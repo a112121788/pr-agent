@@ -1,6 +1,70 @@
 import React, {useRef, useState} from 'react';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import styles from './styles.module.css';
+
+const HERO_COPY = {
+  en: {
+    lede: 'An open-source AI agent that describes, reviews and improves pull requests. Run it from a PR comment, a webhook, your CI or the terminal.',
+    install: 'Install PR-Agent',
+    github: 'View on GitHub',
+    worksWith: 'Works with',
+    type: 'Type',
+    enhancement: 'Enhancement',
+    description: 'Description',
+    retry: 'Retry failed webhook deliveries with exponential backoff',
+    record: 'Record every attempt in the delivery log',
+    walkthrough: 'File walkthrough',
+    reviewGuide: 'PR Reviewer Guide',
+    effort: 'Estimated effort to review',
+    effortLabel: '2 out of 5',
+    tests: 'PR contains tests',
+    security: 'No security concerns identified',
+    focus: 'Recommended focus areas for review',
+    unbounded: 'Unbounded backoff:',
+    unboundedTail: 'has no cap, so the tenth retry waits more than eight minutes.',
+    suggestions: 'PR Code Suggestions',
+    capDelay: 'Cap the retry delay',
+    possibleIssue: 'Possible issue',
+    highImpact: 'Impact: High',
+    delayExplanation: 'The delay doubles on every attempt with no upper bound. Clamp it so a long outage cannot stall the worker.',
+    askAnswer: 'Each delivery is retried up to max_attempts (10) times, doubling the delay from one second. The attempts span about 17 minutes; after the last one the event is marked failed in the delivery log and is not retried again.',
+    threadLabel: 'Example: running a PR-Agent command on a pull request',
+    commandLabel: 'Command',
+    howItWorks: 'How',
+    works: 'works',
+  },
+  'zh-CN': {
+    lede: '一个开源 AI 代理，用于描述、审查并改进拉取请求。可以从评论、Webhook、CI 或终端运行。',
+    install: '安装 PR-Agent',
+    github: '查看 GitHub',
+    worksWith: '支持平台',
+    type: '类型',
+    enhancement: '功能增强',
+    description: '描述',
+    retry: '用指数退避重试失败的 Webhook 投递',
+    record: '在投递日志中记录每一次尝试',
+    walkthrough: '文件导览',
+    reviewGuide: 'PR 审查指南',
+    effort: '预计审查工作量',
+    effortLabel: '5 分中的 2 分',
+    tests: '拉取请求包含测试',
+    security: '未发现安全问题',
+    focus: '建议重点审查',
+    unbounded: '退避没有上限：',
+    unboundedTail: '没有上限，因此第十次重试会等待超过八分钟。',
+    suggestions: 'PR 代码建议',
+    capDelay: '限制重试延迟',
+    possibleIssue: '可能的问题',
+    highImpact: '影响：高',
+    delayExplanation: '每次尝试都会让延迟翻倍，但没有上限。应限制最大值，避免长时间故障拖住工作进程。',
+    askAnswer: '每次投递最多重试 max_attempts（10）次，延迟从一秒开始翻倍。全部尝试大约持续 17 分钟；最后一次之后，事件会在投递日志中标记为 failed，并且不再重试。',
+    threadLabel: '示例：在拉取请求中运行 PR-Agent 命令',
+    commandLabel: '命令',
+    howItWorks: '',
+    works: '的工作方式',
+  },
+};
 
 // The PR-Agent mark (the pull-request glyph from the favicon).
 function Mark({className}) {
@@ -14,21 +78,21 @@ function Mark({className}) {
   );
 }
 
-function Describe() {
+function Describe({copy}) {
   return (
     <>
       <dl className={styles.fields}>
-        <dt>Type</dt>
-        <dd>Enhancement</dd>
-        <dt>Description</dt>
+        <dt>{copy.type}</dt>
+        <dd>{copy.enhancement}</dd>
+        <dt>{copy.description}</dt>
         <dd>
           <ul className={styles.bullets}>
-            <li>Retry failed webhook deliveries with exponential backoff</li>
-            <li>Record every attempt in the delivery log</li>
+            <li>{copy.retry}</li>
+            <li>{copy.record}</li>
           </ul>
         </dd>
       </dl>
-      <p className={styles.sub}>File walkthrough</p>
+      <p className={styles.sub}>{copy.walkthrough}</p>
       <ul className={styles.files}>
         <li><code>webhooks/retry.py</code><span className={styles.add}>+48</span><span className={styles.del}>−6</span></li>
         <li><code>webhooks/handler.py</code><span className={styles.add}>+12</span><span className={styles.del}>−3</span></li>
@@ -38,28 +102,27 @@ function Describe() {
   );
 }
 
-function Review() {
+function Review({copy}) {
   return (
     <>
-      <p className={styles.heading}>PR Reviewer Guide</p>
+      <p className={styles.heading}>{copy.reviewGuide}</p>
       <ul className={styles.checks}>
         <li>
-          <span>Estimated effort to review</span>
-          <span className={styles.meter} role="img" aria-label="2 out of 5">
+          <span>{copy.effort}</span>
+          <span className={styles.meter} role="img" aria-label={copy.effortLabel}>
             {[1, 2, 3, 4, 5].map((n) => (
               <i key={n} className={n <= 2 ? styles.on : undefined} />
             ))}
           </span>
         </li>
-        <li><span>PR contains tests</span></li>
-        <li><span>No security concerns identified</span></li>
+        <li><span>{copy.tests}</span></li>
+        <li><span>{copy.security}</span></li>
       </ul>
-      <p className={styles.sub}>Recommended focus areas for review</p>
+      <p className={styles.sub}>{copy.focus}</p>
       <div className={styles.finding}>
         <code>webhooks/retry.py</code> <span className={styles.lines}>L42–51</span>
         <p>
-          Unbounded backoff: <code>base * 2 ** attempt</code> has no cap, so the tenth retry waits
-          more than eight minutes.
+          {copy.unbounded} <code>base * 2 ** attempt</code> {copy.unboundedTail}
         </p>
       </div>
     </>
@@ -69,16 +132,16 @@ function Review() {
 function Improve() {
   return (
     <>
-      <p className={styles.heading}>PR Code Suggestions</p>
+      <p className={styles.heading}>{copy.suggestions}</p>
       <div className={styles.suggestion}>
         <div className={styles.suggestionHead}>
-          <span>Cap the retry delay</span>
+          <span>{copy.capDelay}</span>
           <span className={styles.tags}>
-            <span>Possible issue</span>
-            <span>Impact: High</span>
+            <span>{copy.possibleIssue}</span>
+            <span>{copy.highImpact}</span>
           </span>
         </div>
-        <p>The delay doubles on every attempt with no upper bound. Clamp it so a long outage cannot stall the worker.</p>
+        <p>{copy.delayExplanation}</p>
         <pre className={styles.diff}>
           <span className={styles.diffFile}>webhooks/retry.py</span>
           <span className={styles.diffDel}>- delay = base * 2 ** attempt</span>
@@ -89,14 +152,8 @@ function Improve() {
   );
 }
 
-function Ask() {
-  return (
-    <p className={styles.answer}>
-      Each delivery is retried up to <code>max_attempts</code> (10) times, doubling the delay from one
-      second. The attempts span about 17 minutes; after the last one the event is marked{' '}
-      <code>failed</code> in the delivery log and is not retried again.
-    </p>
-  );
+function Ask({copy}) {
+  return <p className={styles.answer}>{copy.askAnswer}</p>;
 }
 
 const COMMANDS = [
@@ -114,7 +171,7 @@ const PROVIDERS = [
   {slug: 'gitea', name: 'Gitea'},
 ];
 
-function Thread() {
+function Thread({copy}) {
   const [active, setActive] = useState(1);
   const tabs = useRef([]);
   const {typed, Reply, to, id} = COMMANDS[active];
@@ -129,13 +186,13 @@ function Thread() {
   };
 
   return (
-    <figure className={styles.thread} aria-label="Example: running a PR-Agent command on a pull request">
+    <figure className={styles.thread} aria-label={copy.threadLabel}>
       <div className={styles.threadHead}>
         <span className={styles.prTitle}>feat: retry failed webhook deliveries</span>
         <span className={styles.prNumber}>#482</span>
       </div>
 
-      <div className={styles.tabs} role="tablist" aria-label="Command" onKeyDown={onKeyDown}>
+      <div className={styles.tabs} role="tablist" aria-label={copy.commandLabel} onKeyDown={onKeyDown}>
         {COMMANDS.map((command, index) => (
           <button
             key={command.id}
@@ -175,38 +232,37 @@ function Thread() {
               pr-agent <span className={styles.bot}>bot</span>
             </span>
             <div className={styles.output}>
-              <Reply />
+              <Reply copy={copy} />
             </div>
           </div>
         </div>
       </div>
 
       <Link className={styles.threadFoot} to={to}>
-        How /{id} works →
+        {copy.howItWorks} /{id} {copy.works} →
       </Link>
     </figure>
   );
 }
 
 export default function Hero() {
+  const {i18n: {currentLocale: locale}} = useDocusaurusContext();
+  const copy = HERO_COPY[locale] || HERO_COPY.en;
   return (
     <header className={styles.hero}>
       <div className={styles.intro}>
         <h1 className={styles.title}>PR-Agent</h1>
-        <p className={styles.lede}>
-          An open-source AI agent that describes, reviews and improves pull requests. Run it from a PR
-          comment, a webhook, your CI or the terminal.
-        </p>
+        <p className={styles.lede}>{copy.lede}</p>
         <div className={styles.actions}>
           <Link className={styles.primary} to="/installation/">
-            Install PR-Agent
+            {copy.install}
           </Link>
           <Link className={styles.secondary} to="https://github.com/the-pr-agent/pr-agent">
-            View on GitHub
+            {copy.github}
           </Link>
         </div>
         <div className={styles.providers}>
-          <span className={styles.providersLabel}>Works with</span>
+          <span className={styles.providersLabel}>{copy.worksWith}</span>
           <ul className={styles.providerList}>
             {PROVIDERS.map(({slug, name}) => (
               <li key={slug} className="pra-provider">
@@ -217,7 +273,7 @@ export default function Hero() {
           </ul>
         </div>
       </div>
-      <Thread />
+      <Thread copy={copy} />
     </header>
   );
 }

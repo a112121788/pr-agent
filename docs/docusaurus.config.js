@@ -35,6 +35,17 @@ const config = {
   organizationName: 'the-pr-agent',
   projectName: 'pr-agent',
 
+  // English stays at the existing URLs. A translated file under i18n/zh-CN replaces
+  // its English source; every file that has no translation keeps the English page.
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'zh-CN'],
+    localeConfigs: {
+      en: {label: 'English', htmlLang: 'en-US'},
+      'zh-CN': {label: '中文', htmlLang: 'zh-CN'},
+    },
+  },
+
   markdown: {
     format: 'detect',
     hooks: {

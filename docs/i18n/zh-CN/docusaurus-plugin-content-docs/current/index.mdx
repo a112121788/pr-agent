@@ -1,0 +1,49 @@
+---
+title: "概览"
+sidebar_position: 1
+description: "开源 AI 代理，用于在 GitHub、GitLab、Bitbucket、Azure DevOps、Gitea 和 Gitee 上审查、描述并改进拉取请求。"
+hide_title: true
+hide_table_of_contents: true
+displayed_sidebar: null
+custom_edit_url: null
+pagination_prev: null
+pagination_next: null
+---
+
+import Hero from '@site/src/components/Hero';
+import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
+
+<Hero />
+
+<div className="pra-landing-body">
+
+## 快速开始
+
+在终端里审查一个拉取请求。准备一个 OpenAI 密钥和一个 GitHub 令牌即可。
+
+```bash
+docker run --rm -it \
+  -e OPENAI__KEY=<your_openai_key> \
+  -e GITHUB__USER_TOKEN=<your_github_token> \
+  pragent/pr-agent:latest --pr_url <pr_url> review
+```
+
+<div className="pra-cta-row">
+
+[安装到你的仓库](pathname:///installation/) [在本地运行的其他方式](pathname:///installation/locally/)
+
+</div>
+
+已经安装好了？在拉取请求中评论 `/help "your question"`，PR-Agent 会根据这些文档回答。
+
+## 维护者
+
+<MaintainerAvatars />
+
+<div className="pra-cta-row">
+
+[认识团队](/maintainers/)
+
+</div>
+
+</div>
