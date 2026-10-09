@@ -5,22 +5,28 @@ sidebar_position: 9
 
 ## 概述
 
-`help` 工具列出所有可用工具及其说明。
-对 PR-Agent 用户，它还可以通过勾选相应复选框来触发各个工具。
+`/help` 有两种用法。
 
-可以在任意拉取请求上评论来手动调用：
+不带问题时，它会发一条评论，列出可以在该拉取请求上运行的命令：`/describe`、`/review`、`/improve`、`/ask`、`/add_docs`、`/generate_labels` 和 `/update_changelog`。
+
+带上问题时，它根据随包文档作答，并把答案发成评论，同时附上用到的文档段落。
 
 ```
 /help
 ```
 
-## 使用示例
+```
+/help "How do I run /review on a Gitee pull request?"
+```
 
-在拉取请求上评论以调用 `help` 工具：
+CLI 使用 [Gitee 镜像](./index.md#run) 和一条 Gitee 拉取请求 URL：
 
-<img src="/img/help1.png" alt="帮助工具输入" width="750" />
+```bash
+ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/N \
+  help "How do I run /review on a Gitee pull request?"
+```
 
+接受的 URL 是 `https://gitee.com/owner/repo/pulls/N` 和 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-回复中会包含可用工具列表：
-
-<img src="/img/help2.webp" alt="帮助工具输出" width="750" />
+`/help_docs` 是另一条命令，而且已经[禁用](./help_docs.md)。`/similar_issue` 不会搜索 Gitee 议题，见[相似议题](./similar_issues.md)。

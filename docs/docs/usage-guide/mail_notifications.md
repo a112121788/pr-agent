@@ -3,21 +3,18 @@ title: "Managing Mail Notifications"
 sidebar_position: 6
 ---
 
+Gitee notifies watchers when PR-Agent publishes a comment. Gitee does not provide a switch that silences one bot user while leaving every other pull-request comment in your inbox.
 
-Unfortunately, it is not possible in GitHub to disable mail notifications from a specific user.
-If you are subscribed to notifications for a repo with PR-Agent, we recommend turning off notifications for PR comments, to avoid lengthy emails:
+Reduce the mail in either of these ways:
 
-<img src="/img/notifications.png" alt="notifications" width="512" />
+- In Gitee, turn off email for pull-request comments on repositories where PR-Agent is installed, and keep the in-site notification if you still want to see the comment.
+- In your mail provider, filter messages whose body is a PR-Agent comment (for example a filter on `PR Reviewer Guide` or the bot account that posts the comment).
 
-As an alternative, you can filter in your mail provider the notifications specifically from the PR-Agent bot, [see how](https://www.quora.com/How-can-you-filter-emails-for-specific-people-in-Gmail#:~:text=On%20the%20Filters%20and%20Blocked,the%20body%20of%20the%20email).
+You can also shorten the comment itself. Each tool has `enable_help_text`. Set it to `false` to drop the collapsible help block:
 
-<img src="/img/filter_mail_notifications.png" alt="filter_mail_notifications" width="512" />
-
-Another option to reduce the mail overload, yet still receive notifications on PR-Agent tools, is to disable the help collapsible section in PR-Agent bot comments.
-This can done by setting `enable_help_text=false` for the relevant tool in the configuration file.
-For example, to disable the help text for the `pr_reviewer` tool, set:
-
-```
+```toml
 [pr_reviewer]
 enable_help_text = false
 ```
+
+Apply the same key under the section of any other tool whose help text you do not want mailed. Repository settings go in [`.pr_agent.toml`](./configuration_options.md#local-configuration-file).

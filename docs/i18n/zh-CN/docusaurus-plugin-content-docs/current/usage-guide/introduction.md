@@ -3,12 +3,13 @@ title: "简介"
 sidebar_position: 2
 ---
 
-完成[安装](../installation/index.md)后，调用 PR-Agent 有三种基本方式：
+Gitee PR-Agent 审查 Gitee 上的拉取请求。本构建不连接 GitHub、GitLab、Bitbucket 或 Azure DevOps。
 
-1. 在本地运行 CLI 命令
-2. 在线用法——在拉取请求上<a href="https://github.com/the-pr-agent/pr-agent/pull/229#issuecomment-1695021901" target="_blank" rel="noopener noreferrer">发表评论</a>
-3. 让 PR-Agent 工具在新的拉取请求打开时自动运行
+完成[安装](../installation/gitee.md)后，可以用以下两种方式调用：
 
-具体而言，可以通过预构建的 [Docker 镜像](../installation/locally.md#using-docker-image)发出 CLI 命令，也可以通过[本地克隆的仓库](../installation/locally.md#run-from-source)发出。
+1. 在本地用 CLI，并传入 Gitee 拉取请求 URL。
+2. 在线使用 Gitee Webhook。服务器接受 `POST /api/v1/gitee_webhooks`。
 
-在线使用时，配置 [Gitee Webhook](../installation/gitee.md)。拉取请求打开时会自动运行工具，也可以在评论中使用以 `/` 开头的命令。
+打开拉取请求时会运行 `/describe`、`/review` 和 `/improve`。拉取请求上的评论只有在以 `/` 开头时才会执行。
+
+发布镜像为 `ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest`。Webhook 服务目标是 `gitee_app`。命令、签名校验和环境变量见[用法与自动化](./automations_and_usage.md)。

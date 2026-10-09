@@ -3,17 +3,16 @@ title: "Push outputs to external sinks"
 sidebar_position: 7
 ---
 
-The `[push_outputs]` feature routes finished tool output to external sinks — stdout, a JSONL file, a
-generic webhook, Slack, or Telegram — without calling git-provider APIs. It is disabled by default, and is
-additive to normal publishing: when a tool finishes, the same result that is posted as a PR comment
-is also emitted to the configured sinks.
+`[push_outputs]` copies finished tool output to external sinks — stdout, a JSONL file, a generic webhook, Slack, or Telegram — without calling the Gitee API. It is off by default, and it is additive: the comment published on the Gitee pull request is still published, and the same result is also sent to the configured sinks.
 
-## What gets pushed
+Gitee cannot `push_code`. This feature does not commit files. `/update_changelog` remains a comment, and that comment's text can also be copied to a sink when the tool emits a record.
 
-Each finished tool run emits one record. The tools that currently emit are:
+## What gets pushed {#what-gets-pushed}
+
+Each finished tool run emits one record. The tools that emit are:
 
 | Tool | `type` in the record |
-|---|---|
+| --- | --- |
 | `/review` | `review` |
 | `/describe` | `describe` |
 | `/improve` | `improve` |
@@ -30,14 +29,13 @@ A record is a JSON object:
 ```
 
 - `type` — which tool produced the output
-- `timestamp` — the run completion time, UTC, ISO-8601
+- `timestamp` — completion time, UTC, ISO-8601
 - `payload` — the structured tool result
-- `markdown` — the rendered comment text; present when the tool produces one
+- `markdown` — the rendered comment text, when the tool produces one
 
-## Configuration
+## Configuration {#configuration}
 
-The defaults are defined at the end of the
-[configuration file](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml):
+Defaults are at the end of the [configuration file](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml):
 
 ```toml
 [push_outputs]
@@ -51,50 +49,36 @@ telegram_chat_id = ""                  # destination chat for the Telegram bot
 ```
 
 - `enable` — master switch (default `false`). When `false`, nothing is emitted.
-- `channels` — which sinks to use. Nothing is emitted until at least one channel is listed here.
+- `channels` — which sinks to use. Nothing is emitted until at least one channel is listed.
 - `file_path` — the file the `file` channel appends to.
 - `webhook_url` — the endpoint the `webhook` channel POSTs the generic record to.
-- `slack_webhook_url` — a Slack Incoming Webhook URL that the `slack` channel posts a `{"text": ...}` payload to.
-- `telegram_bot_token` — the bot token used by the `telegram` channel. Keep it in host secrets, not a repository file.
+- `slack_webhook_url` — a Slack Incoming Webhook URL. The `slack` channel posts `{"text": ...}`.
+- `telegram_bot_token` — bot token for the `telegram` channel. Keep it in host secrets.
 - `telegram_chat_id` — the chat that receives Telegram messages.
 
 :::danger[Host-only configuration]
-The whole `[push_outputs]` section is **host-only**. A repository cannot set these keys:
-keys supplied through a repo's local `.pr_agent.toml` are dropped, and CLI arguments
-(`--push_outputs.webhook_url=...`, `--push_outputs={...}`) are blocked. This prevents a
-pull request from redirecting review output to an attacker-controlled host, reaching
-internal endpoints, or appending to arbitrary host files. Configure these values in the
-PR-Agent host's own settings.
+The whole `[push_outputs]` section is **host-only**. Keys in a repository `.pr_agent.toml` are dropped, and CLI arguments (`--push_outputs.webhook_url=...`, `--push_outputs={...}`) are blocked. A pull request must not be able to redirect review output to another host or append to an arbitrary file. Set these values on the host that runs the CLI or the `gitee_app` image `ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest`.
 :::
 
-### URL requirements
+### URL requirements {#url-requirements}
 
-`webhook_url` and `slack_webhook_url` must be absolute `https://` URLs with a host. Any other
-value (for example a plain `http://` URL or a bare path) is ignored with a warning. Requiring
-HTTPS keeps review text, which can quote private code, off plaintext transports. The host is
-intentionally not restricted, so self-hosted collectors and Slack-compatible endpoints
-(Mattermost, Rocket.Chat) are legitimate targets.
+`webhook_url` and `slack_webhook_url` must be absolute `https://` URLs with a host. Any other value, including plain `http://`, is ignored with a warning. HTTPS keeps review text, which can quote private code, off plaintext transports. The host is not restricted, so a self-hosted collector or a Slack-compatible endpoint is a valid target.
 
-Warnings log the setting name — never the URL value — because a webhook or Slack URL is itself a
-credential.
+Warnings log the setting name, never the URL, because a webhook URL is a credential.
 
-## Channels
+## Channels {#channels}
 
 | Channel | Behaviour |
-|---|---|
+| --- | --- |
 | `stdout` | Prints one JSON line (the record) to stdout. |
 | `file` | Appends one JSON line per run (JSONL) to `file_path`, creating parent directories as needed. |
 | `webhook` | POSTs the generic record as JSON to `webhook_url` (5-second timeout, redirects not followed). |
-| `slack` | POSTs `{"text": ...}` to a Slack Incoming Webhook; the text is the markdown, or the payload JSON when the tool produces no markdown. |
+| `slack` | POSTs `{"text": ...}` to a Slack Incoming Webhook. The text is the markdown, or the payload JSON when the tool produces no markdown. |
 | `telegram` | Sends the markdown, or the payload JSON when no markdown is present, as plain text to `telegram_chat_id`. Text is truncated to at most 4096 UTF-16 code units without splitting surrogate pairs. |
 
-Local channels (`stdout`, `file`) run before network channels (`webhook`, `slack`, `telegram`), and network
-posts never follow redirects. Each configured destination is attempted independently, so one failure
-does not prevent later destinations from receiving the output.
+Local channels (`stdout`, `file`) run before network channels (`webhook`, `slack`, `telegram`). Network posts never follow redirects. Each destination is attempted independently, so one failure does not block the others.
 
-### Telegram
-
-Enable the channel in the host's settings and supply the bot token through the host environment:
+### Telegram {#telegram}
 
 ```toml
 [push_outputs]
@@ -103,34 +87,18 @@ channels = ["telegram"]
 telegram_chat_id = "<destination-chat-id>"
 ```
 
-Set `PUSH_OUTPUTS__TELEGRAM_BOT_TOKEN` to your bot token in the host's secret environment.
-The bot must be able to send messages to the destination chat. Missing credentials skip delivery
-with a warning that names only the missing setting.
+Set `PUSH_OUTPUTS__TELEGRAM_BOT_TOKEN` in the host environment. The bot must be allowed to message that chat. Missing credentials skip delivery with a warning that names only the missing setting.
 
-Requests use the fixed `https://api.telegram.org` host, a 5-second timeout, and no redirects.
-The token is URL-encoded in the request path and is never included in PR-Agent's warning messages.
-No Telegram parse mode is set: Markdown syntax is sent as plain text. Longer output is truncated,
-not split across messages; other configured channels still receive the complete output.
+Requests use `https://api.telegram.org`, a 5-second timeout, and no redirects. The token is URL-encoded in the path and is never written into PR-Agent warnings. No parse mode is set, so Markdown is sent as plain text. Longer output is truncated, not split. Other configured channels still receive the complete output.
 
-## Error handling
+## Error handling {#error-handling}
 
-Failures are non-fatal: `push_outputs` never raises, so a sink outage does not break the review
-flow. Exceptions and non-2xx HTTP responses are logged with the destination and only the exception
-type or status code, since request error messages can embed the (secret-bearing) URL.
+Failures are non-fatal. `push_outputs` never raises, so a sink outage does not stop the Gitee comment. Exceptions and non-2xx responses are logged with the destination and only the exception type or status code, because the error text can embed the secret-bearing URL.
 
-## Extending delivery
+## Extending delivery {#extending-delivery}
 
-`push_outputs()` in `pr_agent/algo/run_output.py` builds the record once and isolates failures
-for each selected destination. Delivery strategies live in `pr_agent/algo/output_sinks.py`:
-each implements `OutputSink.send(record, cfg)`, and `create_output_sink()` selects the strategy
-from `OUTPUT_SINK_TYPES`. Registry order determines delivery order, with local writes first;
-duplicate channel entries still result in a single delivery.
+`push_outputs()` in `pr_agent/algo/run_output.py` builds the record once and isolates failures for each destination. Strategies live in `pr_agent/algo/output_sinks.py`. Each implements `OutputSink.send(record, cfg)`, and `create_output_sink()` selects one from `OUTPUT_SINK_TYPES`. Registry order is delivery order, with local writes first. Duplicate channel entries still deliver once.
 
-To add a destination, implement its strategy and register it, then add any required host-only
-settings, documentation, and provider-specific tests. HTTP strategies must validate destinations
-and preserve the shared HTTPS, timeout, redirect, and secret-safe logging policy. Provider-specific
-payload formatting belongs in the strategy, so the generic webhook record remains unchanged.
+To add a destination, implement the strategy, register it, and add host-only settings plus tests. HTTP strategies must keep the shared HTTPS, timeout, redirect, and secret-safe logging rules. Provider-specific payload formatting belongs in the strategy, so the generic webhook record stays unchanged.
 
-This interface organizes provider implementations; it does not remove the work of maintaining
-their APIs. Retries, rate limiting, idempotency, and background delivery are separate policy
-decisions and are not introduced by this structure.
+Retries, rate limits, idempotency, and background delivery are not part of this interface.

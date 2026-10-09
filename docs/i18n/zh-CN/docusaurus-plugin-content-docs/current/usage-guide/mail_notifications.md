@@ -3,21 +3,18 @@ title: "管理邮件通知"
 sidebar_position: 6
 ---
 
+PR-Agent 在 Gitee 上发表评论时，Gitee 会通知关注该仓库的人。Gitee 不能在保留其他拉取请求评论邮件的同时，单独关掉某一个机器人用户的邮件。
 
-很遗憾，GitHub 无法关闭来自特定用户的邮件通知。
-如果你订阅了启用 PR-Agent 的仓库通知，建议关闭拉取请求评论的通知，以避免收到冗长邮件：
+可以用下面两种方式减少邮件：
 
-<img src="/img/notifications.png" alt="通知" width="512" />
+- 在 Gitee 里，对安装了 PR-Agent 的仓库关闭拉取请求评论的邮件，如果仍想看到评论，可以保留站内通知。
+- 在邮件服务里过滤正文来自 PR-Agent 的邮件（例如按 `PR Reviewer Guide` 或发表评论的机器人账号过滤）。
 
-也可以在邮件服务商中专门过滤来自 PR-Agent 机器人的通知，[查看方法](https://www.quora.com/How-can-you-filter-emails-for-specific-people-in-Gmail#:~:text=On%20the%20Filters%20and%20Blocked,the%20body%20of%20the%20email)。
+也可以缩短评论本身。每个工具都有 `enable_help_text`。设为 `false` 会去掉可折叠的帮助段落：
 
-<img src="/img/filter_mail_notifications.png" alt="过滤邮件通知" width="512" />
-
-另一种减轻邮件负担、同时仍接收 PR-Agent 工具通知的做法，是关闭 PR-Agent 机器人评论中的帮助折叠区域。
-可以在配置文件中为相应工具设置 `enable_help_text=false`。
-例如，要关闭 `pr_reviewer` 工具的帮助文本，设置：
-
-```
+```toml
 [pr_reviewer]
 enable_help_text = false
 ```
+
+其他工具如果也不需要帮助文字，在对应的配置节里设置同一个键。仓库级设置写在 [`.pr_agent.toml`](./configuration_options.md#local-configuration-file)。

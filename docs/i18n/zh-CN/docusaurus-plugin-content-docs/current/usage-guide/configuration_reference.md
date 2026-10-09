@@ -3,6 +3,8 @@ title: "配置参考"
 sidebar_position: 4
 ---
 
+本版本只支持 Gitee。
+
 > 本页为**自动生成**，不应手动编辑。
 > 请用以下命令从 [TOML 源文件](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) 重新生成：
 >

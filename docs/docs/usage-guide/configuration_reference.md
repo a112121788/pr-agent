@@ -3,6 +3,8 @@ title: "Configuration Reference"
 sidebar_position: 4
 ---
 
+This version supports Gitee only.
+
 > This page is **auto-generated** and should not be edited by hand.
 > Regenerate it from the [TOML source](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) with:
 >

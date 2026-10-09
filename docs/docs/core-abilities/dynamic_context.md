@@ -3,15 +3,13 @@ title: "Dynamic Context"
 sidebar_position: 4
 ---
 
-`Supported Git Platforms: GitHub, GitLab, Bitbucket, Azure DevOps, Gitea`
+`Supported Git platform: Gitee`
 
-PR-Agent uses an **asymmetric and dynamic context strategy** to improve AI analysis of code changes in pull requests.
-It provides more context before changes than after, and dynamically adjusts the context based on code structure (e.g., enclosing functions or classes).
-This approach balances providing sufficient context for accurate analysis, while avoiding needle-in-the-haystack information overload that could degrade AI performance or exceed token limits.
+Gitee PR-Agent uses an **asymmetric and dynamic context** around each hunk. It keeps more lines before a change than after it, and it widens that window when the change sits inside a function or class. The goal is enough context for an accurate comment without a needle-in-a-haystack prompt that blows the token budget. The default model is `gpt-6.1-sol` (`glm-5.3` is the fallback), and that budget is what the packer in [Compression strategy](./compression_strategy.md) enforces.
 
-## Introduction
+## What Gitee returns
 
-Pull request code changes are retrieved in a unified diff format, showing three lines of context before and after each modified section, with additions marked by '+' and deletions by '-'.
+Changed lines arrive as a unified diff. A typical hunk shows three context lines before and after the edit. Additions are marked `+` and deletions `-`.
 
 ```diff
 @@ -12,5 +12,5 @@ def func1():
@@ -28,52 +26,31 @@ Pull request code changes are retrieved in a unified diff format, showing three 
 ...
 ```
 
-This unified diff format can be challenging for AI models to interpret accurately, as it provides limited context for understanding the full scope of code changes.
-The presentation of code using '+', '-', and ' ' symbols to indicate additions, deletions, and unchanged lines respectively also differs from the standard code formatting typically used to train AI models.
+That format is a poor prompt by itself. Three lines often hide the enclosing function, and the `+` / `-` / ` ` markers are not how models usually see source code.
 
-## Challenges of expanding the context window
+## Why not send the whole file every time
 
-While expanding the context window is technically feasible, it presents a more fundamental trade-off:
+A wider window helps the model place the edit. It also has a cost:
 
-Pros:
+- Too little context and the model misreads the change.
+- Too much context hides the lines that actually changed. Quality drops as the prompt grows, and a Gitee pull request often touches many files.
+- Extra lines spend tokens. They add latency and can force the segmented review described in [Compression strategy](./compression_strategy.md).
 
-- Enhanced context allows the model to better comprehend and localize the code changes, results (potentially) in more precise analysis and suggestions. Without enough context, the model may struggle to understand the code changes and provide relevant feedback.
+## Asymmetric and dynamic windows
 
-Cons:
+**Asymmetric.** The lines above a change usually explain it better than the lines below it. The before-window and the after-window are separate settings.
 
-- Excessive context may overwhelm the model with extraneous information, creating a "needle in a haystack" scenario where focusing on the relevant details (the code that actually changed) becomes challenging.
-LLM quality is known to degrade when the context gets larger.
-Pull requests often encompass multiple changes across many files, potentially spanning hundreds of lines of modified code. This complexity presents a genuine risk of overwhelming the model with excessive context.
+**Dynamic.** The useful window is often the enclosing function or class, not a fixed line count. Gitee PR-Agent walks upward from the hunk until it hits that boundary, and it stops after a configured number of extra lines so one large function cannot consume the budget.
 
-- Increased context expands the token count, increasing processing time and cost, and may prevent the model from processing the entire pull request in a single pass.
+## Configuration
 
-## Asymmetric and dynamic context
-
-To address these challenges, PR-Agent employs an **asymmetric** and **dynamic** context strategy, providing the model with more focused and relevant context information for each code change.
-
-**Asymmetric:**
-
-We start by recognizing that the context preceding a code change is typically more crucial for understanding the modification than the context following it.
-Consequently, PR-Agent implements an asymmetric context policy, decoupling the context window into two distinct segments: one for the code before the change and another for the code after.
-
-By independently adjusting each context window, PR-Agent can supply the model with a more tailored and pertinent context for individual code changes.
-
-**Dynamic:**
-
-We also employ a "dynamic" context strategy.
-We start by recognizing that the optimal context for a code change often corresponds to its enclosing code component (e.g., function, class), rather than a fixed number of lines.
-Consequently, we dynamically adjust the context window based on the code's structure, ensuring the model receives the most pertinent information for each modification.
-
-To prevent overwhelming the model with excessive context, we impose a limit on the number of lines searched when identifying the enclosing component.
-This balance allows for comprehensive understanding while maintaining efficiency and limiting context token usage.
-
-## Appendix - relevant configuration options
+These defaults live in `configuration.toml`:
 
 ```toml
 [config]
-patch_extension_skip_types =[".md",".txt"]  # Skip files with these extensions when trying to extend the context
-allow_dynamic_context=true                  # Allow dynamic context extension
-max_extra_lines_before_dynamic_context = 8  # will try to include up to X extra lines before the hunk in the patch, until we reach an enclosing function or class
-patch_extra_lines_before = 3                # Number of extra lines (+3 default ones) to include before each hunk in the patch
-patch_extra_lines_after = 1                 # Number of extra lines (+3 default ones) to include after each hunk in the patch
+patch_extension_skip_types = [".md", ".txt"]  # do not extend context for these extensions
+allow_dynamic_context = true                   # walk up to an enclosing function or class
+max_extra_lines_before_dynamic_context = 10    # extra lines to search before the hunk
+patch_extra_lines_before = 5                   # extra lines before each hunk, on top of the 3 in the diff
+patch_extra_lines_after = 1                    # extra lines after each hunk, on top of the 3 in the diff
 ```

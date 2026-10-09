@@ -3,32 +3,32 @@ title: "Local and global metadata injection with multi-stage analysis"
 sidebar_position: 6
 ---
 
-`Supported Git Platforms: GitHub, GitLab, Bitbucket, Azure DevOps, Gitea`
+`Supported Git platform: Gitee`
 
-1\.
-PR-Agent initially retrieves for each PR the following data:
+Gitee PR-Agent builds the prompt in layers: the pull request itself, the `/describe` summary, the surrounding file context, and any host or repository instructions. Later commands reuse those layers instead of calling the model again just to recover them. Comments are written in `zh-CN`.
 
-- PR title and branch name
-- PR original description
-- Commit messages history
-- PR diff patches, in [hunk diff](https://loicpefferkorn.net/2014/02/diff-files-what-are-hunks-and-how-to-extract-them/) format
-- The entire content of the files that were modified in the PR
+1. For each Gitee pull request it loads:
 
-:::tip[Tip: Organization-level metadata]
-In addition to the inputs above, PR-Agent can incorporate supplementary preferences provided by the user, like [`extra_instructions` and `organization best practices`](../tools/improve.mdx#extra-instructions-and-best-practices). This information can be used to enhance the PR analysis.
+- Title and branch name
+- The existing description
+- Commit messages
+- The diff, in [hunk](https://loicpefferkorn.net/2014/02/diff-files-what-are-hunks-and-how-to-extract-them/) form
+- The full contents of the files the pull request changes
+- The title and body of referenced Gitee issues, when the issues API returns them. See [Fetching ticket context](./fetching_ticket_context.md).
+
+:::tip[Repository instructions]
+Repository preferences such as [`extra_instructions`](../tools/improve.mdx#extra-instructions-and-repo-files) are added on top of those inputs. They steer suggestions. They do not change the Gitee token, the model endpoint, or `skills.paths`.
 :::
 
-2\.
-By default, the first command that PR-Agent executes is [`describe`](../tools/describe.md), which generates three types of outputs:
+2. The first automatic command on an opened pull request is [`/describe`](../tools/describe.md). It produces:
 
-- PR Type (e.g. bug fix, feature, refactor, etc)
-- PR Description - a bullet point summary of the PR
-- Changes walkthrough - for each modified file, provide a one-line summary followed by a detailed bullet point list of the changes.
+- A pull-request type (bug fix, feature, refactor, and so on)
+- A short bullet summary
+- A changes walkthrough: one line per modified file, then a short bullet list of what changed
 
-These AI-generated outputs are now considered as part of the PR metadata, and can be used in subsequent commands like `review` and `improve`.
-This effectively enables multi-stage chain-of-thought analysis, without doing any additional API calls which will cost time and money.
+That output becomes pull-request metadata for later `/review` and `/improve` calls. The model can use the walkthrough without another round trip.
 
-For example, when generating code suggestions for different files, PR-Agent can inject the AI-generated ["Changes walkthrough"](https://github.com/the-pr-agent/pr-agent/pull/1202#issue-2511546839) file summary in the prompt:
+When `/improve` suggests a change in a file, the prompt can include that file's walkthrough next to the hunk:
 
 ```diff
 ## File: 'src/file1.py'
@@ -56,7 +56,6 @@ __old hunk__
 ...
 ```
 
-3\. The entire PR files that were retrieved are also used to expand and enhance the PR context (see [Dynamic Context](./dynamic_context.md)).
+3. The full file contents expand the hunk context. See [Dynamic context](./dynamic_context.md).
 
-4\. All the metadata described above represents several level of cumulative analysis - ranging from hunk level, to file level, to PR level, to organization level.
-This comprehensive approach enables PR-Agent AI models to generate more precise and contextually relevant suggestions and feedback.
+4. Together these layers run from the hunk, to the file, to the pull request, to repository instructions. `/review` on a diff that does not fit one call segments that metadata across chunks and merges one comment. See [Compression strategy](./compression_strategy.md).

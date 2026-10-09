@@ -3,57 +3,42 @@ title: "扩展 PR-Agent"
 sidebar_position: 9
 ---
 
-扩展模型、Git 提供商或工具的贡献者从这里开始。如果只更换
-模型，请使用[更换模型](./changing_a_model.md)。
+本页面向要扩展模型、Gitee 提供商或工具的贡献者。如果只更换模型，请使用[更换模型](./changing_a_model.md)。正在运行的产品只支持 Gitee：`config.git_provider` 为 `gitee`，Webhook 目标为 `gitee_app`。
 
 ## 添加模型 {#adding-a-model}
 
-工具调用经过 LiteLLM（`pr_agent/algo/ai_handlers/litellm_ai_handler.py`），这是默认处理器。大多数模型只需要配置：
+工具调用经过 LiteLLM（`pr_agent/algo/ai_handlers/litellm_ai_handler.py`）。大多数模型只需要配置：
 
 ```toml
 [config]
-model="<model-name>"
-fallback_models=["<fallback-model-name>"]
+model = "<model-name>"
+fallback_models = ["<fallback-model-name>"]
 ```
 
-在 `pr_agent/settings/configuration.toml` 的 `[config]` 下设置这些项。
-把模型名放在配置中，不要放在工具代码里。
+在 `pr_agent/settings/configuration.toml` 的 `[config]` 中设置。模型名称放在配置里，不要写进工具代码。随构建提供的默认值是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。OpenAI 兼容路由的主机必须设置 `OPENAI__KEY` 和 `OPENAI__API_BASE`。
 
-行为不同的模型在 `pr_agent/algo/__init__.py` 中注册：
-`CLAUDE_EXTENDED_THINKING_MODELS` 用于接受扩展思考的 Claude 模型。对于带提供商前缀别名的 Claude 模型
-（裸名称、`anthropic/`、`vertex_ai/`、`bedrock/`），在 `_CLAUDE_MODEL_FAMILIES` 中声明规范的模型族，
-以便自动展开到各个注册表。
-其他模型可以直接加入对应的列表。
+行为不同的模型登记在 `pr_agent/algo/__init__.py`。上下文窗口位于其中的 `MAX_TOKENS`。没有条目时请设置 `config.custom_model_max_tokens`，否则 `get_max_tokens()` 会抛出异常。
 
-温度支持在运行时通过探测每个模型的
-`litellm.get_supported_openai_params()` 决定（见
-`pr_agent/algo/ai_handlers/litellm_ai_handler.py` 中的 `_litellm_supports_temperature`）。
-绝不能接收 temperature 参数的模型列在
-`configuration.toml` 的 `config.no_temperature_models` 中；自适应思考的 Claude
-模型（Opus 4.7/4.8 以及 Opus/Sonnet/Fable 5）从不接收该参数。
-
-上下文窗口在 `pr_agent/algo/__init__.py` 的 `MAX_TOKENS` 中注册：
-在 `_CLAUDE_MODEL_FAMILIES` 中声明的 Claude 模型族会自动填充其
-别名。对于其他模型，把模型名及其
-上下文窗口的令牌数加入 `MAX_TOKENS`，或在 `configuration.toml` 中设置 `config.custom_model_max_tokens`。
-两者都没有时，`get_max_tokens()` 会抛出异常。
+是否支持 temperature 在运行时通过探测 `litellm.get_supported_openai_params()` 决定（`pr_agent/algo/ai_handlers/litellm_ai_handler.py` 中的 `_litellm_supports_temperature`）。绝不能接收 temperature 的模型列在 `config.no_temperature_models` 中。
 
 用 `PYTHONPATH=. uv run pytest tests/unittest` 验证。
 
 ## 添加 Git 提供商 {#adding-a-git-provider}
 
-实现 `GitProvider` 子类并注册它：
+本发行版交付并文档化的是 Gitee。`pr_agent/git_providers/gitee_provider.py` 中的 `GiteeProvider` 是参考实现。它报告除 `push_code` 以外的全部能力，因此 `/update_changelog` 发表评论，而不是提交。
 
-1. 创建 `pr_agent/git_providers/<name>_provider.py`，扩展 `pr_agent/git_providers/git_provider.py` 中的接口（参考实现是 `gitlab_provider.py`）。
-2. 把内置提供商以 `(module_path, class_name)` 对加入 `pr_agent/git_providers/__init__.py` 的 `_BUILTIN_GIT_PROVIDERS`。内置提供商在被选中时延迟导入。已使用的键：`github`、`gitlab`、`bitbucket`、`bitbucket_server`、`azure`、`codecommit`、`local`、`gerrit`、`gitea`、`plain-diff`。
-3. 在 `pr_agent/settings/configuration.toml` 中通过 `[config]` → `git_provider="<name>"` 选择它。
-4. 添加 `docs/docs/installation/<name>.md`（参见 [`gitlab.md`](../installation/gitee.md)），并在 `docs/sidebars.js` 的 `Installation` 下注册。
-5. 用 `provider.is_supported("feature")` 这类能力检查来选择依赖提供商的行为，而不是检查提供商类型。
-6. 在 `tests/unittest/test_<name>_provider.py` 下添加单元测试（参见 `test_bitbucket_provider.py`），并在 `pr_agent/settings/.secrets_template.toml` 中列出所需的环境变量。
+若要在分叉中增加另一个提供商：
+
+1. 创建 `pr_agent/git_providers/<name>_provider.py`，扩展 `pr_agent/git_providers/git_provider.py` 中的 `GitProvider`。
+2. 在 `pr_agent/git_providers/__init__.py` 的 `_BUILTIN_GIT_PROVIDERS` 里，以内置项 `(module_path, class_name)` 登记。内置项在被选中时才懒加载。本构建运行的 ID 是 `gitee`。
+3. 在 `[config]` 中用 `git_provider="<name>"` 选中它。本仓库的 Webhook 和文档假定值为 `gitee`。
+4. 增加安装页，并在 `docs/sidebars.js` 的 Installation 下登记。当前页面是 [`gitee.md`](../installation/gitee.md)。
+5. 用 `provider.is_supported("feature")` 选择行为，不要做具体类型判断。
+6. 在 `tests/unittest/test_<name>_provider.py` 增加单元测试。模式见 `tests/unittest/test_gitee_provider.py` 和 `tests/unittest/test_gitee_webhook.py`。在 `pr_agent/settings/.secrets_template.toml` 中列出所需环境变量。
 
 ### 从其他包注册提供商 {#registering-a-provider-from-another-package}
 
-提供商不必位于本仓库。在 PR-Agent 解析提供商之前，从你自己的包调用 `register_git_provider`，例如从启动服务器或封装 CLI 的模块中：
+提供商不必放在本仓库里。在 PR-Agent 解析提供商之前调用 `register_git_provider`：
 
 ```python
 from pr_agent.git_providers import register_git_provider
@@ -63,14 +48,18 @@ from my_package.forge_provider import ForgeProvider
 register_git_provider("forge", ForgeProvider)
 ```
 
-然后在 `[config]` 下用 `git_provider="forge"` 选择它。该类必须扩展 `GitProvider`。把同一个类注册两次是空操作；在已被占用的 id 下注册不同的类会抛出异常，因此包不能悄悄替换内置提供商。
+然后在 `[config]` 中设置 `git_provider="forge"`。该类必须扩展 `GitProvider`。用同一个类注册两次是空操作。在已被占用的 ID 下注册另一个类会抛出异常，因此其他包不能静默替换内置的 `gitee` 提供商。
+
+这里交付的 Webhook 仍然是 `gitee_app` 目标上的 `POST /api/v1/gitee_webhooks`。第三方提供商需要自己的服务入口。
 
 ## 添加工具 {#adding-a-tool}
 
-1. 在 `pr_agent/tools/pr_<name>.py` 中实现工具类，入口为 `async def run(self)`（参见 `pr_reviewer.py`）。
-2. 在 `pr_agent/settings/configuration.toml` 中添加 `[pr_<tool>]` 节，放入该工具读取的选项键（参照 `[pr_reviewer]`）。
-3. 在 `pr_agent/settings/` 下添加提示词 TOML，并把它登记到 `pr_agent/config_loader.py` 的 `settings_files=[...]` 列表中——否则不会加载。
-4. 让 TOML 节名与工具读取的设置键一致：`pr_reviewer_prompts.toml` 中的 `[pr_review_prompt]` ↔ `pr_reviewer.py` 中的 `get_settings().pr_review_prompt`。
-5. 在 `pr_agent/agent/pr_agent.py` 的 `command2class` 中以命令名注册该工具，例如 `"my_tool": PRMyTool`。然后把它加入写死的帮助界面，否则不会出现在 `/help` 中：`pr_agent/tools/pr_help_message.py`、`pr_agent/servers/help.py`，以及 `pr_agent/cli.py` 中的命令列表。
-6. 在 `docs/docs/tools/index.md` 的工具列表中加一行，添加页面 `docs/docs/tools/<name>.md`（参见 [`review.md`](../tools/review.md)），并在 `docs/sidebars.js` 的 `Tools` 下注册该页面。
-7. 在 `tests/unittest/` 下添加测试，并用 `PYTHONPATH=. uv run pytest tests/unittest` 验证。
+1. 在 `pr_agent/tools/pr_<name>.py` 中实现工具，入口为 `async def run(self)`（模式见 `pr_reviewer.py`）。
+2. 在 `pr_agent/settings/configuration.toml` 中增加 `[pr_<tool>]` 节，放入工具要读取的键（模式见 `[pr_reviewer]`）。
+3. 在 `pr_agent/settings/` 下增加提示词 TOML，并把它登记到 `pr_agent/config_loader.py` 的 `settings_files=[...]`。未登记的文件不会被加载。
+4. TOML 节名必须与工具读取的设置键一致：`pr_reviewer_prompts.toml` 中的 `[pr_review_prompt]` 对应 `pr_reviewer.py` 里的 `get_settings().pr_review_prompt`。
+5. 在 `pr_agent/agent/pr_agent.py` 的 `command2class` 中登记工具。然后把它加到帮助界面，否则 `/help` 不会显示：`pr_agent/tools/pr_help_message.py`、`pr_agent/servers/help.py`，以及 `pr_agent/cli.py` 中的命令列表。
+6. 在 `docs/docs/tools/index.md` 增加一行，增加页面 `docs/docs/tools/<name>.md`（见 [`review.md`](../tools/review.md)），并在 `docs/sidebars.js` 的 Tools 下登记。
+7. 在 `tests/unittest/` 下增加测试，并用 `PYTHONPATH=. uv run pytest tests/unittest` 验证。
+
+会推送提交的工具必须检查 `provider.is_supported("push_code")`。在 Gitee 上该检查为假，工具应改为发表评论。

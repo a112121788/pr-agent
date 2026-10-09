@@ -5,82 +5,37 @@ sidebar_position: 7
 
 ## 概述
 
-`generate_labels` 工具扫描拉取请求中的代码变更，并根据变更的内容和上下文生成自定义标签。
+`/generate_labels` 读取拉取请求 diff，并打上与变更匹配的标签。它不改写描述。需要摘要时用 [`/describe`](./describe.md)。
 
-可以在任意拉取请求上评论来手动调用：
+在拉取请求上评论：
 
 ```
 /generate_labels
 ```
 
-## 使用示例
+也可以把 `generate_labels` 传给 [Gitee CLI 镜像](./index.md#run)。URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-在任意拉取请求上评论 `/generate_labels` 来手动调用该工具。
+## 发布内容
 
-工具会分析拉取请求并添加合适的标签。
+标签通过 Gitee API 写入。令牌需要有编辑拉取请求标签的权限。发布会替换整组标签，因此会先读出并保留人工添加的标签。如果这次读取失败，就什么都不发布，避免盲目写入把它们清掉。
 
-## 配置选项
+命令运行时会发一条临时评论 `正在准备 PR 标签...`，结束后删除。
 
-`generate_labels` 工具使用 `[pr_description]` 节中的配置来处理自定义标签。
+允许的名字是内置类型 `Bug fix`、`Tests`、`Enhancement`、`Documentation` 和 `Other`，再加上你配置的自定义名字。匹配忽略大小写。未知名字会被丢掉。如果模型只返回未知名字，当前标签保持不变。
 
-### 启用自定义标签
-
-要使用自定义标签，需要在配置中启用：
+## 自定义标签
 
 ```toml
 [config]
 enable_custom_labels = true
-```
 
-### 定义自定义标签
-
-可以在 `[custom_labels]` 节中定义自己的自定义标签。示例见 [custom_labels.toml](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/custom_labels.toml)。
-
-配置示例：
-
-```toml
 [custom_labels."Bug fix"]
 description = "A fix for a bug in the codebase"
 
-[custom_labels."Feature"]
-description = "A new feature or enhancement"
-
-[custom_labels."Documentation"]
-description = "Documentation changes only"
-
-[custom_labels."Tests"]
-description = "Adding or modifying tests"
-
-[custom_labels."Refactoring"]
-description = "Code refactoring without functional changes"
+[custom_labels."sql_changes"]
+description = "Use when a PR contains changes to SQL queries"
 ```
 
-### 标签如何应用
+每条说明写成条件，模型才知道什么时候该打这个标签。不再匹配的自定义标签会在下一次 `/generate_labels` 或 `/describe` 时去掉。这组名字之外、由人加上的标签不会被这个过滤清掉。
 
-1. 工具分析拉取请求 diff 和提交消息
-2. 它使用 AI 判断哪些标签最匹配拉取请求内容
-3. 标签会自动应用到拉取请求（如果 Git 提供方支持）
-4. 如果标签无法直接应用，则会作为评论发布
-
-`/generate_labels` 和 `/describe` 都会在发布前过滤模型生成的标签。
-允许集合包含内置 PR 类型（`Bug fix`、`Tests`、`Enhancement`、
-`Documentation`、`Other`），以及启用自定义标签时已配置的自定义标签名。启用了自定义标签但未配置自定义集合时，默认集合还会包含 `Bug fix with tests`。匹配忽略大小写，未知的生成标签会被丢弃并记录警告。人工添加的既有标签会被保留，不受此过滤器限制。
-
-`bug_fix`、`RELEASE_READY` 这类提示枚举键会解析为允许的显示名称，忽略大小写。如果非空的模型响应只包含被拒绝的标签，`/generate_labels` 会保持当前标签不变。显式的 `labels: []` 响应则保留原有行为：清除机器人拥有的旧标签，同时保留人工添加的标签。
-
-## 与 `/describe` 标签的比较
-
-`/describe` 工具也会在输出中生成标签。主要区别是：
-
-| 特性 | `/generate_labels` | `/describe` |
-|---------|-------------------|-------------|
-| 用途 | 专门生成标签 | 完整的拉取请求描述，并附带标签 |
-| 输出 | 仅标签 | 标题、摘要、导览和标签 |
-| 自定义标签 | ✅ 支持 | ✅ 支持 |
-| 使用场景 | 只需要标签时 | 需要完整拉取请求描述时 |
-
-## 提示
-
-- 使用符合团队工作流和标签约定的自定义标签
-- 结合自动化，在拉取请求打开时自动打标签
-- 检查生成的标签；如果 AI 持续误分类，就调整自定义标签的描述
+`/describe` 使用同一组标签，但 `pr_description.publish_labels` 默认为 `false`。单独发布标签的命令是 `/generate_labels`。

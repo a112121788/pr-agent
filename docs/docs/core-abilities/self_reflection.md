@@ -3,53 +3,45 @@ title: "Self-Reflection"
 sidebar_position: 7
 ---
 
-`Supported Git Platforms: GitHub, GitLab, Bitbucket, Azure DevOps, Gitea`
+`Supported Git platform: Gitee`
 
-PR-Agent implements a **self-reflection** process where the AI model reflects, scores, and re-ranks its own suggestions, eliminating irrelevant or incorrect ones.
-This approach improves the quality and relevance of suggestions, saving users time and enhancing their experience.
-Configuration options allow users to set a score threshold for further filtering out suggestions.
+Gitee PR-Agent runs a **self-reflection** pass on `/improve`. The model scores and re-ranks its own suggestions and drops the ones it marks as irrelevant or wrong. What remains is published in `zh-CN`. You can raise a score threshold to drop more of them.
 
-## Introduction - Efficient Review with Hierarchical Presentation
+## Hierarchical presentation
 
-Given that not all generated code suggestions will be relevant, it is crucial to enable users to review them in a fast and efficient way, allowing quick identification and filtering of non-applicable ones.
+Not every suggestion should be applied. The comment is arranged so a reviewer can reject one in a few seconds:
 
-To achieve this goal, PR-Agent offers a dedicated hierarchical structure when presenting suggestions to users:
+- A category heading groups suggestions. Skip a category that does not apply.
+- Each suggestion starts as one line. Open it for the full explanation and a code example.
+- The example is illustrative. Applying it on Gitee is a separate edit. Inline publication, when it is enabled, uses Gitee's diff `position` and is skipped when that position cannot be resolved. See [Gitee installation](../installation/gitee.md#verified-behavior).
 
-- A "category" section groups suggestions by their category, allowing users to quickly dismiss irrelevant suggestions.
-- Each suggestion is first described by a one-line summary, which can be expanded to a full description by clicking on a collapsible.
-- Upon expanding a suggestion, the user receives a more comprehensive description, and a code snippet demonstrating the recommendation.
-
-:::note[Fast Review]
-This hierarchical structure is designed to facilitate rapid review of each suggestion, with users spending an average of ~5-10 seconds per item.
+:::note[Fast review]
+The layout is meant for a quick pass, on the order of a few seconds per suggestion.
 :::
 
-## Self-reflection and Re-ranking
+## Score, then re-rank
 
-The AI model is initially tasked with generating suggestions, and outputting them in order of importance.
-However, in practice we observe that models often struggle to simultaneously generate high-quality code suggestions and rank them well in a single pass.
-Furthermore, the initial set of generated suggestions sometimes contains easily identifiable errors.
+The first call generates suggestions and tries to order them. Models are weak at writing suggestions and ranking them in the same pass, and the first list often contains items that are obviously wrong.
 
-To address these issues, we implemented a "self-reflection" process that refines suggestion ranking and eliminates irrelevant or incorrect proposals.
-This process consists of the following steps:
+The follow-up call:
 
-1. Presenting the generated suggestions to the model in a follow-up call.
-2. Instructing the model to score each suggestion on a scale of 0-10 and provide a rationale for the assigned score.
-3. Utilizing these scores to re-rank the suggestions and filter out incorrect ones (with a score of 0).
-4. Optionally, filtering out all suggestions below a user-defined score threshold.
+1. Shows the model the whole list at once.
+2. Asks for a score from 0 to 10 and a short reason for each item.
+3. Re-ranks by that score and drops anything scored 0.
+4. Optionally drops anything below `suggestions_score_threshold`.
 
-Note that presenting all generated suggestions simultaneously provides the model with a comprehensive context, enabling it to make more informed decisions compared to evaluating each suggestion individually.
+Scoring the list together gives the model more context than scoring each item alone.
 
-To conclude, the self-reflection process enables PR-Agent to prioritize suggestions based on their importance, eliminate inaccurate or irrelevant proposals, and optionally exclude suggestions that fall below a specified threshold of significance.
-This results in a more refined and valuable set of suggestions for the user, saving time and improving the overall experience.
+## Example
 
-## Example Results
+<img src="/img/self_reflection1.png" alt="Self-reflection scores" width="768" />
+<img src="/img/self_reflection2.png" alt="Suggestions after re-ranking" width="768" />
 
-<img src="/img/self_reflection1.png" alt="self_reflection" width="768" />
-<img src="/img/self_reflection2.png" alt="self_reflection" width="768" />
-
-## Appendix - Relevant Configuration Options
+## Configuration
 
 ```toml
 [pr_code_suggestions]
-suggestions_score_threshold = 0 # Filter out suggestions with a score below this threshold (0-10)
+suggestions_score_threshold = 0 # drop suggestions scored below this (0-10)
 ```
+
+The pass uses the same model chain as the rest of the command: `gpt-6.1-sol`, then `glm-5.3` if the primary call falls over. See [Changing a model](../usage-guide/changing_a_model.md).

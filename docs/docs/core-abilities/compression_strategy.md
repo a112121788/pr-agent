@@ -3,59 +3,69 @@ title: "Compression Strategy"
 sidebar_position: 3
 ---
 
-`Supported Git Platforms: GitHub, GitLab, Bitbucket, Azure DevOps, Gitea`
-
+`Supported Git platform: Gitee`
 
 ## Overview
 
-There are two scenarios:
+Gitee PR-Agent prepares a Gitee pull-request diff in two passes. First it packs the diff into the model's token budget. When the diff still does not fit, `/review` and `/describe` segment it by default instead of dropping the rest silently.
 
-1. The PR is small enough to fit in a single prompt (including system and user prompt)
-2. The PR is too large to fit in a single prompt (including system and user prompt)
+1. The pull request is small enough for one prompt (system prompt plus user prompt).
+2. The pull request is too large for one prompt.
 
-For both scenarios, we first use the following strategy
+Both cases start with the same file ordering.
 
-#### Repo language prioritization strategy
+#### Repository language priority
 
-We prioritize the languages of the repo based on the following criteria:
+1. Drop binary files and non-code files (images, PDFs, and similar).
+2. Take the main languages used in the repository.
+3. Sort the pull-request files by those languages, most common first:
 
-1. Exclude binary files and non code files (e.g. images, pdfs, etc)
-2. Given the main languages used in the repo
-3. We sort the PR files by the most common languages in the repo (in descending order):
-   * ```[[file.py, file2.py],[file3.js, file4.jsx],[readme.md]]```
+   * `[[file.py, file2.py], [file3.js, file4.jsx], [readme.md]]`
 
-### Small PR
+### Small pull request
 
-In this case, we can fit the entire PR in a single prompt:
+The whole diff fits in one prompt:
 
-1. Exclude binary files and non code files (e.g. images, pdfs, etc)
-2. We Expand the surrounding context of each patch to 3 lines above and below the patch
+1. Drop binary files and non-code files.
+2. Expand the context around each hunk. The dynamic-context settings in [Dynamic context](./dynamic_context.md) control how many extra lines are added.
 
-### Large PR
+### Large pull request
 
-#### Motivation
+#### Why pack the diff
 
-Pull Requests can be very long and contain a lot of information with varying degree of relevance to the pr-agent.
-We want to be able to pack as much information as possible in a single LMM prompt, while keeping the information relevant to the pr-agent.
+A Gitee pull request can be long, and not every hunk matters equally. The packer keeps as much relevant code as the token budget allows before any extra model call.
 
-#### Compression strategy
+#### What is compressed
 
-We prioritize additions over deletions:
+Additions are kept ahead of deletions:
 
-* Combine all deleted files into a single list (`deleted files`)
-* File patches are a list of hunks, remove all hunks of type deletion-only from the hunks in the file patch
+* Deleted files are folded into one `deleted files` list.
+* Hunks that only delete lines are removed from the file patch.
 
-#### Adaptive and token-aware file patch fitting
+#### Token-aware fitting
 
-We use [tiktoken](https://github.com/openai/tiktoken) to tokenize the patches after the modifications described above, and we use the following strategy to fit the patches into the prompt:
+Patches are tokenized with [tiktoken](https://github.com/openai/tiktoken) after the steps above, then fitted as follows:
 
-1. Within each language we sort the files by the number of tokens in the file (in descending order):
-    * ```[[file2.py, file.py],[file4.jsx, file3.js],[readme.md]]```
-2. Iterate through the patches in the order described above
-3. Add the patches to the prompt until the prompt reaches a certain buffer from the max token length
-4. If there are still patches left, add the remaining patches as a list called `other modified files` to the prompt until the prompt reaches the max token length (hard stop), skip the rest of the patches.
-5. If we haven't reached the max token length, add the `deleted files` to the prompt until the prompt reaches the max token length (hard stop), skip the rest of the patches.
+1. Inside each language group, sort files by token count, largest first:
+    * `[[file2.py, file.py], [file4.jsx, file3.js], [readme.md]]`
+2. Walk the patches in that order.
+3. Add patches until the prompt is within a buffer of the model's token limit.
+4. If patches remain, add them as `other modified files` until the hard token limit, then stop.
+5. If there is still room, add `deleted files` until the hard token limit, then stop.
+
+#### Segmented review and description
+
+Packing is not the last step. In this build both tools continue when files are left out:
+
+| Tool | Default | What happens |
+| --- | --- | --- |
+| `/review` | `pr_reviewer.enable_large_pr_chunking = true` | The diff is split into at most `pr_reviewer.max_number_of_calls` chunks (default `3`). Each chunk is reviewed, then the answers are merged into one comment. |
+| `/describe` | `pr_description.enable_large_pr_handling = true` | The tool makes further model calls and combines them so more files are covered. |
+
+Files that still do not fit are listed in the review coverage footer. A failed chunk is retried on the fallback model (`glm-5.3` when the primary model is `gpt-6.1-sol`) before the successful chunks are published as a partial review. The chunk switch is under [Other options](../tools/review.md#other-options). The describe switch is `enable_large_pr_handling` on the [Describe configuration](../tools/describe.md#configuration).
+
+Inline comments published from a chunk still use Gitee's diff `position`. See [Gitee installation](../installation/gitee.md#verified-behavior).
 
 #### Example
 
-<img src="/img/git_patch_logic.png" alt="Core Abilities" width="768" />
+<img src="/img/git_patch_logic.png" alt="How a Gitee pull-request patch is packed" width="768" />

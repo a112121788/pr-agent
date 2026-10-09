@@ -3,187 +3,117 @@ title: "Configuration File"
 sidebar_position: 3
 ---
 
-The different tools and sub-tools used by PR-Agent are adjustable via a Git configuration file.
-There are three main ways to set persistent configurations:
+Tools used by Gitee PR-Agent read a TOML configuration. Three persistent layers exist:
 
 1. [Local](./configuration_options.md#local-configuration-file) configuration file
 2. [Global](./configuration_options.md#global-configuration-file) configuration file
-3. [External configuration URL](./configuration_options.md#external-configuration-url) (CLI flag)
+3. [External configuration URL](./configuration_options.md#external-configuration-url) (CLI)
 
-In terms of precedence, local configurations will override global configurations, and global configurations will override an external configuration URL.
+Local configuration overrides global configuration, and global configuration overrides an external URL. Environment variables of the form `SECTION__KEY` override those files.
 
+For every key, see the [configuration reference](./configuration_reference.md), which is rendered from [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml). Each tool also has its own section. `/review` reads `[pr_reviewer]`.
 
-For a list of all possible configurations, see the [configuration options](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) page, or the rendered [Configuration Reference](./configuration_reference.md) which lists every option grouped by section.
-In addition to general configuration options, each tool has its own configurations. For example, the `review` tool will use parameters from the [pr_reviewer](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) section in the configuration file.
-
-:::tip[Tip1: Edit only what you need]
-Your configuration file should be minimal, and edit only the relevant values. Don't copy the entire configuration options, since it can lead to legacy problems when something changes.
+:::tip[Edit only what you need]
+Keep the file small. Copying the whole default file makes later default changes look like local overrides.
 :::
 
-:::tip[Tip2: Show relevant configurations]
-If you set `config.output_relevant_configurations` to True, each tool will also output in a collapsible section its relevant configurations. This can be useful for debugging, or getting to know the configurations better.
+:::tip[Show the settings a run used]
+When `config.output_relevant_configurations` is true, each tool adds a collapsible block with the settings that applied. Comment arguments cannot turn this on, because the block can include host-controlled values. Set it in `.pr_agent.toml` or the host configuration.
 :::
 
+## Local configuration file {#local-configuration-file}
 
+Upload `.pr_agent.toml` to the repository. Gitee reads it from the pull request **target** branch, not from the head branch, so the pull request cannot point the review at a file it just added. The file must already be on the target branch before the command runs.
 
-## Local configuration file
+The path defaults to `.pr_agent.toml` (`gitee.repo_setting`).
 
-`Platforms supported: GitHub, GitLab, Bitbucket, Azure DevOps`
+These Gitee keys are host-only. A repository file cannot set them:
 
-By uploading a local `.pr_agent.toml` file to the root of the repo's default branch, you can customize parameters that support repository-level overrides. Note that you need to upload or update `.pr_agent.toml` before using the PR Agent tools (either at PR creation or via manual trigger) for the configuration to take effect.
+- `gitee.api_base`
+- `gitee.webhook_secret`
+- `gitee.skip_ssl_verification`
+- `gitee.ssl_ca_cert`
 
-Provider endpoint settings are host-controlled: `openai.api_base`, `openai.api_type`, `openai.api_version`, `azure_ad.api_base`, `databricks.api_base`, `huggingface.api_base`, `moonshot.api_base`, `ollama.api_base`, and `openrouter.api_base` are ignored when set in repository-local `.pr_agent.toml` and must be configured on the host. The same restriction applies to provider authentication and TLS settings: `github.deployment_type`, `bitbucket.auth_type`, `gitlab.auth_type`, `gitlab.ssl_verify`, `gitea.skip_ssl_verification`, and `gitea.ssl_ca_cert`. Jira ticket lookups run with the host's Atlassian credentials, so `jira.jira_site`, `jira.jira_api_email`, and `jira.project_keys` are host-controlled as well. These settings are also rejected in command arguments.
+Model endpoints and credentials are also host-only. That includes `openai.api_base` and `openai.key`. Set them with `OPENAI__API_BASE` and `OPENAI__KEY` on the host, as described in [Changing a model](./changing_a_model.md).
 
-For example, if you set in `.pr_agent.toml`:
+Example `.pr_agent.toml`:
 
-```
+```toml
 [pr_reviewer]
-extra_instructions="""\
+extra_instructions = """\
 - instruction a
 - instruction b
-...
 """
 ```
 
-Then you can give a list of extra instructions to the `review` tool.
+The Gitee provider does not use `--config-branch` or `PR_AGENT_CONFIG_BRANCH`. Those options do not move the file off the target branch.
 
-### Loading the local configuration from a non-default branch
+## Global configuration file {#global-configuration-file}
 
-`Platforms supported: GitHub, GitLab`
+Set `config.global_settings_repo` on the **host** to the name of a repository in the same Gitee owner (namespace). PR-Agent reads `.pr_agent.toml` from that repository's default branch and applies it to every repository under the owner. The setting is empty by default, which disables the feature. A repository file or a comment cannot set `global_settings_repo`.
 
-By default, the local `.pr_agent.toml` is read from the repo's **default branch**. When running PR-Agent from the CLI (or any wrapper that exposes its arguments), you can point it at a different branch — for example to test configuration changes from a feature branch before merging them:
+With `global_settings_repo = "pr-agent-settings"` and a pull request in `my-org/my-repo`, the file that is read is `my-org/pr-agent-settings` on its default branch. Keys in `my-org/my-repo`'s own `.pr_agent.toml` override it.
 
-```bash
-python -m pr_agent.cli \
-  --pr_url=<PR URL> \
-  --config-branch=<branch name> \
-  review
-```
-
-Equivalently, set the `PR_AGENT_CONFIG_BRANCH` environment variable. The CLI flag takes precedence over the environment variable, and whitespace-only values are ignored.
-
-If `.pr_agent.toml` cannot be loaded from the requested branch (e.g. the branch or file does not exist), PR-Agent logs a warning and falls back to the default branch.
-
-:::danger[Security: treat the config branch as privileged]
-By default, configuration is read from the **default branch**, so only users who can merge to it can change how PR-Agent behaves. `--config-branch` / `PR_AGENT_CONFIG_BRANCH` move that trust boundary to whatever branch you name.
-
-**Never set the config branch from untrusted or PR-derived input** (e.g. `--config-branch=$GITHUB_HEAD_REF` / `${{ github.head_ref }}` in CI). Doing so lets anyone who can push a branch to the repository supply their own `.pr_agent.toml` and control the review — for example pointing `model`/the API base at an attacker endpoint to exfiltrate the diff, injecting `extra_instructions`, or enabling auto-approval of their own PR. Always pin the config branch to a fixed, maintainer-controlled branch.
-:::
-
-:::note[Provider branch behavior]
-Branch selection is currently implemented for GitHub and GitLab. Gitea ignores these options and reads
-the local `.pr_agent.toml` from the pull request target ref, which may differ from the default branch.
-Gerrit also ignores these options, but reads the file from the cloned default branch. Other platforms
-retain their provider-specific settings source.
-:::
-
-## Global configuration file
-
-`Platforms supported: GitHub, GitLab, Bitbucket (cloud), Bitbucket Server, Azure DevOps, Gitea`
-
-Name an organization-level settings repository with `global_settings_repo` in the deployment's own configuration; its `.pr_agent.toml` (read from that repo's default branch) is used as a global configuration for every repository under the same organization. The setting is empty by default, which turns this off, and a repository's `.pr_agent.toml` or a comment cannot set it. With `global_settings_repo = "pr-agent-settings"`, the repository read is:
-
-- **GitHub:** `<organization>/pr-agent-settings`
-- **GitLab:** `<top-level-group>/pr-agent-settings` (both GitLab.com and self-hosted GitLab)
-- **Bitbucket (cloud):** `<workspace>/pr-agent-settings`
-- **Bitbucket Server:** `<project>/pr-agent-settings`
-- **Azure DevOps:** `<org>/<project>/pr-agent-settings` (looked up in the same project as the current repository)
-- **Gitea:** `<owner>/pr-agent-settings`
-
-Parameters from a local `.pr_agent.toml` file, in a specific repo, will override the global configuration parameters (the global file is merged *beneath* the repo-local one).
-For GitHub Enterprise Server, use the same organization-level repository on your GHES host.
-The app installation or token used by PR-Agent must have read access to both the pull request repository and the settings repository; otherwise, PR-Agent will skip the global configuration and continue with repository-local settings.
+The token in `GITEE__PERSONAL_ACCESS_TOKEN` must be able to read both repositories. If the settings repository or file is missing, PR-Agent skips the global file and continues with the repository-local file.
 
 :::note[Caching]
-In long-running deployments (the GitHub App / webhook server), the fetched global settings are cached **in-process** for up to 15 minutes to avoid re-fetching on every webhook event, so a change to the settings repository may take up to that long to take effect there. CLI and CI (GitHub Action) runs are short-lived processes, so they fetch the global settings once per invocation and always see the latest version.
+The Gitee webhook process caches the global file in memory for up to 15 minutes. A change in the settings repository can take that long to appear. CLI runs are short-lived and read the file once per invocation.
 :::
 
-Loading the global settings file is controlled by the `use_global_settings_file` flag, which is **enabled by default** but reads nothing until `global_settings_repo` is set. To opt out and rely only on each repo's local `.pr_agent.toml`, set:
+`use_global_settings_file` defaults to true but reads nothing until `global_settings_repo` is set. To ignore the global file:
 
 ```toml
 [config]
 use_global_settings_file = false
 ```
 
-For example, with `global_settings_repo = "pr-agent-settings"` in a GitHub organization named `my-org`:
+## External configuration URL {#external-configuration-url}
 
-- The file `my-org/pr-agent-settings/.pr_agent.toml` (read from that repository's default branch) serves as a global configuration file for all the repos in the organization.
+On the CLI, merge an extra `.pr_agent.toml` before the global and repository-local files. Use this when the shared file is not in the Gitee owner namespace, or when CI should choose the defaults without committing them to the target repository.
 
-- A repository such as `my-org/my-repo` inherits that global configuration file, and may override its repository-configurable values in its own `.pr_agent.toml`.
+### Usage {#usage}
 
-## Project/Group level configuration file
-
-`Platforms supported: GitLab, Bitbucket Data Center`
-
-Once `global_settings_repo` is set, the repository with that name within a specific project (Bitbucket) or a group/subgroup (GitLab) is read.
-The configuration file in this repository will apply to all repositories directly under the same project/group/subgroup.
-
-:::note[Note]
-For GitLab, in case of a repository nested in several sub groups, the lookup for the settings repository will be only on one level above such repository.
-:::
-
-## External configuration URL
-
-`Platforms supported: GitHub, GitLab, Bitbucket, Azure DevOps`
-
-When running PR-Agent from the CLI (or any wrapper that exposes its arguments), you can merge an additional `.pr_agent.toml` from any URL or local path before the repo-local and global configurations are applied. This is useful when:
-
-- You want a single shared configuration that applies to repositories nested deep inside subgroups, where the [project/group-level lookup](./configuration_options.md#projectgroup-level-configuration-file) only walks one level up.
-- The shared configuration is published outside of a Git host (a static site, an internal artifact server, an S3 bucket, etc.).
-- You want CI-time control over which defaults are layered in, without committing a file to the target repository.
-
-### Usage
-
-Pass `--extra_config_url` to the CLI, or set the `PR_AGENT_EXTRA_CONFIG_URL` environment variable:
+Pass `--extra_config_url`, or set `PR_AGENT_EXTRA_CONFIG_URL`:
 
 ```bash
-python -m pr_agent.cli \
-  --pr_url=<MR/PR URL> \
+uv run python -m pr_agent.cli \
+  --pr_url=<Gitee pull request URL> \
   --extra_config_url=https://config.example.com/pr-agent/shared.toml \
   review
 ```
 
 Accepted values:
 
-- `https://…` or `http://…` — fetched at runtime
-- `file:///path/to/shared.toml` — read from the local filesystem
-- A bare filesystem path — same as `file://`
+- `https://…` or `http://…`, fetched at runtime
+- `file:///path/to/shared.toml`
+- a bare filesystem path, treated like `file://`
 
-### Authentication for private endpoints
+### Authentication for private endpoints {#authentication-for-private-endpoints}
 
-For private endpoints (e.g. a GitLab API URL pointing at a private `pr-agent-settings` file), provide a single header via the `PR_AGENT_EXTRA_CONFIG_AUTH_HEADER` environment variable, formatted as `<HeaderName>: <value>`:
+For a private URL, set one header in `PR_AGENT_EXTRA_CONFIG_AUTH_HEADER` as `<HeaderName>: <value>`:
 
 ```bash
-# GitLab Personal Access Token
-export PR_AGENT_EXTRA_CONFIG_AUTH_HEADER="PRIVATE-TOKEN: <your-personal-access-token>"
-
-# GitLab CI job token
-export PR_AGENT_EXTRA_CONFIG_AUTH_HEADER="JOB-TOKEN: $CI_JOB_TOKEN"
-
-# Generic bearer token
 export PR_AGENT_EXTRA_CONFIG_AUTH_HEADER="Authorization: Bearer <your-token>"
 ```
 
-### Precedence
+### Precedence {#precedence}
 
-External-URL settings are applied **first**, so every other layer overrides them:
+The external file is applied first. Later layers override it:
 
-```
+```text
 built-in defaults
   < --extra_config_url
     < global pr-agent-settings
-      < local .pr_agent.toml (repo default branch)
-        < environment variables (PR_AGENT__SECTION__KEY)
+      < local .pr_agent.toml (pull request target branch)
+        < environment variables (SECTION__KEY)
 ```
 
-This means an external URL acts as an organization-wide *default* that any team can still override with their own `pr-agent-settings` or repo-local `.pr_agent.toml`.
+### Security and limits {#security-and-limits}
 
-### Security and limits
+The file goes through the same loader as a repository `.pr_agent.toml`. Includes, preloads, custom loaders, and other directives that could run code or read arbitrary files are rejected. The fetch also:
 
-The external file is loaded through the same secure loader as the repo-local `.pr_agent.toml`: includes, preloads, custom loaders, and other directives that could execute code or read arbitrary files are rejected. The fetcher additionally:
+- stops at **1 MB**
+- times out after **10 seconds**
+- accepts only `http`, `https`, `file`, or a bare local path
 
-- Limits the response size to **1 MB**
-- Uses a **10-second** request timeout
-- Only accepts `http`, `https`, `file` schemes (or a bare local path)
-
-If the fetch fails, the request is logged and PR-Agent continues with the remaining configuration layers.
+A failed fetch is logged. PR-Agent continues with the remaining layers. Host-only keys in the external file are still dropped.

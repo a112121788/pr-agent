@@ -3,42 +3,62 @@ title: "工具"
 sidebar_position: 1
 ---
 
-每个 PR-Agent 工具都有独立页面，说明其行为与用法：
+Gitee PR-Agent 只审查 Gitee 上的拉取请求。它只接受这两种拉取请求 URL：
 
-| 工具 | 说明 |
-|------|-------------|
-| **[PR 描述（`/describe`）](./describe.md)** | 生成拉取请求标题、类型、摘要、代码导览和标签。 |
-| **[PR 审查（`/review`）](./review.md)** | 生成拉取请求审查，反馈可能的问题、安全顾虑、测试和审查工作量。 |
-| **[代码建议（`/improve`）](./improve.mdx)** | 生成可执行的代码建议，用于改进拉取请求。 |
-| **[问答（`/ask ...`）](./ask.md)** | 回答关于拉取请求或特定代码行的自由文本问题。 |
-| **[添加文档（`/add_docs`）](./add_docs.md)** | 为缺少文档的代码组件生成文档。 |
-| **[生成标签（`/generate_labels`）](./generate_labels.md)** | 根据代码变更生成自定义标签。 |
-| **[相似议题（`/similar_issue`）](./similar_issues.md)** | 根据当前议题在仓库中查找相似议题。 |
-| **[帮助（`/help`）](./help.md)** | 列出所有可用工具。 |
-| **[文档帮助（`/help_docs`）](./help_docs.md)** | 基于 git 文档目录回答自由文本问题。 |
-| **[更新变更日志（`/update_changelog`）](./update_changelog.md)** | 根据拉取请求变更自动更新 CHANGELOG.md。 |
+- `https://gitee.com/owner/repo/pulls/N`
+- `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`
 
-## 使用示例
+发布文本使用 `config.response_language` = `zh-CN`。默认模型是 `config.model` = `gpt-6.1-sol`。这次调用失败时，`config.fallback_models` 使用 `glm-5.3`。
 
-每个工具都可以通过两种方式触发：
+## 运行工具 {#run}
 
-- **作为评论** — 把命令（例如 `/review`）写成评论，PR-Agent 会回复。大多数工具评论在拉取请求上；`similar_issue` 这类以议题为范围的工具则评论在议题上。
-- **通过 [CLI](../usage-guide/automations_and_usage.md#local-repo-cli)** — 运行 `python -m pr_agent.cli --pr_url=<PR_URL> <tool>`。以议题为范围的工具改用 `--issue_url=<ISSUE_URL>`，而不是 `--pr_url`。模块形式只在可以导入 `pr_agent` 包的环境中可用（例如 `uv sync` 创建的虚拟环境）。如果 `pr-agent` 已在 `PATH` 中，可以直接运行。
+在拉取请求上评论。只有以 `/` 开头的评论会执行命令：
 
-两种方式接受相同的工具参数和[配置覆盖](../usage-guide/configuration_options.md)。
+```
+/review
+```
 
-| 工具                                     | 评论                          | CLI                                                             |
-|------------------------------------------|----------------------------------|----------------------------------------------------------------|
-| [描述](./describe.md)                | `/describe`                      | `python -m pr_agent.cli --pr_url=<PR_URL> describe`             |
-| [审查](./review.md)                    | `/review`                        | `python -m pr_agent.cli --pr_url=<PR_URL> review`              |
-| [改进](./improve.mdx)                  | `/improve`                       | `python -m pr_agent.cli --pr_url=<PR_URL> improve`             |
-| [提问](./ask.md)                          | `/ask "How does X work?"`        | `python -m pr_agent.cli --pr_url=<PR_URL> ask "How does X work?"` |
-| [添加文档](./add_docs.md)                | `/add_docs`                      | `python -m pr_agent.cli --pr_url=<PR_URL> add_docs`           |
-| [生成标签](./generate_labels.md)  | `/generate_labels`               | `python -m pr_agent.cli --pr_url=<PR_URL> generate_labels`     |
-| [相似议题](./similar_issues.md)    | `/similar_issue`                 | `python -m pr_agent.cli --issue_url=<ISSUE_URL> similar_issue` |
-| [帮助](./help.md)                        | `/help`                          | `python -m pr_agent.cli --pr_url=<PR_URL> help`                |
-| [更新变更日志](./update_changelog.md)| `/update_changelog`              | `python -m pr_agent.cli --pr_url=<PR_URL> update_changelog`    |
+也可以运行 CLI 镜像 `ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest`：
 
-`/help_docs` 暂时禁用（见 [#2445](https://github.com/The-PR-Agent/pr-agent/issues/2445)），因此未列入上表。
+```bash
+docker run --rm -it \
+  -e OPENAI__KEY=<your_openai_key> \
+  -e OPENAI__API_BASE=https://your-gateway.example/v1 \
+  -e CONFIG__GIT_PROVIDER=gitee \
+  -e GITEE__PERSONAL_ACCESS_TOKEN=<your_gitee_token> \
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/N review
+```
 
-截图、参数以及典型用例的演练，见上方各工具页面的**使用示例**一节。
+`CONFIG__GIT_PROVIDER` 必须是 `gitee`。`OPENAI__KEY` 和 `OPENAI__API_BASE` 是模型凭据。`GITEE__PERSONAL_ACCESS_TOKEN` 用来读取拉取请求，并发布评论、行内评论、描述和标签。
+
+评论里可以用同样的覆盖参数：
+
+```
+/review --pr_reviewer.extra_instructions="focus on the migration"
+```
+
+拉取请求打开时，[Gitee webhook](../installation/gitee.md) 会运行 `/describe`、`/review` 和 `/improve`，除非 `gitee.pr_commands` 换掉这份列表。推送事件不会启动命令。
+
+如果 Gitee 无法返回完整的变更文件列表，命令会停止。启用 `config.publish_output` 时，Gitee PR-Agent 会尝试发布 **PR-Agent command was not run**。
+
+## 工具
+
+| 工具 | 在 Gitee 上发布什么 |
+|------|---------------------|
+| **[`/describe`](./describe.md)** | 拉取请求类型、摘要、文件导览，以及可选的图。 |
+| **[`/review`](./review.md)** | 标题为 `PR 审查指南` 的中文审查，并在适用时打上 `审查工作量N/5` 和 `可能存在安全问题`。 |
+| **[`/improve`](./improve.mdx)** | `PR 代码建议`，以评论和行内评论发布。Gitee 不能提交建议代码。 |
+| **[`/ask`](./ask.md)** | 针对该拉取请求的一个回答。 |
+| **[`/add_docs`](./add_docs.md)** | 以行内评论发布的文档建议。 |
+| **[`/generate_labels`](./generate_labels.md)** | 与本次变更匹配的标签。 |
+| **[`/update_changelog`](./update_changelog.md)** | 以评论发布的变更日志草稿。不会推送文件。 |
+| **[`/similar_issue`](./similar_issues.md)** | 没有检索结果：不支持议题索引，命令会说明这一点后停止。 |
+| **[`/help`](./help.md)** | 命令列表，或根据这些文档作出的回答。 |
+| **[`/help_docs`](./help_docs.md)** | 没有效果。该命令已禁用且未注册。 |
+
+## 已验证的拉取请求
+
+`/review` 和 `/improve` 已在 [eclouddev/hlzs_web#2896](https://gitee.com/eclouddev/hlzs_web/pulls/2896) 上运行过。
+
+默认值在 `pr_agent/settings/configuration.toml`。仓库级覆盖写在拉取请求目标分支的 `.pr_agent.toml` 里。参见[配置文件](../usage-guide/configuration_options.md)。仓库文件不能覆盖 `api_base`、`webhook_secret`、`skip_ssl_verification` 或 `ssl_ca_cert`。

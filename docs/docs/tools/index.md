@@ -3,42 +3,62 @@ title: "Tools"
 sidebar_position: 1
 ---
 
-Each PR-Agent tool has a dedicated page that explains its behavior and usage:
+Gitee PR-Agent reviews pull requests on Gitee. It accepts only these pull-request URLs:
 
-| Tool | Description |
-|------|-------------|
-| **[PR Description (`/describe`)](./describe.md)** | Generate a PR title, type, summary, code walkthrough and labels. |
-| **[PR Review (`/review`)](./review.md)** | Generate a PR review with feedback on possible issues, security concerns, tests and review effort. |
-| **[Code Suggestions (`/improve`)](./improve.mdx)** | Generate actionable code suggestions for improving the PR. |
-| **[Question Answering (`/ask ...`)](./ask.md)** | Answering free-text questions about the PR, or on specific code lines |
-| **[Add Documentation (`/add_docs`)](./add_docs.md)** | Generate documentation for code components that are missing it |
-| **[Generate Labels (`/generate_labels`)](./generate_labels.md)** | Generate custom labels for the PR based on the code changes |
-| **[Similar Issues (`/similar_issue`)](./similar_issues.md)** | Find similar issues in the repository based on the current issue |
-| **[Help (`/help`)](./help.md)** | Provides a list of all the available tools |
-| **[Help Docs (`/help_docs`)](./help_docs.md)** | Answer a free-text question based on a git documentation folder |
-| **[Update Changelog (`/update_changelog`)](./update_changelog.md)** | Automatically updating the CHANGELOG.md file with the PR changes |
+- `https://gitee.com/owner/repo/pulls/N`
+- `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`
 
-## Usage examples
+Published text uses `config.response_language` = `zh-CN`. The default model is `config.model` = `gpt-6.1-sol`. If that call fails, `config.fallback_models` uses `glm-5.3`.
 
-Each tool can be triggered in two ways:
+## Run a tool {#run}
 
-- **As a comment** — write the command (e.g. `/review`) as a comment, and PR-Agent replies. Most tools are commented on a PR; issue-scoped tools such as `similar_issue` are commented on an issue.
-- **From the [CLI](../usage-guide/automations_and_usage.md#local-repo-cli)** — run `python -m pr_agent.cli --pr_url=<PR_URL> <tool>`. Issue-scoped tools take `--issue_url=<ISSUE_URL>` instead of `--pr_url`. The module form works only from an environment where the `pr_agent` package is importable (for example, the venv created by `uv sync`). If `pr-agent` is on your `PATH`, run it directly.
+Comment on the pull request. Only a comment that starts with `/` runs a command:
 
-Both accept the same tool arguments and [configuration overrides](../usage-guide/configuration_options.md).
+```
+/review
+```
 
-| Tool                                     | Comment                          | CLI                                                             |
-|------------------------------------------|----------------------------------|----------------------------------------------------------------|
-| [Describe](./describe.md)                | `/describe`                      | `python -m pr_agent.cli --pr_url=<PR_URL> describe`             |
-| [Review](./review.md)                    | `/review`                        | `python -m pr_agent.cli --pr_url=<PR_URL> review`              |
-| [Improve](./improve.mdx)                  | `/improve`                       | `python -m pr_agent.cli --pr_url=<PR_URL> improve`             |
-| [Ask](./ask.md)                          | `/ask "How does X work?"`        | `python -m pr_agent.cli --pr_url=<PR_URL> ask "How does X work?"` |
-| [Add Docs](./add_docs.md)                | `/add_docs`                      | `python -m pr_agent.cli --pr_url=<PR_URL> add_docs`           |
-| [Generate Labels](./generate_labels.md)  | `/generate_labels`               | `python -m pr_agent.cli --pr_url=<PR_URL> generate_labels`     |
-| [Similar Issues](./similar_issues.md)    | `/similar_issue`                 | `python -m pr_agent.cli --issue_url=<ISSUE_URL> similar_issue` |
-| [Help](./help.md)                        | `/help`                          | `python -m pr_agent.cli --pr_url=<PR_URL> help`                |
-| [Update Changelog](./update_changelog.md)| `/update_changelog`              | `python -m pr_agent.cli --pr_url=<PR_URL> update_changelog`    |
+Or run the CLI image `ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest`:
 
-`/help_docs` is temporarily disabled (see [#2445](https://github.com/The-PR-Agent/pr-agent/issues/2445)) and is therefore omitted from the table above.
+```bash
+docker run --rm -it \
+  -e OPENAI__KEY=<your_openai_key> \
+  -e OPENAI__API_BASE=https://your-gateway.example/v1 \
+  -e CONFIG__GIT_PROVIDER=gitee \
+  -e GITEE__PERSONAL_ACCESS_TOKEN=<your_gitee_token> \
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/N review
+```
 
-For screenshots, arguments, and a walkthrough of a typical use case, see the **Example usage** section on each tool's page linked above.
+`CONFIG__GIT_PROVIDER` must be `gitee`. `OPENAI__KEY` and `OPENAI__API_BASE` are the model credentials. `GITEE__PERSONAL_ACCESS_TOKEN` reads the pull request and publishes comments, inline comments, descriptions, and labels.
+
+The same overrides work on a comment:
+
+```
+/review --pr_reviewer.extra_instructions="focus on the migration"
+```
+
+When a pull request is opened, the [Gitee webhook](../installation/gitee.md) runs `/describe`, `/review`, and `/improve` unless `gitee.pr_commands` replaces that list. Push events do not start a command.
+
+If Gitee cannot return a complete changed-file list, the command stops. With `config.publish_output` enabled, Gitee PR-Agent tries to post **PR-Agent command was not run**.
+
+## Tools
+
+| Tool | What it publishes on Gitee |
+|------|----------------------------|
+| **[`/describe`](./describe.md)** | Pull-request type, summary, walkthrough, and an optional diagram. |
+| **[`/review`](./review.md)** | A Chinese review titled `PR 审查指南`, plus `审查工作量N/5` and `可能存在安全问题` when those labels apply. |
+| **[`/improve`](./improve.mdx)** | `PR 代码建议`, as a comment and inline comments. Gitee cannot commit the suggested code. |
+| **[`/ask`](./ask.md)** | An answer to one question about the pull request. |
+| **[`/add_docs`](./add_docs.md)** | Documentation suggestions as inline comments. |
+| **[`/generate_labels`](./generate_labels.md)** | Labels chosen from the change. |
+| **[`/update_changelog`](./update_changelog.md)** | A changelog draft as a comment. The file is not pushed. |
+| **[`/similar_issue`](./similar_issues.md)** | Nothing useful: issue indexing is not supported, so the command reports that and stops. |
+| **[`/help`](./help.md)** | A command list, or an answer taken from these docs. |
+| **[`/help_docs`](./help_docs.md)** | Nothing. The command is disabled and not registered. |
+
+## Checked pull request
+
+`/review` and `/improve` were run on [eclouddev/hlzs_web#2896](https://gitee.com/eclouddev/hlzs_web/pulls/2896).
+
+Defaults live in `pr_agent/settings/configuration.toml`. Put repository overrides in `.pr_agent.toml` on the pull request's target branch. See [Configuration file](../usage-guide/configuration_options.md). A repository file cannot override `api_base`, `webhook_secret`, `skip_ssl_verification`, or `ssl_ca_cert`.

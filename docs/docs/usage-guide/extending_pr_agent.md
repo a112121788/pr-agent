@@ -3,58 +3,42 @@ title: "Extending PR-Agent"
 sidebar_position: 9
 ---
 
-Contributors extending a model, git provider, or tool start here. To only change
-the model, use [Changing a Model](./changing_a_model.md).
+This page is for contributors who extend a model, the Gitee provider, or a tool. To only change the model, use [Changing a model](./changing_a_model.md). The running product is Gitee-only: `config.git_provider` is `gitee`, and the webhook target is `gitee_app`.
 
-## Adding a model
+## Adding a model {#adding-a-model}
 
-Tool calls go through LiteLLM (`pr_agent/algo/ai_handlers/litellm_ai_handler.py`), the default handler. Most models need only configuration:
+Tool calls go through LiteLLM (`pr_agent/algo/ai_handlers/litellm_ai_handler.py`). Most models need only configuration:
 
 ```toml
 [config]
-model="<model-name>"
-fallback_models=["<fallback-model-name>"]
+model = "<model-name>"
+fallback_models = ["<fallback-model-name>"]
 ```
 
-Set these under `[config]` in `pr_agent/settings/configuration.toml`.
-Keep model names in configuration, not in tool code.
+Set these under `[config]` in `pr_agent/settings/configuration.toml`. Keep model names in configuration, not in tool code. The shipped defaults are `gpt-6.1-sol` and fallback `glm-5.3`. The host must set `OPENAI__KEY` and `OPENAI__API_BASE` for the OpenAI-compatible route.
 
-Models that behave differently are registered in `pr_agent/algo/__init__.py`:
-`CLAUDE_EXTENDED_THINKING_MODELS` for Claude models that
-take extended thinking. For Claude models with provider-prefixed aliases
-(bare, `anthropic/`, `vertex_ai/`, `bedrock/`), declare the canonical family
-in `_CLAUDE_MODEL_FAMILIES` to expand them across registries automatically.
-Other models can be added directly to the matching list.
+Models that behave differently are registered in `pr_agent/algo/__init__.py`. Context windows live in `MAX_TOKENS` there. Without an entry, set `config.custom_model_max_tokens`, or `get_max_tokens()` raises.
 
-Temperature support is decided at runtime by probing
-`litellm.get_supported_openai_params()` for each model (see
-`_litellm_supports_temperature` in `pr_agent/algo/ai_handlers/litellm_ai_handler.py`).
-Models that must never receive the temperature parameter are listed in
-`config.no_temperature_models` in `configuration.toml`; adaptive-thinking Claude
-models (Opus 4.7/4.8 and Opus/Sonnet/Fable 5) never receive it.
-
-Context windows are registered in `MAX_TOKENS` in `pr_agent/algo/__init__.py`:
-Claude model families declared in `_CLAUDE_MODEL_FAMILIES` populate their
-aliases automatically. For other models, add the model name and its
-context-window token count to `MAX_TOKENS`, or set `config.custom_model_max_tokens`
-in `configuration.toml`. Without either, `get_max_tokens()` raises.
+Temperature support is decided at runtime by probing `litellm.get_supported_openai_params()` (`_litellm_supports_temperature` in `pr_agent/algo/ai_handlers/litellm_ai_handler.py`). Models that must never receive temperature are listed in `config.no_temperature_models`.
 
 Verify with `PYTHONPATH=. uv run pytest tests/unittest`.
 
-## Adding a git provider
+## Adding a git provider {#adding-a-git-provider}
 
-Implement a `GitProvider` subclass and register it:
+This distribution ships and documents Gitee. `GiteeProvider` in `pr_agent/git_providers/gitee_provider.py` is the reference implementation. It reports every capability except `push_code`, so `/update_changelog` publishes a comment instead of committing.
 
-1. Create `pr_agent/git_providers/<name>_provider.py`, extending the interface in `pr_agent/git_providers/git_provider.py` (`gitlab_provider.py` is the reference).
-2. Add the built-in provider to `_BUILTIN_GIT_PROVIDERS` in `pr_agent/git_providers/__init__.py` as a `(module_path, class_name)` pair. Built-ins are imported lazily when selected. Keys already used: `github`, `gitlab`, `bitbucket`, `bitbucket_server`, `azure`, `codecommit`, `local`, `gerrit`, `gitea`, `plain-diff`.
-3. Select it via `[config]` → `git_provider="<name>"` in `pr_agent/settings/configuration.toml`.
-4. Add `docs/docs/installation/<name>.md` (see [`gitlab.md`](../installation/gitee.md)) and register it under `Installation` in `docs/sidebars.js`.
-5. Select provider-dependent behavior with capability checks like `provider.is_supported("feature")` rather than provider-type checks.
-6. Add unit tests under `tests/unittest/test_<name>_provider.py` (see `test_bitbucket_provider.py`) and list the required env vars in `pr_agent/settings/.secrets_template.toml`.
+To add another provider in a fork:
 
-### Registering a provider from another package
+1. Create `pr_agent/git_providers/<name>_provider.py`, extending `GitProvider` in `pr_agent/git_providers/git_provider.py`.
+2. Add the built-in to `_BUILTIN_GIT_PROVIDERS` in `pr_agent/git_providers/__init__.py` as a `(module_path, class_name)` pair. Built-ins import lazily when selected. `gitee` is the id this build runs.
+3. Select it with `git_provider="<name>"` under `[config]`. The webhook and docs in this tree assume `gitee`.
+4. Add an installation page and register it under Installation in `docs/sidebars.js`. The current page is [`gitee.md`](../installation/gitee.md).
+5. Choose behavior with `provider.is_supported("feature")`, not with a concrete type check.
+6. Add unit tests under `tests/unittest/test_<name>_provider.py`. `tests/unittest/test_gitee_provider.py` and `tests/unittest/test_gitee_webhook.py` are the patterns. List required environment variables in `pr_agent/settings/.secrets_template.toml`.
 
-A provider does not have to live in this repository. Call `register_git_provider` from your own package before PR-Agent resolves the provider, for example from the module that starts your server or wraps the CLI:
+### Registering a provider from another package {#registering-a-provider-from-another-package}
+
+A provider does not have to live in this repository. Call `register_git_provider` before PR-Agent resolves the provider:
 
 ```python
 from pr_agent.git_providers import register_git_provider
@@ -64,14 +48,18 @@ from my_package.forge_provider import ForgeProvider
 register_git_provider("forge", ForgeProvider)
 ```
 
-Then select it with `git_provider="forge"` under `[config]`. The class must extend `GitProvider`. Registering the same class twice is a no-op, and registering a different class under an id that is already taken raises, so a package cannot silently replace a built-in provider.
+Then set `git_provider="forge"` under `[config]`. The class must extend `GitProvider`. Registering the same class twice is a no-op. Registering a different class under an id that is already taken raises, so a package cannot replace the built-in `gitee` provider silently.
 
-## Adding a tool
+The webhook that ships here is still `POST /api/v1/gitee_webhooks` on the `gitee_app` target. A third-party provider needs its own server entrypoint.
 
-1. Implement the tool class in `pr_agent/tools/pr_<name>.py` with an `async def run(self)` entry point (see `pr_reviewer.py`).
-2. Add a `[pr_<tool>]` section in `pr_agent/settings/configuration.toml` for the option keys the tool reads (`[pr_reviewer]` is the pattern to follow).
-3. Add a prompt TOML under `pr_agent/settings/` and register it in the `settings_files=[...]` list in `pr_agent/config_loader.py` — it is not loaded otherwise.
-4. Match the TOML section name to the settings key the tool reads: `[pr_review_prompt]` in `pr_reviewer_prompts.toml` ↔ `get_settings().pr_review_prompt` in `pr_reviewer.py`.
-5. Register the tool in `command2class` in `pr_agent/agent/pr_agent.py` under a command name, e.g. `"my_tool": PRMyTool`. Then add it to the hardcoded help surfaces, or it will not show up in `/help`: `pr_agent/tools/pr_help_message.py`, `pr_agent/servers/help.py`, and the command list in `pr_agent/cli.py`.
-6. Add a row to the tool list in `docs/docs/tools/index.md`, a page `docs/docs/tools/<name>.md` (see [`review.md`](../tools/review.md)), and register the page under `Tools` in `docs/sidebars.js`.
+## Adding a tool {#adding-a-tool}
+
+1. Implement the tool in `pr_agent/tools/pr_<name>.py` with an `async def run(self)` entry point (`pr_reviewer.py` is the pattern).
+2. Add a `[pr_<tool>]` section in `pr_agent/settings/configuration.toml` for the keys the tool reads (`[pr_reviewer]` is the pattern).
+3. Add a prompt TOML under `pr_agent/settings/` and register it in `settings_files=[...]` in `pr_agent/config_loader.py`. Unregistered files are not loaded.
+4. Match the TOML section name to the settings key the tool reads: `[pr_review_prompt]` in `pr_reviewer_prompts.toml` matches `get_settings().pr_review_prompt` in `pr_reviewer.py`.
+5. Register the tool in `command2class` in `pr_agent/agent/pr_agent.py`. Then add it to the help surfaces or it will not show up in `/help`: `pr_agent/tools/pr_help_message.py`, `pr_agent/servers/help.py`, and the command list in `pr_agent/cli.py`.
+6. Add a row in `docs/docs/tools/index.md`, a page `docs/docs/tools/<name>.md` (see [`review.md`](../tools/review.md)), and register the page under Tools in `docs/sidebars.js`.
 7. Add tests under `tests/unittest/` and verify with `PYTHONPATH=. uv run pytest tests/unittest`.
+
+A tool that pushes commits must check `provider.is_supported("push_code")`. On Gitee that check is false, and the tool should publish a comment instead.

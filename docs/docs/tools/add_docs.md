@@ -5,73 +5,51 @@ sidebar_position: 6
 
 ## Overview
 
-The `add_docs` tool scans the PR code changes and suggests documentation for any code components that are missing documentation, such as functions, classes, and methods.
+`/add_docs` looks through the pull-request diff for functions, classes, and methods that have no documentation, and drafts docs for them.
 
-It can be invoked manually by commenting on any PR:
+Comment on the pull request:
 
 ```
 /add_docs
 ```
 
-## Example usage
+Or pass `add_docs` to the [Gitee CLI image](./index.md#run). The URL must be `https://gitee.com/owner/repo/pulls/N` or `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`.
 
-Invoke the tool manually by commenting `/add_docs` on any PR:
+## What is published
 
-<img src="/img/add_docs_comment.png" alt="Add Docs" width="512" />
+Suggestions are inline comments on the diff. Gitee cannot commit them. Apply the text yourself if you want it in the branch.
 
-The tool will generate documentation suggestions as inline code suggestions.
+While the command runs, and when `config.publish_output` is enabled, a temporary comment says `正在生成文档...` and is removed before the inline comments are posted.
 
-### Language-specific documentation styles
+The docs style follows the language of the change:
 
-The tool automatically detects the programming language and generates documentation in the appropriate format:
-
-| Language | Documentation Format |
-|----------|---------------------|
-| Python | Docstrings (Sphinx, Google, Numpy styles) |
-| Java | Javadocs |
-| JavaScript/TypeScript | JSdocs |
+| Language | Format |
+|----------|--------|
+| Python | Docstring. `pr_add_docs.docs_style` chooses the Python style. |
+| Java | Javadoc |
+| JavaScript / TypeScript | JSDoc |
 | C++ | Doxygen |
-| Other | Generic documentation |
+| Other | A short generic block |
 
-## Configuration options
+`pr_add_docs.docs_style` defaults to `Sphinx`. Other Python values are `Google Style with Args, Returns, Attributes...etc`, `Numpy Style`, `PEP257`, and `reStructuredText`.
 
-Under the section `[pr_add_docs]`, the following options are available:
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `extra_instructions` | string | `""` | Additional instructions for the AI model |
-| `docs_style` | string | `"Sphinx"` | Documentation style for Python. Options: `"Sphinx"`, `"Google Style with Args, Returns, Attributes...etc"`, `"Numpy Style"`, `"PEP257"`, `"reStructuredText"` |
-| `file` | string | `""` | Specific file to document (useful when multiple components have the same name) |
-| `class_name` | string | `""` | Specific class name to target (useful when methods have the same name in the same file) |
-
-### Example configuration
-
-To customize the documentation style, add the following to your configuration file:
+## Configuration
 
 ```toml
 [pr_add_docs]
-docs_style = "Google Style with Args, Returns, Attributes...etc"
-extra_instructions = "Focus on documenting public methods and include usage examples"
+docs_style = "Sphinx"
+extra_instructions = "Document public methods only."
 ```
 
-### Command line options
+| Key | Default | Effect |
+|-----|---------|--------|
+| `docs_style` | `Sphinx` | Python docstring style. |
+| `extra_instructions` | empty | Extra directions for this command. |
 
-You can pass configuration options directly in the command:
+A command override looks like this:
 
 ```
 /add_docs --pr_add_docs.docs_style="Numpy Style"
 ```
 
-## How it works
-
-1. The tool analyzes the PR diff to identify code components (functions, classes, methods) that lack documentation
-2. It uses AI to generate appropriate documentation based on the code context and language
-3. Documentation suggestions are published as inline code suggestions that can be applied with a single click
-
-### Publication failures
-
-With `CONFIG.PUBLISH_OUTPUT` enabled, PR-Agent retries unsuccessful batch
-publication one suggestion at a time. If the batch and every individual retry
-explicitly report failure, it attempts to post **Failed to publish code
-documentation for this PR.** and records the command as failed. Partial success
-or an unconfirmed provider result does not trigger this all-failed outcome.
+If every inline comment fails to publish, the command records a failure and tries to post **Failed to publish code documentation for this PR.** A partial success is kept.

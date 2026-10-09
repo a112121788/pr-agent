@@ -1,6 +1,6 @@
 {
-  "title": {"message": "PR-Agent"},
-  "logo.alt": {"message": "PR-Agent 标志"},
+  "title": {"message": "Gitee PR-Agent"},
+  "logo.alt": {"message": "Gitee PR-Agent 标志"},
   "item.label.Get Started": {"message": "开始使用"},
   "item.label.Guides": {"message": "指南"},
   "item.label.Tools": {"message": "工具"},

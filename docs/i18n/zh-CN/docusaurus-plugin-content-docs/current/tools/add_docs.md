@@ -5,69 +5,51 @@ sidebar_position: 6
 
 ## 概述
 
-`add_docs` 工具扫描拉取请求中的代码变更，并为缺少文档的代码组件（例如函数、类和方法）建议文档。
+`/add_docs` 在拉取请求 diff 里查找没有文档的函数、类和方法，并为它们起草文档。
 
-可以在任意拉取请求上评论来手动调用：
+在拉取请求上评论：
 
 ```
 /add_docs
 ```
 
-## 使用示例
+也可以把 `add_docs` 传给 [Gitee CLI 镜像](./index.md#run)。URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-在任意拉取请求上评论 `/add_docs` 来手动调用该工具：
+## 发布内容
 
-<img src="/img/add_docs_comment.png" alt="添加文档" width="512" />
+建议以 diff 上的行内评论发布。Gitee 不能把它们提交进分支。如果要留在分支里，请自己把文字加进去。
 
-工具会把文档建议生成为行内代码建议。
+命令运行期间，若启用了 `config.publish_output`，会先发一条临时评论 `正在生成文档...`，行内评论发出前再删掉它。
 
-### 各语言的文档风格
+文档格式跟随变更的语言：
 
-工具会自动检测编程语言，并按相应格式生成文档：
-
-| 语言 | 文档格式 |
-|----------|---------------------|
-| Python | 文档字符串（Sphinx、Google、Numpy 风格） |
-| Java | Javadocs |
-| JavaScript/TypeScript | JSdocs |
+| 语言 | 格式 |
+|------|------|
+| Python | 文档字符串。`pr_add_docs.docs_style` 选择 Python 风格。 |
+| Java | Javadoc |
+| JavaScript / TypeScript | JSDoc |
 | C++ | Doxygen |
-| 其他 | 通用文档 |
+| 其他 | 一段简短的通用说明 |
 
-## 配置选项
+`pr_add_docs.docs_style` 默认为 `Sphinx`。其他 Python 取值是 `Google Style with Args, Returns, Attributes...etc`、`Numpy Style`、`PEP257` 和 `reStructuredText`。
 
-在 `[pr_add_docs]` 节下可以使用以下选项：
-
-| 选项 | 类型 | 默认值 | 说明 |
-|--------|------|---------|-------------|
-| `extra_instructions` | string | `""` | 给 AI 模型的附加指令 |
-| `docs_style` | string | `"Sphinx"` | Python 文档风格。可选：`"Sphinx"`、`"Google Style with Args, Returns, Attributes...etc"`、`"Numpy Style"`、`"PEP257"`、`"reStructuredText"` |
-| `file` | string | `""` | 要编写文档的特定文件（多个组件同名时有用） |
-| `class_name` | string | `""` | 要针对的特定类名（同一文件中方法同名时有用） |
-
-### 配置示例
-
-要自定义文档风格，把以下内容加入配置文件：
+## 配置
 
 ```toml
 [pr_add_docs]
-docs_style = "Google Style with Args, Returns, Attributes...etc"
-extra_instructions = "Focus on documenting public methods and include usage examples"
+docs_style = "Sphinx"
+extra_instructions = "Document public methods only."
 ```
 
-### 命令行选项
+| 键 | 默认值 | 作用 |
+|----|--------|------|
+| `docs_style` | `Sphinx` | Python 文档字符串风格。 |
+| `extra_instructions` | 空 | 这条命令的额外说明。 |
 
-可以直接在命令中传入配置选项：
+命令上的覆盖像这样：
 
 ```
 /add_docs --pr_add_docs.docs_style="Numpy Style"
 ```
 
-## 工作原理
-
-1. 工具分析拉取请求 diff，找出缺少文档的代码组件（函数、类、方法）
-2. 它根据代码上下文和语言，用 AI 生成合适的文档
-3. 文档建议以行内代码建议的形式发布，单击即可应用
-
-### 发布失败
-
-启用 `CONFIG.PUBLISH_OUTPUT` 时，PR-Agent 会把未成功的批量发布逐条重试。如果批量和每一次单独重试都明确报告失败，它会尝试发布 **Failed to publish code documentation for this PR.**，并把该命令记为失败。部分成功或提供方结果未确认时，不会触发这种全部失败的结果。
+如果每一条行内评论都发布失败，命令会记为失败，并尝试发布 **Failed to publish code documentation for this PR.** 部分成功的评论会保留。

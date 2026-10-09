@@ -5,90 +5,37 @@ sidebar_position: 7
 
 ## Overview
 
-The `generate_labels` tool scans the PR code changes and generates custom labels for the PR based on the content and context of the changes.
+`/generate_labels` reads the pull-request diff and applies labels that match the change. It does not rewrite the description. Use [`/describe`](./describe.md) when you want the summary as well.
 
-It can be invoked manually by commenting on any PR:
+Comment on the pull request:
 
 ```
 /generate_labels
 ```
 
-## Example usage
+Or pass `generate_labels` to the [Gitee CLI image](./index.md#run). The URL must be `https://gitee.com/owner/repo/pulls/N` or `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`.
 
-Invoke the tool manually by commenting `/generate_labels` on any PR.
+## What is published
 
-The tool will analyze the PR and add appropriate labels.
+Labels are written through the Gitee API. The token needs permission to edit pull-request labels. Publishing replaces the label set, so labels a person added are read first and kept. If that read fails, nothing is published, because a blind write would remove them.
 
-## Configuration options
+A temporary comment says `正在准备 PR 标签...` while the command runs, then it is removed.
 
-The `generate_labels` tool uses configurations from the `[pr_description]` section for custom labels.
+The allowed names are the built-in types `Bug fix`, `Tests`, `Enhancement`, `Documentation`, and `Other`, plus any custom names you configure. Matching ignores case. Unknown names are dropped. If the model returns only unknown names, the current labels stay as they are.
 
-### Enabling custom labels
-
-To use custom labels, you need to enable them in the configuration:
+## Custom labels
 
 ```toml
 [config]
 enable_custom_labels = true
-```
 
-### Defining custom labels
-
-You can define your own custom labels in the `[custom_labels]` section. See the [custom_labels.toml](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/custom_labels.toml) file for examples.
-
-Example configuration:
-
-```toml
 [custom_labels."Bug fix"]
 description = "A fix for a bug in the codebase"
 
-[custom_labels."Feature"]
-description = "A new feature or enhancement"
-
-[custom_labels."Documentation"]
-description = "Documentation changes only"
-
-[custom_labels."Tests"]
-description = "Adding or modifying tests"
-
-[custom_labels."Refactoring"]
-description = "Code refactoring without functional changes"
+[custom_labels."sql_changes"]
+description = "Use when a PR contains changes to SQL queries"
 ```
 
-### How labels are applied
+Write each description as a condition, so the model knows when the label applies. A custom label that no longer matches is removed on the next `/generate_labels` or `/describe` run. Human-added labels outside this set are not removed by that filter.
 
-1. The tool analyzes the PR diff and commit messages
-2. It uses AI to determine which labels best match the PR content
-3. Labels are automatically applied to the PR (if the git provider supports it)
-4. If labels cannot be applied directly, they are published as a comment
-
-Both `/generate_labels` and `/describe` filter model-generated labels before publishing.
-The allowed set contains the built-in PR types (`Bug fix`, `Tests`, `Enhancement`,
-`Documentation`, `Other`) plus the configured custom label names when custom labels
-are enabled. With custom labels enabled but no custom set configured, the default
-set also includes `Bug fix with tests`. Matching ignores case, and unknown generated
-labels are dropped with a warning. Existing human-added labels are preserved and
-are not restricted by this filter.
-
-Prompt enum keys such as `bug_fix` and `RELEASE_READY` are resolved to their
-allowed display names, ignoring case. If a nonempty model response contains only
-rejected labels, `/generate_labels` leaves the current labels unchanged. An
-explicit `labels: []` response retains the existing behavior of clearing old
-bot-owned labels while preserving human-added labels.
-
-## Comparison with `/describe` labels
-
-The `/describe` tool also generates labels as part of its output. The key differences are:
-
-| Feature | `/generate_labels` | `/describe` |
-|---------|-------------------|-------------|
-| Purpose | Dedicated label generation | Full PR description with labels |
-| Output | Labels only | Title, summary, walkthrough, and labels |
-| Custom labels | ✅ Supported | ✅ Supported |
-| Use case | When you only need labels | When you want a complete PR description |
-
-## Tips
-
-- Use custom labels that match your team's workflow and labeling conventions
-- Combine with automation to automatically label PRs when they are opened
-- Review the generated labels and adjust custom label descriptions if the AI consistently misclassifies PRs
+`/describe` uses the same label set, but `pr_description.publish_labels` defaults to `false`. `/generate_labels` is the command that publishes labels on its own.

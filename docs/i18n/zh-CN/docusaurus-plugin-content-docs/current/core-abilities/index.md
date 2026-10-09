@@ -3,7 +3,7 @@ title: "核心能力"
 sidebar_position: 1
 ---
 
-PR-Agent 利用多种核心能力，提供全面、高效的代码审查体验。这些能力包括：
+Gitee PR-Agent 审查 Gitee 上的拉取请求。下面这些能力决定提示词里放什么、过大的 diff 如何拆开，以及结果如何发回拉取请求：
 
 - [代理技能](./agent_skills.md)
 - [压缩策略](./compression_strategy.md)
@@ -12,22 +12,10 @@ PR-Agent 利用多种核心能力，提供全面、高效的代码审查体验�
 - [本地与全局元数据](./metadata.md)
 - [自我反思](./self_reflection.md)
 
-## 博客
+## 本构建的默认值
 
-以下是 Qodo 的一些额外技术博客，深入探讨大型语言模型（LLM）应用于编码任务时的核心能力与特性。
-这些资源更全面地说明了如何利用 LLM 进行软件开发。
-
-### 代码生成与 LLM
-
-- [有效的 AI 代码建议：少即是多](https://www.qodo.ai/blog/effective-code-suggestions-llms-less-is-more/)
-- [使用 AlphaCodium 实现最先进的代码生成——从提示工程到流程工程](https://www.qodo.ai/blog/qodoflow-state-of-the-art-code-generation-for-code-contests/)
-- [面向 1 万个仓库代码库的 RAG](https://www.qodo.ai/blog/rag-for-large-scale-code-repos/)
-
-### 开发流程
-
-- [理解拉取请求周期的挑战与痛点](https://www.qodo.ai/blog/understanding-the-challenges-and-pain-points-of-the-pull-request-cycle/)
-- [代码覆盖率测试简介](https://www.qodo.ai/blog/introduction-to-code-coverage-testing/)
-
-### 成本优化
-
-- [使用 GPT 处理 Python 代码时将成本降低 30%](https://www.qodo.ai/blog/reduce-your-costs-by-30-when-using-gpt-3-for-python-code/)
+- 平台：仅 Gitee。安装见 [Gitee 安装指南](../installation/gitee.md)。其他 Git 托管不在支持范围内，见 [支持的平台](../overview/supported_platforms.md)。
+- 模型：`gpt-6.1-sol`。备用模型是 `glm-5.3`。更换方式见 [更换模型](../usage-guide/changing_a_model.md)。
+- 响应语言：`zh-CN`（`config.response_language`）。
+- 大拉取请求：`/review` 和 `/describe` 默认分段处理。见 [压缩策略](./compression_strategy.md)。
+- 行内评论锚定在 Gitee 的 diff `position` 上，从该文件补丁里第一个 `@@` 差异块头的下一行起算。无法映射的行会跳过。见 [Gitee 安装](../installation/gitee.md#已验证的行为)。

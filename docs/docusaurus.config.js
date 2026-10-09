@@ -22,8 +22,8 @@ const codeTheme = {
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'PR-Agent',
-  tagline: 'AI-powered code review agent',
+  title: 'Gitee PR-Agent',
+  tagline: 'AI review for Gitee pull requests',
   url: 'https://docs.pr-agent.ai',
   baseUrl: '/',
   // The MkDocs site published directory URLs, and pr_agent/tools/pr_help_message.py

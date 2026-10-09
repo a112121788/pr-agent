@@ -5,24 +5,40 @@ sidebar_position: 11
 
 ## 概述
 
-`update_changelog` 工具会根据拉取请求变更自动更新 CHANGELOG.md。
-可以在任意拉取请求上评论来手动调用：
+`/update_changelog` 根据拉取请求起草一条变更日志。在 Gitee 上，草稿以评论发布。这条命令不能推送 `CHANGELOG.md` 或任何其他文件。
+
+在拉取请求上评论：
 
 ```
 /update_changelog
 ```
 
-## 使用示例
+也可以把 `update_changelog` 传给 [Gitee CLI 镜像](./index.md#run)。URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-<img src="/img/update_changelog_comment.png" alt="update_changelog_comment" width="768" />
+## 为什么不能推送
 
-<img src="/img/update_changelog.png" alt="update_changelog" width="768" />
+这个构建使用的 Gitee API 不能写仓库文件，因此 `push_code` 能力是关闭的。`pr_update_changelog.push_changelog_changes` 默认为 `false`。把它设为 `true` 仍然不会产生提交。条目留在评论里。
 
-## 配置选项
+评论里可能带一段固定说明，让你打开 `pr_update_changelog.push_changelog_changes`。这段说明在 Gitee 上不起作用。如果要把条目放进分支，请自己复制到 `CHANGELOG.md`。
 
-在 `pr_update_changelog` 节下，[配置文件](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml)包含用于自定义 “update changelog” 工具的选项：
+当 Gitee 返回当前的 `CHANGELOG.md` 时，这段文字会作为草稿的上下文。`pr_update_changelog.add_pr_link` 默认为 `true`，草稿会尝试链接该拉取请求。`pr_update_changelog.skip_ci_on_push` 没有效果，因为不会产生提交。
 
-- `push_changelog_changes`：是把变更推送到 CHANGELOG.md，还是只作为评论发布。默认值为 false（作为评论发布）。推送之前，工具需要已确认读到现有的 CHANGELOG.md；确认文件缺失时视为空文件，其他读取失败则会跳过仓库写入，尝试发布一条未推送的回退评论，并抛出原始错误。如果仓库写入本身失败，工具会尽最大努力尝试发布
-- `extra_instructions`：给工具的可选附加指令。例如："Use the following structure: ..."
-- `add_pr_link`：模型是否应尝试在变更日志中加入指向该拉取请求的链接。默认值为 true。
-- `skip_ci_on_push`：当 `push_changelog_changes` 为 true 时，提交消息是否包含 “[skip ci]”，从而避免变更日志提交触发 CI 测试。默认值为 true。
+## 配置
+
+```toml
+[pr_update_changelog]
+extra_instructions = "Use Added, Fixed, and Changed."
+add_pr_link = true
+push_changelog_changes = false
+```
+
+| 键 | 默认值 | 在 Gitee 上的效果 |
+|----|--------|-------------------|
+| `push_changelog_changes` | `false` | 不能推送。结果仍然是评论。 |
+| `add_pr_link` | `true` | 让模型链接该拉取请求。 |
+| `extra_instructions` | 空 | 条目的结构或措辞。 |
+| `skip_ci_on_push` | `true` | 未使用，因为不会创建提交。 |
+
+```
+/update_changelog --pr_update_changelog.extra_instructions="Write one bullet."
+```

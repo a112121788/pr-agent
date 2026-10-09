@@ -3,499 +3,80 @@ title: "改进"
 sidebar_position: 4
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+## 概述
 
-## 概述 {#overview}
+`/improve` 为拉取请求提出代码修改建议。在 Gitee 上，结果是一条评论；能定位到行时，再加上行内评论。Gitee 不能提交建议代码。
 
-生成可执行的代码建议，用于改进拉取请求。
-该工具可以在每次新拉取请求[打开](../usage-guide/automations_and_usage.md#github-app-automatic-tools-when-a-new-pr-is-opened)时自动触发，也可以在任意拉取请求上评论来手动调用：
+在拉取请求上评论：
 
-```toml
+```
 /improve
 ```
 
-## 效果展示
+也可以把 `improve` 传给 [Gitee CLI 镜像](./index.md#run)。URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-<Tabs>
-<TabItem value="suggestions-overview" label="建议概览">
+拉取请求打开时会和 `/describe`、`/review` 一起运行 `/improve`，除非 `gitee.pr_commands` 换掉这份列表。
 
-<img src="/img/code_suggestions_as_comment_closed.png" alt="code_suggestions_as_comment_closed" width="512" />
+## 发布内容
 
-</TabItem>
-<TabItem value="selecting-a-specific-suggestion" label="选择某条具体建议">
+摘要标题来自 `pr_code_suggestions.suggestions_heading`，默认是 `PR 代码建议`。建议正文遵循 `config.response_language` = `zh-CN`。
 
-<img src="/img/code_suggestions_as_comment_open.png" alt="code_suggestions_as_comment_open" width="512" />
+`pr_code_suggestions.committable_code_suggestions` 默认为 `false`，建议会集中在这一条评论里。把它设为 `true`，或把 `pr_code_suggestions.dual_publishing_score_threshold` 设成大于 `-1`，在 Gitee 上仍然不会产生提交。这些模式只改变发布哪些评论和行内评论。行内评论使用 Gitee diff 的 `position`，从第一个 `@@` hunk 头的下一行开始计数。无法定位的建议留在摘要评论里。
 
-</TabItem>
-</Tabs>
+`pr_code_suggestions.persistent_comment` 为 `true`，因此下一次摘要会替换上一条 `PR 代码建议` 评论。
 
-___
+`/review` 和 `/improve` 已在 [eclouddev/hlzs_web#2896](https://gitee.com/eclouddev/hlzs_web/pulls/2896) 上运行过。
 
-## 使用示例
+每条建议包含一行摘要、一段说明，以及修改前后的片段。把片段当成示意。你同意这条发现之后，自己把改动应用到分支上。Gitee PR-Agent 不会推送这段改动。
 
-### 手动触发
+## 会生成多少条
 
-在任意拉取请求上评论 `/improve` 来手动调用该工具。代码建议默认呈现为一条评论：
+diff 会按大约 `config.max_model_tokens` 个令牌分块（默认 `32000`）。每一块最多请求 `pr_code_suggestions.num_code_suggestions_per_chunk` 条建议（默认 `3`）。`pr_code_suggestions.max_number_of_calls`（默认 `3`）限制块数。
 
-要编辑与 `improve` 工具相关的[配置](#configuration-options)，使用以下模板：
+`pr_code_suggestions.max_suggestions_per_file` 默认为 `0`，表示不按文件封顶。设成正整数后，合并各块时每个文件只保留分数最高的建议。
 
-```toml
-/improve --pr_code_suggestions.some_config1=... --pr_code_suggestions.some_config2=...
-```
+`pr_code_suggestions.suggestions_score_threshold` 默认为 `0`。低于该阈值的建议会被丢掉。设到 7 或 8 以上常常会丢掉有用的说明。
 
-例如，可以运行以下命令，把替换范围已验证的建议呈现为可提交的代码评论：
+分块进行时，若启用了 `config.publish_output_progress`，进度评论会就地更新，并在最终评论发出前删除。
 
-```toml
-/improve --pr_code_suggestions.committable_code_suggestions=true
-```
+如果有些块失败，会只用 `config.fallback_models` 里后面的模型重试失败的块。配置的备用模型是 `glm-5.3`。已经成功的块会保留。如果每一块都失败，命令失败。
 
-替换范围无法验证的建议仍是普通评论，没有应用操作。
+## 额外说明和仓库文件
 
-:::note
-该键在 1.0 之前的拼写修正前写作 `commitable_code_suggestions`。该拼写仍然
-可用，但已弃用：它会记录一条警告，并将在 1.0 中移除。请将其重命名为
-`committable_code_suggestions`。
-:::
-
-如果批量发布失败，`/improve` 会逐条重试每条建议。如果每次重试都失败，
-它会报告失败，而不是静默移除进度评论。当
-`config.propagate_tool_errors=true` 时，发布错误也会抛给调用方。
-普通回退评论和覆盖范围提示会在报告错误之前发布。
-当此回退输出成功时，会予以保留，不再附加失败横幅；
-错误传播仍遵循 `config.propagate_tool_errors`。
-如果任何一次单独重试成功，则保留现有的部分恢复行为。
-
-<img src="/img/improve.png" alt="改进" width="512" />
-
-### 自动触发
-
-要在拉取请求打开时自动运行 `improve`，在[配置文件](../usage-guide/configuration_options.md#local-configuration-file)中定义：
-
-```toml
-[github_app]
-pr_commands = [
-    "/improve",
-    ...
-]
-
-[pr_code_suggestions]
-num_code_suggestions_per_chunk = ...
-...
-```
-
-- `pr_commands` 列出拉取请求打开时会自动执行的命令。
-- `[pr_code_suggestions]` 节包含你想修改的 `improve` 工具配置（如果有）
-
-### 增量建议
-
-在 Azure DevOps 上，运行 `/improve -i` 只分析最近一次代码建议之后的变更。第一次
-增量运行在不存在更早的建议评论时，会分析整个拉取请求。之后若没有新
-变更，则退出且不调用模型。
-
-### 表格与可提交代码评论
-
-PR-Agent 支持两种呈现代码建议的模式：
-
-1) [表格](pathname:///img/code_suggestions_as_comment_closed.png)模式
-
-2) [行内可提交](pathname:///img/improve.png)代码评论模式。
-
-表格格式有几个关键优势：
-
-- **减少噪音**：拉取请求更干净，杂乱更少
-- **快速概览和排优先级**：可以快速查看一行摘要、影响级别，并轻松排优先级
-- **高层建议**：不绑定到特定代码块的高层建议只在表格模式中呈现
-- **集中跟踪**：在一处显示建议的落实状态
-- **IDE 集成**：可以通过 CLI 工具直接在 IDE 中应用建议
-
-表格模式是 PR-Agent 的默认模式，由于这些好处，是大多数用户的推荐方式。
-
-<img src="/img/code_suggestions_as_comment_closed.png" alt="code_suggestions_as_comment_closed.png" width="512" />
-
-有特定偏好的团队可以在本地配置中启用可提交代码评论模式，或使用[双发布模式](#dual-publishing-mode)。
-
-> `注意：由于平台限制，Bitbucket Cloud 和 Server 只支持可提交代码评论模式。`
-
-## `附加指令`与`最佳实践` {#extra-instructions-and-best-practices}
-
-可以通过向 AI 模型提供附加指令和最佳实践，进一步自定义 `improve` 工具。
-
-### 附加指令 {#extra-instructions}
-
-可以使用 `extra_instructions` 配置选项，为 `improve` 工具向 AI 模型提供附加指令。
-指令要具体、清楚、简洁。使用附加指令时，你就是提示词的作者。
-
-可能的指令示例：
+`pr_code_suggestions.extra_instructions` 改的是这条命令的提示词。`config.repo_context_files` 会加入默认分支上的文件，例如 `AGENTS.md`（`config.repo_context_from_default_branch` 为 `true`）。把该标志设为 `false` 则改为读取拉取请求的目标分支。渲染后的上下文停在 `config.repo_context_max_lines`（默认 `500`）。
 
 ```toml
 [pr_code_suggestions]
-extra_instructions="""\
-(1) Answer in Japanese
-(2) Don't suggest to add try-except block
-(3) Ignore changes in toml files
-...
+extra_instructions = """\
+Focus on data-loss and auth checks.
+Do not suggest formatting-only edits.
 """
-```
+focus_only_on_problems = true
 
-使用三引号编写多行指令。使用项目符号或编号让指令更易读。
-
-### 最佳实践 {#best-practices}
-
-`支持仓库上下文文件的平台：GitHub、GitLab、Gitea、Bitbucket、Azure DevOps`
-
-开源 PR-Agent 包不会自动加载 `best_practices.md`。要使用最佳实践文件，
-把它加入 `config.repo_context_files`：
-
-```toml
 [config]
 repo_context_files = ["AGENTS.md", "best_practices.md"]
 ```
 
-此回退支持 GitHub、GitLab、Gitea、Bitbucket 和 Azure DevOps。仓库上下文文件默认从默认分支读取，并受 `config.repo_context_max_lines` 限制（默认 500 行）。
-设置 `config.repo_context_from_default_branch = false` 可改为从拉取请求的目标分支读取。
-不支持获取仓库文件的提供方会记录警告并跳过此上下文。
-
-<details>
-<summary>编写有效的最佳实践文件</summary>
-
-以下准则适用于所有最佳实践文件：
-
-- 写得清楚、简洁
-- 有帮助时包含简短代码示例，并采用修改前/修改后模式
-- 聚焦项目特有的准则，以便得到你真正想要的相关建议
-- 每个文件保持简短、聚焦，因为：
-    - AI 模型可能无法有效处理很长的文档
-    - 长文件往往包含 AI 已经知道的通用准则
-    - `config.repo_context_max_lines` 限制渲染后的仓库上下文总量，包括包装行和截断行。
-- 使用基于模式的结构，而不是简单项目符号，以便更清晰
-
-</details>
-
-<details>
-<summary>最佳实践文件示例</summary>
-
-模式 1：在外部函数调用周围添加带 try-except 块的适当错误处理。
-
-修改前的示例代码：
-
-```python
-# Some code that might raise an exception
-return process_pr_data(data)
-```
-
-修改后的示例代码：
-
-```python
-try:
-    # Some code that might raise an exception
-    return process_pr_data(data)
-except Exception as e:
-    logger.exception("Failed to process request", extra={"error": e})
-```
-
-模式 2：在访问对象属性或对可能为空的变量执行操作之前，添加防御性的空值/空检查，以防止运行时错误。
-
-修改前的示例代码：
-
-```python
-def get_pr_code(pr_data):
-    if "changed_code" in pr_data:
-        return pr_data.get("changed_code", "")
-    return ""
-```
-
-修改后的示例代码：
-
-```python
-def get_pr_code(pr_data):
-    if pr_data is None:
-        return ""
-    if "changed_code" in pr_data:
-        return pr_data.get("changed_code", "")
-    return ""
-```
-
-</details>
-
-### 结合 “extra instructions” 与 “best practices”
-
-`extra instructions` 配置更贴近 `improve` 工具的提示词。例如，可以用它避免特定建议（"Don't suggest to add try-except block"、"Ignore changes in toml files" 等），或强调特定方面或格式（"Answer in Japanese"、"Give only short suggestions" 等）。
-
-相比之下，`best_practices.md` 文件是仓库中代码应当如何编写的一般准则。
-
-两者结合可以帮助 AI 模型提供相关且贴合的建议。
-
-## 使用提示
-
-### 落实所提议的代码建议
-
-每条生成的建议包含三个关键要素：
-
-1. 所提议变更的单行摘要
-2. 可展开节，包含对该建议的全面描述
-3. 展示建议代码修改的 diff 片段（修改前和修改后）
-
-建议用户在落实所提议的建议时运用批判性分析和判断。
-除了错误（可能发生，但很少见）之外，有时所呈现的代码修改更像是一个*说明性示例*，而不是可以直接应用的解决方案。
-在这种情况下，建议优先考虑建议的详细描述，把 diff 片段主要当作辅助参考。
-
-### 双发布模式 {#dual-publishing-mode}
-
-我们推荐通过[表格](./improve.mdx#overview)呈现代码建议（`--pr_code_suggestions.committable_code_suggestions=false`）。
-这种方法显著减小拉取请求占用，并能快速、轻松地消化多条建议。
-
-我们还提供互补的**双发布模式**。启用后，超过某一分数阈值的建议不仅显示在表格中，也会作为可提交的拉取请求评论呈现。
-此模式有助于突出被认为更关键的建议。
-
-要激活双发布模式，使用以下设置：
-
-```toml
-[pr_code_suggestions]
-dual_publishing_score_threshold = x
-```
-
-其中 x 表示除表格之外还要作为可提交拉取请求评论呈现的建议的最低分数阈值（>=）。默认值为 -1（禁用）。
-
-### 持久行内评论
-
-默认情况下，PR-Agent 会在每次运行时重新发布相同的行内代码评论，这会弄乱讨论，在 GitLab 上尤其如此。持久行内评论功能通过跳过重新发布更早运行中已经存在的评论来避免这一点。做法是在每条已发布评论中嵌入带短指纹的隐藏 HTML 注释标记，使 PR-Agent 能在后续运行中扫描已有评论正文，识别并跳过重复项。
-
-使用两个指纹，并以 OR 逻辑匹配：一个覆盖评论文本（文件、行、规范化文本），另一个在存在时覆盖
-所提议的代码块。即使模型改写了
-正文或略微改动了代码，这种方法也能抓住再次发出的发现。该功能为可选，默认关闭，并已在 GitHub、
-GitLab 和 Azure DevOps 提供方上实现。
-
-Azure DevOps 指纹包含完整行范围和规范化的发现文本，因此另一处的相同问题仍然符合条件。当所提议代码与当前文件完全匹配时，活动建议讨论会被标为已修复。已有的终态会被保留。
-
-GitLab 和 Azure DevOps 还会在下一次建议
-流程中，把更早的建议讨论及其回复作为上下文。常规 `/improve` 会审查当前完整拉取请求，同时避开已经提出、
-已处理、已拒绝或已推迟的问题。使用 `/improve -i` 只审查上一次建议流程之后的变更。
-在 GitLab 上，每个讨论都带有状态：`open`、`auto_resolved`（由已认证的 PR-Agent 用户关闭，例如
-通过 `resolve_outdated_inline_threads` 或 `auto_resolve_fixed_inline_threads`，因此发现可能仍然
-适用）、`resolved`（由其他人关闭，或无法验证 PR-Agent 用户时）或 `applied`（建议
-已通过 GitLab UI 应用）。
-
-重复抑制和已应用建议的核对需要 `persistent_inline_comments`。讨论上下文
-和线程问题在没有它时仍然可用。
-
-要启用它，使用以下设置：
-
-```toml
-[config]
-persistent_inline_comments = true
-```
-
-### 在 GitLab 上批量发布可提交建议
-
-`支持的平台：GitLab`
-
-默认情况下，启用 `committable_code_suggestions` 时，GitLab 会在每条建议创建后立即将其作为自己的实时讨论发布，这意味着每条建议都会有单独的通知（如果已配置，还有邮件）。要改为把所有建议排队，并在单次批量中一起发布，类似于在 GitLab UI 中使用 “start a review”，请启用：
-
-```toml
-[gitlab]
-publish_code_suggestions_as_review = true
-```
-
-建议会作为 GitLab 草稿笔记发布（发布前只有 PR-Agent 的用户可见），并在所有建议排队后通过一次 API 调用一起发布。无论哪种方式，建议都完全可提交——此设置只改变投递方式。只有至少有一条建议实际入队时才会发起发布调用，因此一次没有内容可发布的运行不会意外发布 MR 上已待处理的无关草稿。
-
-### 自审
-
-`支持的平台：GitHub、GitLab`
-
-如果在配置文件中设置：
-
-```toml
-[pr_code_suggestions]
-demand_code_suggestions_self_review = true
-```
-
-`improve` 工具会在建议下方添加一个复选框，提示用户确认已审阅这些建议。
-可以通过以下方式设置复选框文本内容：
-
-```toml
-[pr_code_suggestions]
-code_suggestions_self_review_text = "... (your text here) ..."
-```
-
-<img src="/img/self_review_1.webp" alt="self_review_1" width="512" />
-
-:::note[复选框只是视觉标记]
-
-PR-Agent 会渲染该复选框，但不会对勾选做出反应。拉取请求作者点击它时，不会折叠任何内容，也不会添加批准。
-:::
-
-### 会生成多少条代码建议？
-
-PR-Agent 使用动态策略，根据拉取请求（PR）的大小生成代码建议。工作方式如下：
-
-#### 1. 对大型拉取请求分块
-
-- PR-Agent 把大型拉取请求分成 “chunks”。
-- 每个分块最多包含 `config.max_model_tokens` 个令牌（默认：32,000）。
-
-#### 2. 生成建议
-
-- 对每个分块，PR-Agent 最多生成 `pr_code_suggestions.num_code_suggestions_per_chunk` 条建议（默认：3）。
-- 为了限制大型或已分块拉取请求的输出，把 `pr_code_suggestions.max_suggestions_per_file` 设为正整数。
-  所有分块合并后，每个文件保留得分最高的建议；平局时保持原有顺序。
-  摘要输出（包括未发布的摘要）会在应用正数上限之前，跳过行位置无法解析的建议。
-  行内输出保持其现有的选择和回退行为。
-  默认值 `0` 禁用此上限。
-
-这种方法有两个主要好处：
-
-- 可扩展性：建议数量随拉取请求大小伸缩，而不是固定不变。
-- 质量：通过处理较小的分块，AI 可以保持更高质量的建议，因为更大的上下文往往会降低 AI 表现。
-
-注意：分块主要与大型拉取请求相关。对于大多数拉取请求（最多 600 行代码），PR-Agent 能够在一次调用中处理全部代码。
-
-分块运行期间，动画评论 `Work in progress ...` 会就地编辑，带上
-已经分析的分块数，例如 `analyzed 2 of 3 chunks`，当分块放弃时还会加上 `... 1 chunk
-failed`。更新需要 `config.publish_output_progress`，以及
-同时支持编辑和删除评论的提供方，因此单分块运行和纯 diff
-提供方会保留冻结的占位符。自动命令不发布进度评论，但在启用
-`github.publish_as_check_run` 时，其进行中的 check run 会显示相同的分块计数。
-回退模型会在开始之前恢复
-占位符，并且每一轮重试都会计入总数，因此可见计数
-既不会倒退，也不会过早停止。然后该评论会照常编辑成最终建议。
-
-## 配置选项 {#configuration-options}
-
-下面的说明解释每个选项的行为。权威默认值见
-[`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml)
-中的相关节。
-
-<details open>
-<summary>通用选项</summary>
-
-<table>
-  <tr>
-    <td><b>extra_instructions</b></td>
-    <td>给工具的可选附加指令。例如："focus on the changes in the file X. Ignore change in ..."。</td>
-  </tr>
-  <tr>
-    <td><b>suggestions_heading</b></td>
-    <td>
-      摘要表格改进评论的可见基础标题，不含 Markdown 前缀。
-      例如，<code>suggestions_heading = "Guideline Improvement Suggestions"</code> 渲染为
-      <code>## Guideline Improvement Suggestions ✨</code>。在 GitHub、GitLab 和 Azure DevOps 上，
-      更改此值会更新同一条持久建议评论；它不会创建单独的
-      建议通道。LocalGit 在 <code>improve.md</code> 中使用相同的可见标题，没有
-      隐藏身份标记。此设置不影响可提交的行内建议。
-    </td>
-  </tr>
-  <tr>
-    <td><b>committable_code_suggestions</b></td>
-    <td>设为 true 时，工具会把建议显示为可提交的代码评论。已弃用的拼写
-    <code>commitable_code_suggestions</code> 仍被接受并会记录
-    警告；它将在 1.0 中移除，请重命名。</td>
-  </tr>
-  <tr>
-    <td><b>dual_publishing_score_threshold</b></td>
-    <td>除表格之外还要作为可提交拉取请求评论呈现的建议的最低分数阈值。</td>
-  </tr>
-  <tr>
-    <td><b>focus_only_on_problems</b></td>
-    <td>设为 true 时，建议将主要聚焦于识别和修复代码问题，而较少关注
-    最佳实践、可维护性或可读性等风格考量。</td>
-  </tr>
-  <tr>
-    <td><b>persistent_comment</b></td>
-    <td>设为 true 时，改进评论会持久存在，即每次新的改进请求都会编辑上一条。</td>
-  </tr>
-  <tr>
-    <td><b>suggestions_score_threshold</b></td>
-    <td>重要性分数低于此阈值的任何建议都会被移除。高于 7-8 的值可能会裁掉相关建议。</td>
-  </tr>
-  <tr>
-    <td><b>enable_help_text</b></td>
-    <td>设为 true 时，工具会在评论中显示帮助文本。</td>
-  </tr>
-  <tr>
-    <td><b>enable_chat_text</b></td>
-    <td>设为 true 时，工具会在评论中显示指向 PR 聊天的引用。</td>
-  </tr>
-  <tr>
-    <td><b>publish_output_no_suggestions</b></td>
-    <td>设为 true 时，即使没有找到建议，工具也会发布评论。</td>
-  </tr>
-  <tr>
-    <td><b>enable_suggestions_coverage_footer</b></td>
-    <td>
-      设为 true 时，当分析分块失败，或文件因令牌预算或 AI 调用次数上限而被省略时，
-      工具会显示覆盖范围提示。
-    </td>
-  </tr>
-</table>
-
-</details>
-
-<details open>
-<summary>建议数量与 AI 调用次数的参数</summary>
-
-<table>
-  <tr>
-    <td><b>num_code_suggestions_per_chunk</b></td>
-    <td>“improve” 工具在每个分块中提供的代码建议数量。</td>
-  </tr>
-  <tr>
-    <td><b>max_suggestions_per_file</b></td>
-    <td>
-      分块结果合并后，每个文件保留的建议数量上限。保留得分最高的
-      建议。设为 <code>0</code> 以保留无上限行为。
-      摘要输出会在应用正数上限之前跳过无法解析的行位置；
-      行内选择和回退行为不变。
-    </td>
-  </tr>
-  <tr>
-    <td><b>max_number_of_calls</b></td>
-    <td>分块的最大数量。</td>
-  </tr>
-  <tr>
-    <td><b>max_discussion_context_chars</b></td>
-    <td>
-      “improve” 在 GitLab 和 Azure DevOps 上作为上下文读取的先前代码建议讨论（及其回复）的字符预算，
-      以免重复已经拒绝或已处理的建议。
-      默认值为 24000。设为 <code>0</code> 可禁用此上下文。
-    </td>
-  </tr>
-</table>
-
-</details>
-
-## 恢复部分失败的分析
-
-部分失败的分析会自动对在其他分块成功之后抛出异常的分块，尝试剩余已配置的
-`config.fallback_models`，除 `config.fallback_models` 本身外无需额外配置。
-成功的预测会按原有顺序保留。恢复按模型逐个进行，
-在前一批次结束后进行，并在已配置时使用匹配的 `openai.fallback_deployments`，
-同时遵循该次调用的有效回退链，包括由
-[模型路由](../usage-guide/changing_a_model.md#routing-small-pull-requests-to-a-cheaper-model)选择的主模型。
-至少恢复了一个分块的回退模型会在运行
-细节中标记为回退，因此已发布的运行行仍报告主模型，而粘性回退标志
-保持设置。
-
-在工具层面，每个剩余模型对仍然失败的分块最多尝试一次；模型
-处理器现有的重试和自我反思调用可以增加提供方请求。完整
-生成提示放不进某个回退模型令牌预算的分块会对该模型跳过，而不会
-截断其上下文；预留余量遵循 AI 处理器将
-实际为该模型请求的输出配额（`config.max_output_tokens` 及相关控制），当没有暴露具体限制时回退到
-固定的软阈值。之后，更大的模型仍然可以恢复
-它。耗尽的失败仍留在覆盖范围提示中。取消会向外传播，而不是开始
-另一次重试。
-
-这是同一次调用内的恢复，而不是跨命令的持久续跑。完全失败的初始
-批次仍使用现有的整批回退。合法的空建议是成功结果；
-被现有 YAML 解析器拒绝的响应保留其现有的解析失败行为。
-含糊的重复模型/部署对会跳过部分恢复，而不是重新开始这条链。
-
-## 理解 AI 代码建议 {#understanding-ai-code-suggestions}
-
-- **AI 的局限：** 代码 AI 模型越来越好，但并非完美。不是所有建议都完美，用户不应自动接受全部建议。需要批判性阅读和判断。AI 的错误很少见，但可能发生，而且人类通常很容易发现它们。
-- **建议的目的：**
-    - **自我反思：** 建议旨在让开发者*自我反思*并改进自己的拉取请求。这个过程可以帮助发现盲点、找出遗漏的边界情况，并提高代码可读性和一致性。即使某条具体代码建议不合适，它指出的底层问题也常常揭示出值得注意的重要事项。
-    - **缺陷检测：** 建议还会对分析期间可能识别出的*关键缺陷*发出警报。这提供了额外的安全网，在问题进入生产之前抓住潜在问题。只落实你认为对具体上下文有价值的建议完全可以接受。
-- **层次结构：** 以结构化的层次表格呈现建议，使用户能够*快速*理解它们，并决定哪些相关、哪些不相关。
-- **自定义：** 为了引导模型给出更符合项目具体需求的建议，建议使用 [`extra_instructions`](./improve.mdx#extra-instructions-and-best-practices) 和 [`best practices`](./improve.mdx#best-practices) 字段。
-- **模型选择：** 对于特定编程语言或用例，某些模型可能比其他模型表现更好。
+`focus_only_on_problems` 默认为 `true`，因此建议优先指出缺陷，而不是风格。
+
+自审复选框（`pr_code_suggestions.demand_code_suggestions_self_review`）只是视觉标记。勾上它不会批准拉取请求，也不会藏起建议。
+
+## 配置
+
+| 键 | 默认值 | 作用 |
+|----|--------|------|
+| `suggestions_heading` | `PR 代码建议` | 摘要评论的标题。 |
+| `committable_code_suggestions` | `false` | 同时发布行内评论。在 Gitee 上仍然不会提交。 |
+| `dual_publishing_score_threshold` | `-1` | 分数达到该值时同时发布行内评论。`-1` 表示关闭。 |
+| `persistent_comment` | `true` | 编辑上一条摘要评论。 |
+| `focus_only_on_problems` | `true` | 优先缺陷，而不是风格。 |
+| `suggestions_score_threshold` | `0` | 丢掉低于该分数的建议。 |
+| `num_code_suggestions_per_chunk` | `3` | 每一块请求的建议数。 |
+| `max_suggestions_per_file` | `0` | 合并后的单文件上限。`0` 表示不封顶。 |
+| `max_number_of_calls` | `3` | 最大块数。 |
+| `publish_output_no_suggestions` | `true` | 没有建议时仍然发评论。 |
+| `enable_suggestions_coverage_footer` | `true` | 列出失败的块和预算没覆盖的文件。 |
+| `extra_instructions` | 空 | 这条命令的额外说明。 |
+| `enable_help_text` | `false` | 在评论里加帮助文字。 |
+
+旧拼写 `commitable_code_suggestions` 仍会打开发行内评论，并记一条警告。请改成 `committable_code_suggestions`。

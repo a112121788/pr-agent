@@ -5,189 +5,47 @@ sidebar_position: 2
 
 ## Overview
 
-Generate a PR title, type, summary, code walkthrough and labels.
+`/describe` writes a pull-request type, summary, file walkthrough, and an optional Mermaid diagram. The response language is `zh-CN`.
 
-The tool can be triggered automatically every time a new PR is [opened](../usage-guide/automations_and_usage.md#github-app-automatic-tools-when-a-new-pr-is-opened), or it can be invoked manually by commenting on any PR:
+Comment on the pull request:
 
 ```
 /describe
 ```
 
-## Example usage
+Or pass `describe` to the [Gitee CLI image](./index.md#run). The pull-request URL must be `https://gitee.com/owner/repo/pulls/N` or `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`.
 
-### Manual triggering
+An opened pull request runs `/describe` together with `/review` and `/improve`, unless `gitee.pr_commands` says otherwise. See [Gitee installation](../installation/gitee.md).
 
-Invoke the tool manually by commenting `/describe` on any PR:
-
-<img src="/img/describe_comment.png" alt="Describe comment" width="512" />
-
-After ~30 seconds, the tool will generate a description for the PR:
-
-<img src="/img/describe_new.webp" alt="Describe New" width="512" />
-
-While a large PR's chunks run, the temporary `Preparing PR description...` comment is rewritten in place, for example `Preparing PR description... analyzed 2 of 3 chunks`; once every chunk has settled, `, 1 chunk failed` is added if a chunk gave up. This needs `config.publish_output_progress` and a provider that can edit and remove comments; single-chunk runs keep the plain placeholder.
-
-If you want to edit [configurations](#configuration-options), add the relevant ones to the command:
+Add overrides on the command when you need them:
 
 ```
-/describe --pr_description.some_config1=... --pr_description.some_config2=...
+/describe --pr_description.extra_instructions="focus on the API change"
 ```
 
-### Automatic triggering
+## Where the text goes
 
-To run the `describe` automatically when a PR is opened, define in a [configuration file](../usage-guide/configuration_options.md#local-configuration-file):
+By default `pr_description.publish_description_as_comment` is `false`, so the tool replaces the pull-request body. Set it to `true` to publish a comment instead. With `pr_description.publish_description_as_comment_persistent` left at `true`, a later run edits that comment.
 
-```
-[github_app]
-pr_commands = [
-    "/describe",
-    ...
-]
+`pr_description.generate_ai_title` is `false`, so the existing title stays. Set it to `true` to replace the title as well.
 
-[pr_description]
-publish_labels = true
-...
-```
+`pr_description.add_original_user_description` is `true`. Text above the `PR Type` heading is kept as the author's text. Text below that heading is treated as an earlier generated description and is replaced. Write the author text before the command runs. Editing the body while the command is still running can drop it.
 
-- The `pr_commands` lists commands that will be executed automatically when a PR is opened.
-- The `[pr_description]` section contains the configurations for the `describe` tool you want to edit (if any).
+`pr_description.publish_labels` is `false`, so `/describe` does not apply labels unless you turn that on. Use [`/generate_labels`](./generate_labels.md) when you only want labels.
 
-## Preserving the original user description
+## Diagram and walkthrough
 
-By default, PR-Agent tries to preserve your original PR description by placing it above the generated content.
-This requires including your description during the initial PR creation.
+`pr_description.enable_pr_diagram` is `true`. The diagram is omitted when the change has no useful flow. `pr_description.pr_diagram_direction` is `adaptive`: a chain longer than `pr_description.pr_diagram_direction_threshold` (default `5`) is drawn top-down. Set the direction to `LR` or `TD` to pin it.
 
-"PR-Agent removed the original description from the PR. Why"?
+`pr_description.enable_semantic_files_types` is `true`, which adds the file walkthrough. `pr_description.collapsible_file_list` is `adaptive`, so the file list collapses after `pr_description.collapsible_file_list_threshold` files (default `6`).
 
-From our experience, there are two possible reasons:
+`pr_description.enable_large_pr_handling` is `true`. A large diff is split into several model calls and combined. While those calls run, and when `config.publish_output_progress` is enabled, the placeholder comment is updated in place.
 
-- If you edit the description _while_ the automated tool is running, a race condition may occur, potentially causing your original description to be lost. Hence, create a description before launching the PR.
+## Markers
 
-- When _updating_ PR descriptions, the `/describe` tool considers everything above the "PR Type" field as user content and will preserve it.
-Everything below this marker is treated as previously auto-generated content and will be replaced.
-
-<img src="/img/pr_description_user_description.png" alt="Describe comment" width="512" />
-
-## Sequence Diagram Support
-The `/describe` tool includes a Mermaid sequence diagram showing component/function interactions.
-
-This option is enabled by default via the `pr_description.enable_pr_diagram` param.
-
-The direction of the diagram adapts to its shape. A diagram whose longest chain of nodes exceeds `pr_description.pr_diagram_direction_threshold` is drawn top-down rather than left-to-right, so that wide diagrams are not scaled down until they become unreadable. Set `pr_description.pr_diagram_direction` to `LR` or `TD` to pin the direction instead.
-
-
-[//]: # (### How to enable\disable)
-
-[//]: # ()
-[//]: # (In your configuration:)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (toml)
-
-[//]: # ([pr_description])
-
-[//]: # (enable_pr_diagram = true)
-
-[//]: # (```)
-
-## Configuration options
-
-The descriptions below explain each option's behavior. See the relevant sections in
-[`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml)
-for the authoritative default values.
-
-<details open>
-<summary>Possible configurations</summary>
-
-<table>
-  <tr>
-    <td><b>publish_labels</b></td>
-    <td>If set to true, the tool will publish labels to the PR.</td>
-  </tr>
-  <tr>
-    <td><b>publish_description_as_comment</b></td>
-    <td>If set to true, the tool will publish the description as a comment to the PR. If false, it will overwrite the original description.</td>
-  </tr>
-  <tr>
-    <td><b>publish_description_as_comment_persistent</b></td>
-    <td>If set to true and `publish_description_as_comment` is true, the tool will publish the description as a persistent comment to the PR.</td>
-  </tr>
-  <tr>
-    <td><b>add_original_user_description</b></td>
-    <td>If set to true, the tool will add the original user description to the generated description.</td>
-  </tr>
-  <tr>
-    <td><b>generate_ai_title</b></td>
-    <td>If set to true, the tool will also generate an AI title for the PR.</td>
-  </tr>
-  <tr>
-    <td><b>extra_instructions</b></td>
-    <td>Optional extra instructions to the tool. For example: "focus on the changes in the file X. Ignore change in ..."</td>
-  </tr>
-  <tr>
-    <td><b>enable_pr_type</b></td>
-    <td>If set to false, it will not show the `PR type` as a text value in the description content.</td>
-  </tr>
-  <tr>
-    <td><b>enable_pr_description</b></td>
-    <td>If set to false, the AI-generated summary section will not be requested from the model, nor shown in the description content. The other sections (diagram, changes walkthrough) are unaffected.</td>
-  </tr>
-  <tr>
-    <td><b>final_update_message</b></td>
-    <td>If set to true, it will add a comment message [`PR Description updated to latest commit...`](https://github.com/the-pr-agent/pr-agent/pull/499#issuecomment-1837412176) after finishing calling `/describe`.</td>
-  </tr>
-  <tr>
-    <td><b>enable_semantic_files_types</b></td>
-    <td>If set to true, "Changes walkthrough" section will be generated.</td>
-  </tr>
-  <tr>
-        <td><b>file_table_collapsible_open_by_default</b></td>
-        <td>Controls whether the file list in the "Changes walkthrough" section is initially open or closed.</td>
-  </tr>
-  <tr>
-    <td><b>collapsible_file_list</b></td>
-    <td>If set to true, the file list in the "Changes walkthrough" section will be collapsible. If set to "adaptive", the file list will be collapsible only when the number of files exceeds <code>collapsible_file_list_threshold</code>.</td>
-  </tr>
-  <tr>
-    <td><b>enable_large_pr_handling</b></td>
-    <td>If set to true, in case of a large PR the tool will make several calls to the AI and combine them to be able to cover more files.</td>
-  </tr>
-  <tr>
-    <td><b>enable_help_text</b></td>
-    <td>If set to true, the tool will display a help text in the comment.</td>
-  </tr>
-  <tr>
-    <td><b>enable_pr_diagram</b></td>
-    <td>If set to true, the tool will generate a Mermaid flowchart summarizing the main pull request changes. This field remains empty if not applicable.</td>
-  </tr>
-  <tr>
-    <td><b>pr_diagram_direction</b></td>
-    <td>Direction of the generated Mermaid flowchart: <b>adaptive</b>, <b>LR</b> or <b>TD</b>. With adaptive, the direction is chosen from the shape of the diagram.</td>
-  </tr>
-  <tr>
-    <td><b>pr_diagram_direction_threshold</b></td>
-    <td>With <b>adaptive</b> direction, a diagram whose longest chain exceeds this many nodes is drawn top-down instead of left-to-right.</td>
-  </tr>
-  <tr>
-    <td><b>auto_create_ticket</b></td>
-    <td>If set to true, this will automatically create a ticket in the ticketing system when a PR is opened.</td>
-  </tr>
-</table>
-
-</details>
-
-## Markers template
-
-To enable markers, set `pr_description.use_description_markers=true`.
-Markers enable to easily integrate user's content and auto-generated content, with a template-like mechanism.
-
-For example, if the PR original description was:
+Set `pr_description.use_description_markers` to `true` to fill markers already present in the body:
 
 ```
-User content...
-
 ## PR Type:
 pr_agent:type
 
@@ -201,98 +59,41 @@ pr_agent:walkthrough
 pr_agent:diagram
 ```
 
-The marker `pr_agent:type` will be replaced with the PR type, `pr_agent:summary` will be replaced with the PR summary, `pr_agent:walkthrough` will be replaced with the PR walkthrough, and `pr_agent:diagram` will be replaced with the sequence diagram (if enabled).
+`pr_agent:type`, `pr_agent:summary`, `pr_agent:walkthrough`, and `pr_agent:diagram` are replaced with the matching section. `pr_agent:diagram` stays empty when diagrams are off. If markers are enabled and the body has none, the description is left unchanged.
 
-<img src="/img/describe_markers_before.png" alt="Describe markers before" width="512" />
-
-becomes
-
-<img src="/img/describe_markers_after.webp" alt="Describe markers after" width="512" />
-
-**Configuration params**:
-
-- `use_description_markers`: if set to true, the tool will use markers template. It replaces every marker of the form `pr_agent:marker_name` with the relevant content. Default is false.
-- `include_generated_by_header`: if set to true, the tool will add a dedicated header: 'Generated by PR Agent at ...' to any automatic content. Default is true.
-- `diagram`: if present as a marker, will be replaced by the PR sequence diagram (if enabled).
+`pr_description.include_generated_by_header` is `true`, so generated marker sections can include a `Generated by PR Agent at ...` header.
 
 ## Custom labels
 
-The default labels of the describe tool are quite generic, since they are meant to be used in any repo: [`Bug fix`, `Tests`, `Enhancement`, `Documentation`, `Other`].
+Built-in type names are `Bug fix`, `Tests`, `Enhancement`, `Documentation`, and `Other`. To add repo-specific names, enable custom labels and describe each one as a condition:
 
-You can define custom labels that are relevant for your repo and use cases.
-Custom labels can be defined in a configuration file, or directly in the repo's [labels page](#handle-custom-labels-from-the-repos-labels-page).
-
-Make sure to provide proper title, and a detailed and well-phrased description for each label, so the tool will know when to suggest it.
-Each label description should be a **conditional statement**, that indicates if to add the label to the PR or not, according to the PR content.
-
-<details open>
-<summary>Auto-remove custom label when no longer relevant</summary>
-
-If the custom label is no longer relevant, it will be automatically removed from the PR by running the `generate_labels` tool or the `describe` tool.
-
-</details>
-
-
-### Handle custom labels from a configuration file
-
-Example for a custom labels configuration setup in a configuration file:
-
-```
+```toml
 [config]
-enable_custom_labels=true
-
+enable_custom_labels = true
 
 [custom_labels."sql_changes"]
 description = "Use when a PR contains changes to SQL queries"
-
-[custom_labels."test"]
-description = "use when a PR primarily contains new tests"
-
-...
 ```
 
-### Handle custom labels from the Repo's labels page
+Labels are published through the Gitee API when the token can edit them. Names the model invents outside this set are dropped. Labels a person already added are kept.
 
-You can also control the custom labels that will be suggested by the `describe` tool from the repo's labels page:
+## Configuration
 
-- GitHub : go to `https://github.com/{owner}/{repo}/labels` (or click on the "Labels" tab in the issues or PRs page)
-- GitLab : go to `https://gitlab.com/{owner}/{repo}/-/labels` (or click on "Manage" -> "Labels" on the left menu)
+| Key | Default | Effect |
+|-----|---------|--------|
+| `publish_labels` | `false` | Apply the generated labels on the pull request. |
+| `publish_description_as_comment` | `false` | Comment instead of replacing the body. |
+| `publish_description_as_comment_persistent` | `true` | Edit the previous description comment. |
+| `add_original_user_description` | `true` | Keep author text above `PR Type`. |
+| `generate_ai_title` | `false` | Replace the title when `true`. |
+| `enable_pr_type` | `true` | Include the type section. |
+| `enable_pr_description` | `true` | Include the summary. Other sections stay. |
+| `enable_pr_diagram` | `true` | Include the Mermaid diagram when one applies. |
+| `pr_diagram_direction` | `adaptive` | `adaptive`, `LR`, or `TD`. |
+| `enable_semantic_files_types` | `true` | Include the file walkthrough. |
+| `use_description_markers` | `false` | Fill `pr_agent:` markers instead of rewriting the body. |
+| `enable_large_pr_handling` | `true` | Split a large diff across model calls. |
+| `extra_instructions` | empty | Extra directions for this command only. |
+| `final_update_message` | `true` | Post a short note after the description is updated. |
 
-Now add/edit the custom labels. they should be formatted as follows:
-
-- Label name: The name of the custom label.
-- Description: Start the description of with prefix `pr_agent:`, for example: `pr_agent: Description of when AI should suggest this label`.<br>
-
-Examples for custom labels:
-
-- `Main topic:performance` -  pr_agent:The main topic of this PR is performance
-- `New endpoint` -  pr_agent:A new endpoint was added in this PR
-- `SQL query` -  pr_agent:A new SQL query was added in this PR
-- `Dockerfile changes` - pr_agent:The PR contains changes in the Dockerfile
-- ...
-
-The description should be comprehensive and detailed, indicating when to add the desired label. For example:
-<img src="/img/add_native_custom_labels.webp" alt="Add native custom labels" width="768" />
-
-## Usage Tips
-
-:::tip[Automation]
-- When you first install PR-Agent app, the [default mode](../usage-guide/automations_and_usage.md#github-app) for the describe tool is:
-```
-pr_commands = ["/describe", ...]
-```
-meaning the `describe` tool will run automatically on every PR, with the default configurations.
-:::
-
-- Markers are an alternative way to control the generated description, to give maximal control to the user. If you set:
-
-   ```
-   pr_commands = ["/describe --pr_description.use_description_markers=true", ...]
-   ```
-
-   the tool will replace every marker of the form `pr_agent:marker_name` in the PR description with the relevant content, where `marker_name` is one of the following:
-         *`type`: the PR type.
-         * `summary`: the PR summary.
-         * `walkthrough`: the PR walkthrough.
-
-- Note that when markers are enabled, if the original PR description does not contain any markers, the tool will not alter the description at all.
+All of these keys belong under `[pr_description]`.

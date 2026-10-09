@@ -3,32 +3,32 @@ title: "通过多阶段分析注入本地与全局元数据"
 sidebar_position: 6
 ---
 
-`支持的 Git 平台：GitHub、GitLab、Bitbucket、Azure DevOps、Gitea`
+`支持的 Git 平台：Gitee`
 
-1\.
-PR-Agent 最初会为每个拉取请求检索以下数据：
+Gitee PR-Agent 分层组装提示词：拉取请求本身、`/describe` 的摘要、文件周围的上下文，以及主机或仓库指令。后面的命令复用这些层，而不是再叫一次模型才把它们找回来。评论使用 `zh-CN`。
 
-- 拉取请求标题和分支名
-- 拉取请求原始描述
-- 提交消息历史
-- 拉取请求 diff 补丁，采用 [hunk diff](https://loicpefferkorn.net/2014/02/diff-files-what-are-hunks-and-how-to-extract-them/) 格式
-- 拉取请求中被修改文件的完整内容
+1. 对每个 Gitee 拉取请求，它会读取：
 
-:::tip[提示：组织级元数据]
-除上述输入外，PR-Agent 还可以纳入用户提供的补充偏好，例如 [`extra_instructions` 和组织最佳实践](../tools/improve.mdx#extra-instructions-and-best-practices)。这些信息可用于增强拉取请求分析。
+- 标题和分支名
+- 已有描述
+- 提交说明
+- diff，以 [hunk](https://loicpefferkorn.net/2014/02/diff-files-what-are-hunks-and-how-to-extract-them/) 形式
+- 本次拉取请求改过的文件的全文
+- 所引用 Gitee 议题的标题和正文（议题 API 有返回时）。见 [获取工单上下文](./fetching_ticket_context.md)。
+
+:::tip[仓库指令]
+[`extra_instructions`](../tools/improve.mdx#额外说明和仓库文件) 这类仓库偏好会加在上述输入之上。它们用来引导建议，不会改 Gitee 令牌、模型端点或 `skills.paths`。
 :::
 
-2\.
-默认情况下，PR-Agent 执行的第一条命令是 [`describe`](../tools/describe.md)，它生成三类输出：
+2. 拉取请求打开后，第一条自动命令是 [`/describe`](../tools/describe.md)。它产出：
 
-- 拉取请求类型（例如缺陷修复、功能、重构等）
-- 拉取请求描述——拉取请求的项目符号摘要
-- 变更导览——对每个被修改文件，提供一行摘要，随后是变更的详细项目符号列表。
+- 拉取请求类型（缺陷修复、功能、重构等）
+- 简短的要点摘要
+- 变更导览：每个修改过的文件一行，再加几条这次改了什么
 
-这些 AI 生成的输出现在被视为拉取请求元数据的一部分，并可在后续的 `review` 和 `improve` 等命令中使用。
-这实际上实现了多阶段思维链分析，而无需任何额外的 API 调用，那些调用会花费时间和金钱。
+这些输出成为后续 `/review` 和 `/improve` 的拉取请求元数据。模型可以直接用导览，不必再来回一次。
 
-例如，在为不同文件生成代码建议时，PR-Agent 可以把 AI 生成的 [“Changes walkthrough”](https://github.com/the-pr-agent/pr-agent/pull/1202#issue-2511546839) 文件摘要注入提示词：
+`/improve` 对某个文件给建议时，提示词可以把该文件的导览和差异块放在一起：
 
 ```diff
 ## File: 'src/file1.py'
@@ -56,7 +56,6 @@ __old hunk__
 ...
 ```
 
-3\. 检索到的完整拉取请求文件也会用来扩展和增强拉取请求上下文（见[动态上下文](./dynamic_context.md)）。
+3. 文件全文用来扩展差异块上下文。见 [动态上下文](./dynamic_context.md)。
 
-4\. 上面描述的所有元数据代表若干层累积分析——从差异块级，到文件级，到拉取请求级，再到组织级。
-这种全面的方法使 PR-Agent 的 AI 模型能够生成更精确、更符合上下文的建议和反馈。
+4. 这几层从差异块到文件，再到拉取请求，再到仓库指令。一次调用放不下的 `/review` 会把这些元数据分到各段里，再合并成一条评论。见 [压缩策略](./compression_strategy.md)。
