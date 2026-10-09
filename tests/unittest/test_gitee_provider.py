@@ -753,6 +753,15 @@ class TestInlineComments:
         assert provider._inline_position("app.py", 2) == 3
         assert provider._inline_position("`app.py`", "+c") == 3
 
+    def test_position_ignores_the_file_header_of_a_rebuilt_patch(self):
+        # A diff rebuilt from both revisions starts with the ---/+++ header. Gitee counts
+        # from the line below the first @@ header, so that header must not shift the anchor.
+        diff_file = _diff_file()
+        diff_file.patch = "--- a/app.py\n+++ b/app.py\n" + PATCH
+        provider = _provider(diff_files=[diff_file])
+
+        assert provider._inline_position("app.py", 2) == 3
+
     def test_position_is_minus_one_for_an_unknown_file(self):
         provider = _provider(diff_files=[_diff_file()])
 

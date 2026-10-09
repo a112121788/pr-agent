@@ -1010,7 +1010,21 @@ class GiteeProvider(GitProvider):
         position, _ = find_line_number_of_relevant_line_in_file(
             diff_files, relevant_file, "" if absolute_position is not None else line, absolute_position
         )
-        return position
+        if position == -1:
+            return -1
+        # Gitee counts lines below the first hunk header. The shared finder returns the patch
+        # line index, which includes the `---`/`+++` file header of a rebuilt diff.
+        patch = next(
+            (diff_file.patch or "" for diff_file in diff_files if (diff_file.filename or "").strip() == relevant_file),
+            "",
+        )
+        first_hunk = next(
+            (index for index, patch_line in enumerate(patch.splitlines()) if patch_line.startswith("@@")),
+            None,
+        )
+        if first_hunk is None or position <= first_hunk:
+            return -1
+        return position - first_hunk
 
     def publish_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str,
                                original_suggestion=None) -> bool:
