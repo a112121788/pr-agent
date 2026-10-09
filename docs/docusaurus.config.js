@@ -167,6 +167,10 @@ const config = {
           },
           {to: '/maintainers', label: 'Maintainers', position: 'left'},
           {
+            type: 'localeDropdown',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/the-pr-agent/pr-agent',
             label: 'GitHub',
             position: 'right',
