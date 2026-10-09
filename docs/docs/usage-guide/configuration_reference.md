@@ -27,8 +27,8 @@ to-do list.
 
 | Key | Default | Description |
 | --- | --- | --- |
-| `model` | "codex-auto-review" |  |
-| `fallback_models` | ["gpt-6.1-sol"] |  |
+| `model` | "gpt-6.1-sol" |  |
+| `fallback_models` | ["glm-5.3"] |  |
 **CLI**
 
 | Key | Default | Description |

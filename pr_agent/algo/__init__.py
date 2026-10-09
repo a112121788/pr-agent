@@ -284,6 +284,7 @@ MAX_TOKENS = {
     'claude-2': 100000,
     'deepseek/deepseek-chat': 128000,  # 128K, but may be limited by config.max_model_tokens
     'zai/glm-5.2': 1000000,  # 1M per LiteLLM (issue #3196); kept pinned: absent from LiteLLM's bundled cost map
+    'glm-5.3': 1000000,  # bare fallback id; zai/glm-5.3 has a 1M context window in LiteLLM
     'openai/qwq-plus': 131072,  # 131K context length, but may be limited by config.max_model_tokens
     "openrouter/auto": 2000000,  # 2M context length, but may be limited by config.max_model_tokens
     "openrouter/free": 200000,  # 200K context length, but may be limited by config.max_model_tokens
