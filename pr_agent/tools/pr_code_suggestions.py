@@ -50,6 +50,7 @@ from pr_agent.algo.utils import (
     replace_code_tags,
 )
 from pr_agent.config_loader import get_settings, get_verbosity_level
+from pr_agent.dashboard.store import FactoryRecord, record_factory_event
 from pr_agent.git_providers import get_git_provider_with_context
 from pr_agent.git_providers.git_provider import (
     GitProvider,
@@ -496,6 +497,10 @@ class PRCodeSuggestions:
 
                     # publish the PR comment
                     pr_body = bind_commit(pr_body, self.git_provider.get_pr_head_sha())
+                    record_factory_event(FactoryRecord(
+                        pr_url=self.git_provider.get_pr_url(), record_type="建议", stage="取证",
+                        head_sha=self.git_provider.get_pr_head_sha(), summary="PR 代码建议",
+                    ))
                     if get_settings().pr_code_suggestions.persistent_comment: # true by default
                         published_comment = self.publish_persistent_comment_with_history(
                             self.git_provider,

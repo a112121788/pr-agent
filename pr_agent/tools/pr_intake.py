@@ -1,6 +1,7 @@
 """Record the author's stated intent without asking a model to rewrite it."""
 
 from pr_agent.config_loader import get_settings
+from pr_agent.dashboard.store import FactoryRecord, record_factory_event
 from pr_agent.git_providers import get_git_provider
 
 INTENTS = ("新业务", "旧版迭代", "新版升级", "双线")
@@ -45,6 +46,10 @@ class PRIntake:
             self.git_provider.get_pr_branch(),
             self.git_provider.get_pr_head_sha(),
         )
+        record_factory_event(FactoryRecord(
+            pr_url=self.git_provider.get_pr_url(), record_type="受理", stage="受理",
+            intent=self.intent, head_sha=self.git_provider.get_pr_head_sha(), summary=self.statement,
+        ))
         if get_settings().config.publish_output:
             self.git_provider.publish_comment(comment)
             self.git_provider.remove_initial_comment()

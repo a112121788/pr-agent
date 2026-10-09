@@ -68,6 +68,7 @@ from pr_agent.algo.utils import (
     load_yaml,
 )
 from pr_agent.config_loader import get_settings
+from pr_agent.dashboard.store import FactoryRecord, record_factory_event
 from pr_agent.git_providers import get_git_provider_with_context
 from pr_agent.git_providers.git_provider import (
     DISCUSSION_CONTEXT_MAX_MESSAGE_CHARS,
@@ -425,6 +426,10 @@ class PRReviewer:
                     **review_thread_kwargs,
                 )
             pr_review = bind_commit(pr_review, self.git_provider.get_pr_head_sha())
+            record_factory_event(FactoryRecord(
+                pr_url=self.git_provider.get_pr_url(), record_type="审查", stage="取证",
+                head_sha=self.git_provider.get_pr_head_sha(), summary="PR 审查指南",
+            ))
             if get_settings().pr_reviewer.persistent_comment and not self.incremental.is_incremental:
                 final_update_message = get_settings().pr_reviewer.final_update_message
                 persistent_args = dict(

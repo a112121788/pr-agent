@@ -15,6 +15,7 @@ from starlette_context.middleware import RawContextMiddleware
 
 from pr_agent.agent.pr_agent import PRAgent
 from pr_agent.config_loader import get_settings, global_settings
+from pr_agent.dashboard.page import render_dashboard
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.servers.request_body_limit import create_server_app
@@ -82,6 +83,12 @@ def _command_from_note(body: Mapping[str, Any]) -> str:
         return ""
     comment_body = comment.get("body")
     return comment_body if is_command_comment(comment_body) else ""
+
+
+@router.get("/dashboard")
+async def factory_dashboard():
+    """Show the latest factory records. The page does not reveal the database URL."""
+    return Response(render_dashboard(), media_type="text/html")
 
 
 @router.post("/api/v1/gitee_webhooks")

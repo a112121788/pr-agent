@@ -12,6 +12,7 @@ ENV LITELLM_LOCAL_MODEL_COST_MAP=True
 RUN apt-get update && apt-get install --no-install-recommends -y git curl && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+VOLUME ["/data"]
 ENV UV_COMPILE_BYTECODE=1
 COPY pyproject.toml uv.lock ./
 COPY docs docs
@@ -25,8 +26,8 @@ ENV PYTHONPATH=/app
 FROM base AS service
 RUN groupadd --gid 10001 pragent && \
     useradd --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin pragent && \
-    mkdir -p /app/pr-agent-outputs /app/lancedb && \
-    chown pragent:pragent /app/pr-agent-outputs /app/lancedb
+    mkdir -p /app/pr-agent-outputs /app/lancedb /data && \
+    chown pragent:pragent /app/pr-agent-outputs /app/lancedb /data
 ENV HOME=/home/pragent
 USER 10001:10001
 

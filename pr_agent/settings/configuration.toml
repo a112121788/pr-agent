@@ -2,6 +2,10 @@
 # Do not copy this entire file to your repository configuration.
 # Your repository configuration should only include options you wish to override from the defaults.
 
+[dashboard]
+# sqlite:/// is the Docker-first default. Use postgresql://user:pass@host:5432/dbname for PostgreSQL.
+database_url = "sqlite:////data/factory.db"
+
 [config]
 max_webhook_request_body_bytes = 5242880 # maximum request body accepted by webhook servers (5 MiB)
 # models

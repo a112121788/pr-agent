@@ -2,6 +2,7 @@
 
 from pr_agent.algo.factory_record import latest_verdict, render_merge_check
 from pr_agent.config_loader import get_settings
+from pr_agent.dashboard.store import FactoryRecord, record_factory_event
 from pr_agent.git_providers import get_git_provider
 
 
@@ -15,6 +16,10 @@ class PRMergeCheck:
         comments = self.git_provider.get_issue_comments_newest_first()
         verdict, verdict_sha = latest_verdict(comments)
         comment = render_merge_check(verdict, verdict_sha, self.git_provider.get_pr_head_sha())
+        record_factory_event(FactoryRecord(
+            pr_url=self.git_provider.get_pr_url(), record_type="汇入检查", stage="汇入",
+            verdict=verdict or "", head_sha=self.git_provider.get_pr_head_sha(), summary=comment,
+        ))
         if get_settings().config.publish_output:
             self.git_provider.publish_comment(comment)
             self.git_provider.remove_initial_comment()

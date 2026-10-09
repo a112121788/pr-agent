@@ -2,6 +2,7 @@
 
 from pr_agent.algo.factory_record import parse_verdict, render_verdict
 from pr_agent.config_loader import get_settings
+from pr_agent.dashboard.store import FactoryRecord, record_factory_event
 from pr_agent.git_providers import get_git_provider
 
 
@@ -18,6 +19,10 @@ class PRVerdict:
         if callable(get_user_id):
             author = str(get_user_id() or "")
         comment = render_verdict(self.verdict, self.git_provider.get_pr_head_sha(), author)
+        record_factory_event(FactoryRecord(
+            pr_url=self.git_provider.get_pr_url(), record_type="判定", stage="判定",
+            verdict=self.verdict, head_sha=self.git_provider.get_pr_head_sha(), summary=author,
+        ))
         if get_settings().config.publish_output:
             self.git_provider.publish_comment(comment)
             self.git_provider.remove_initial_comment()
