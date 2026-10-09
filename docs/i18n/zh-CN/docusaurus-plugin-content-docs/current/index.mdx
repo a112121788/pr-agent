@@ -19,7 +19,7 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 ## 快速开始
 
-在终端里审查一个 Gitee 拉取请求。准备一个 OpenAI 密钥、一个 OpenAI 兼容的 API 地址和一个 Gitee 令牌即可。
+Gitee PR-Agent 每次审查一个 Gitee 拉取请求。默认模型是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。
 
 ```bash
 docker run --rm -it \
@@ -27,16 +27,23 @@ docker run --rm -it \
   -e OPENAI__API_BASE=https://your-gateway.example/v1 \
   -e CONFIG__GIT_PROVIDER=gitee \
   -e GITEE__PERSONAL_ACCESS_TOKEN=<your_gitee_token> \
-  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest --pr_url <gitee_pr_url> review
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/7 review
+```
+
+企业版地址也可以使用：
+
+```text
+https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/7
 ```
 
 <div className="pra-cta-row">
 
-[安装到你的仓库](pathname:///installation/) [在本地运行的其他方式](pathname:///installation/locally/)
+[配置 Gitee Webhook](pathname:///installation/gitee/) [本地运行](pathname:///installation/locally/)
 
 </div>
 
-已经安装好了？在拉取请求中评论 `/help "your question"`，PR-Agent 会根据这些文档回答。
+在拉取请求中评论 `/review`、`/improve`、`/describe` 或 `/ask`。`/review` 发布 **PR 审查指南**，`/improve` 发布 **PR 代码建议**。Gitee 不能提交建议代码，结果都保留为评论。
 
 ## 维护者
 

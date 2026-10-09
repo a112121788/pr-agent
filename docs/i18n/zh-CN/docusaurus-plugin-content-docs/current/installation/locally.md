@@ -106,7 +106,7 @@ pip install "pr-agent[github]"
 ```
 
 Git 提供商 SDK 是可选的 extra，因此请安装你所用提供商对应的那个：`github`、`gitlab`、`bitbucket`（Bitbucket Cloud、Bitbucket Server 和 Jira）、`azure`、`codecommit` 或 `gitea`。
-`google` 会加入 Vertex AI，`mosaico` 会加入 Mosaico 服务器，`pr-agent[all]` 会安装全部集成。
+`google` 会加入 Vertex AI，`pr-agent[all]` 会安装全部集成。
 
 然后用下面的脚本运行相应工具。
 <br>

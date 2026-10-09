@@ -15,5 +15,3 @@ Defaults for that review:
 - Inline comments use Gitee's diff `position`.
 
 GitHub, GitLab, Bitbucket, Azure DevOps, Gitea, Gerrit, and CodeCommit are not available. Do not point the CLI or the webhook at those hosts.
-
-The [MOSAICO A2A server](../installation/mosaico_server.md) accepts a Gitee pull-request URL or a unified diff pasted into the request. It is not a second git host.

@@ -15,5 +15,3 @@ Gitee PR-Agent 只支持 Gitee。令牌、Webhook 和 Docker 服务按 [Gitee �
 - 行内评论使用 Gitee 的 diff `position`。
 
 GitHub、GitLab、Bitbucket、Azure DevOps、Gitea、Gerrit 和 CodeCommit 不可用。不要把命令行或 Webhook 指到这些托管。
-
-[MOSAICO A2A 服务器](../installation/mosaico_server.md) 接受 Gitee 拉取请求地址，或贴在请求里的统一 diff。它不是另一家 Git 托管。

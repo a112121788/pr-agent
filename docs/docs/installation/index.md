@@ -60,7 +60,7 @@ Releases **`0.34.2` and later** are published under [`pragent/pr-agent`](https:/
 - **GitHub releases** — the Git tag cannot be moved or deleted, and attached assets cannot be added, replaced, or removed. The protection also survives repository deletion, so a tag from an immutable release can never be reused by a repository recreated under the same name. (Release titles and notes stay editable; immutability covers the tag and the assets.)
 - **Docker images** — version tags such as `0.40.0` and `0.40.0-github_app` always resolve to the same image. Once pushed, they cannot be overwritten or repointed.
 
-**Rolling tags stay mutable by design.** `latest`, `gitee_app` and `mosaico_agent` move to the newest build on every release. They are convenient for trying things out, but a `docker pull` of the same rolling tag on two different days can give you two different images.
+**Rolling tags stay mutable by design.** `latest` and `gitee_app` move to the newest build on every release. They are convenient for trying things out, but a `docker pull` of the same rolling tag on two different days can give you two different images.
 
 For anything you depend on — CI, production webhooks, pinned Action steps — reference a version tag (or a digest) rather than a rolling one. Upgrading then becomes a deliberate change you make, not something that happens underneath you.
 :::

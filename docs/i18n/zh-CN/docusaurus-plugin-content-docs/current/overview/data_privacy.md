@@ -20,4 +20,3 @@ Gitee PR-Agent 由你自行托管。它用你的令牌读取 Gitee 拉取请求�
 ## 留在主机上的内容
 
 - 令牌和模型密钥放在环境变量或主机密钥文件里。
-- [MOSAICO A2A 服务器](../installation/mosaico_server.md) 只在内存里保留任务历史。重启即丢。这份历史不是训练语料。

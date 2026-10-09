@@ -23,15 +23,6 @@ const sidebars = {
         {type: 'doc', id: 'installation/gitee', label: 'Gitee'},
       ],
     },
-    {
-      // Running without a hosted pull request, or as a service for another system.
-      type: 'category',
-      label: 'Other ways to run',
-      collapsible: false,
-      items: [
-        {type: 'doc', id: 'installation/mosaico_server', label: 'MOSAICO A2A server'},
-      ],
-    },
     {type: 'doc', id: 'overview/data_privacy', label: 'Data privacy'},
     {type: 'doc', id: 'faq/index', label: 'FAQ'},
   ],

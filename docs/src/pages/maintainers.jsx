@@ -8,7 +8,7 @@ import styles from './maintainers.module.css';
 const PAGE_COPY = {
   en: {
     title: 'Maintainers',
-    description: 'The people who maintain PR-Agent, the open-source AI agent for pull requests.',
+    description: 'The people who maintain Gitee PR-Agent.',
     ledeBefore: 'PR-Agent was started at ',
     ledeMiddle: ' in July 2023. In April 2026 Qodo donated it to the open-source community, and it now lives in the ',
     ledeAfter: ', maintained by the people below.',
@@ -18,7 +18,7 @@ const PAGE_COPY = {
   },
   'zh-CN': {
     title: '维护者',
-    description: '维护 PR-Agent 的人们。PR-Agent 是用于处理拉取请求的开源 AI 代理。',
+    description: '维护 Gitee PR-Agent 的人们。',
     ledeBefore: 'PR-Agent 于 2023 年 7 月在 ',
     ledeMiddle: ' 创立。2026 年 4 月，Qodo 将其捐赠给开源社区。项目现由 ',
     ledeAfter: ' 托管，并由以下人员维护。',

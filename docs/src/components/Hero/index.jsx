@@ -5,25 +5,25 @@ import styles from './styles.module.css';
 
 const HERO_COPY = {
   en: {
-    lede: 'An open-source AI agent that describes, reviews and improves pull requests. Run it from a PR comment, a webhook, your CI or the terminal.',
-    install: 'Install PR-Agent',
-    github: 'View on GitHub',
-    worksWith: 'Works with',
+    lede: 'Describe, review and improve Gitee pull requests. Run it from a comment, a webhook or one Docker command.',
+    install: 'Install on Gitee',
+    github: 'Browse the tools',
+    worksWith: 'Runs on',
     type: 'Type',
     enhancement: 'Enhancement',
     description: 'Description',
     retry: 'Retry failed webhook deliveries with exponential backoff',
     record: 'Record every attempt in the delivery log',
     walkthrough: 'File walkthrough',
-    reviewGuide: 'PR Reviewer Guide',
-    effort: 'Estimated effort to review',
+    reviewGuide: 'PR 审查指南',
+    effort: '预计审查工作量',
     effortLabel: '2 out of 5',
-    tests: 'PR contains tests',
-    security: 'No security concerns identified',
-    focus: 'Recommended focus areas for review',
+    tests: '拉取请求包含测试',
+    security: '未发现安全问题',
+    focus: '建议重点审查',
     unbounded: 'Unbounded backoff:',
     unboundedTail: 'has no cap, so the tenth retry waits more than eight minutes.',
-    suggestions: 'PR Code Suggestions',
+    suggestions: 'PR 代码建议',
     capDelay: 'Cap the retry delay',
     possibleIssue: 'Possible issue',
     highImpact: 'Impact: High',
@@ -35,10 +35,10 @@ const HERO_COPY = {
     works: 'works',
   },
   'zh-CN': {
-    lede: '一个开源 AI 代理，用于描述、审查并改进拉取请求。可以从评论、Webhook、CI 或终端运行。',
-    install: '安装 PR-Agent',
-    github: '查看 GitHub',
-    worksWith: '支持平台',
+    lede: '描述、审查并改进 Gitee 拉取请求。可以从评论、Webhook 或一条 Docker 命令运行。',
+    install: '安装到 Gitee',
+    github: '查看工具',
+    worksWith: '运行于',
     type: '类型',
     enhancement: '功能增强',
     description: '描述',
@@ -165,11 +165,6 @@ const COMMANDS = [
 
 const PROVIDERS = [
   {slug: 'gitee', name: 'Gitee'},
-  {slug: 'github', name: 'GitHub'},
-  {slug: 'gitlab', name: 'GitLab'},
-  {slug: 'bitbucket', name: 'Bitbucket'},
-  {slug: 'azuredevops', name: 'Azure DevOps'},
-  {slug: 'gitea', name: 'Gitea'},
 ];
 
 function Thread({copy}) {
@@ -252,13 +247,13 @@ export default function Hero() {
   return (
     <header className={styles.hero}>
       <div className={styles.intro}>
-        <h1 className={styles.title}>PR-Agent</h1>
+        <h1 className={styles.title}>Gitee PR-Agent</h1>
         <p className={styles.lede}>{copy.lede}</p>
         <div className={styles.actions}>
-          <Link className={styles.primary} to="/installation/">
+          <Link className={styles.primary} to="/installation/gitee/">
             {copy.install}
           </Link>
-          <Link className={styles.secondary} to="https://github.com/the-pr-agent/pr-agent">
+          <Link className={styles.secondary} to="/tools/">
             {copy.github}
           </Link>
         </div>

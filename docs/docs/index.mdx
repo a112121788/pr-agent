@@ -19,7 +19,7 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 ## Quick start
 
-Review a Gitee pull request from your terminal. All you need is an OpenAI key, an OpenAI-compatible API base, and a Gitee token.
+Gitee PR-Agent reviews one Gitee pull request at a time. The default model is `gpt-6.1-sol`, with `glm-5.3` as the fallback.
 
 ```bash
 docker run --rm -it \
@@ -27,16 +27,23 @@ docker run --rm -it \
   -e OPENAI__API_BASE=https://your-gateway.example/v1 \
   -e CONFIG__GIT_PROVIDER=gitee \
   -e GITEE__PERSONAL_ACCESS_TOKEN=<your_gitee_token> \
-  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest --pr_url <gitee_pr_url> review
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/7 review
+```
+
+The same command accepts an enterprise URL:
+
+```text
+https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/7
 ```
 
 <div className="pra-cta-row">
 
-[Install it on your repositories](./installation/index.md) [Other ways to run it locally](./installation/locally.md)
+[Configure the Gitee webhook](./installation/gitee.md) [Run it locally](./installation/locally.md)
 
 </div>
 
-Already installed? Comment `/help "your question"` on a pull request and PR-Agent answers from these docs.
+Comment `/review`, `/improve`, `/describe` or `/ask` on the pull request. `/review` publishes **PR 审查指南**, and `/improve` publishes **PR 代码建议**. Gitee cannot commit the suggested code, so both results stay as comments.
 
 ## Maintained by
 

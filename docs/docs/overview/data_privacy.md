@@ -20,4 +20,3 @@ Gitee PR-Agent is self-hosted. It reads a Gitee pull request with your token and
 ## What stays on the host
 
 - Keep tokens and model keys in the environment or the host secrets file.
-- The [MOSAICO A2A server](../installation/mosaico_server.md) keeps task history in memory. A restart drops it. History is not a training corpus.
