@@ -104,7 +104,7 @@ def test_update_check_run_progress_appends_the_line_to_a_started_run():
 def test_update_check_run_progress_without_a_started_run_is_a_noop():
     provider = _github()
 
-    assert provider.update_check_run_progress("analyzed 1 of 2 chunks") is False
+    assert provider.update_check_run_progress("已分析 1/2 段") is False
     assert _requests(provider) == []
 
 
@@ -113,12 +113,12 @@ def test_update_check_run_progress_stops_retrying_a_failing_run():
     provider.start_check_run("review", "working")
     provider.pr._requester.requestJsonAndCheck.side_effect = RequestException("api down")
 
-    assert provider.update_check_run_progress("analyzed 1 of 2 chunks") is False
+    assert provider.update_check_run_progress("已分析 1/2 段") is False
     # A failed progress write stops retrying, but the run must stay completable:
     # finish_check_run completes runs by in-progress membership, and stranding a run
     # in progress on GitHub is worse than missing interim progress lines.
     assert provider._check_runs_in_progress == {"review"}
-    assert provider.update_check_run_progress("analyzed 2 of 2 chunks") is False
+    assert provider.update_check_run_progress("已分析 2/2 段") is False
     provider.pr._requester.requestJsonAndCheck.side_effect = None
     assert provider.finish_check_run("review", "failure", "PR-Agent failed") is True
     completed = _requests(provider)[-1][2]
@@ -137,7 +137,7 @@ def test_a_failed_progress_patch_never_opens_a_second_run():
 
     provider.pr._requester.requestJsonAndCheck.side_effect = request
 
-    assert provider.update_check_run_progress("analyzed 1 of 2 chunks") is False
+    assert provider.update_check_run_progress("已分析 1/2 段") is False
     assert [method for method, _url, _body in _requests(provider)] == ["POST", "PATCH"]
     assert provider._check_run_ids == {"review": 101}
 
@@ -154,7 +154,7 @@ def test_a_reopened_run_is_not_blocked_by_the_previous_attempt():
     original = request.side_effect
     request.side_effect = RequestException("offline")
 
-    assert provider.update_check_run_progress("analyzed 1 of 2 chunks") is False
+    assert provider.update_check_run_progress("已分析 1/2 段") is False
     assert provider.finish_check_run("review", "failure", "failed") is False
 
     request.side_effect = original

@@ -30,9 +30,9 @@ def build_progress_comment() -> str:
     gif_width = get_progress_gif_width()
 
     return (
-        "## Generating PR code suggestions\n\n"
-        "\nWork in progress ...<br>\n"
-        f"<img src=\"{gif_url}\" alt=\"Work in progress\" width=\"{gif_width}\">"
+        "## 正在生成 PR 代码建议\n\n"
+        "\n正在处理 ...<br>\n"
+        f"<img src=\"{gif_url}\" alt=\"正在处理\" width=\"{gif_width}\">"
     )
 
 
@@ -40,9 +40,9 @@ def chunk_progress_line(completed: int, total: int, failed: int = 0) -> str:
     """Render the `analyzed X of Y chunks` note shown while a chunked run is still working."""
     if total <= 0:
         return ""
-    line = f"analyzed {min(completed, total)} of {total} chunks"
+    line = f"已分析 {min(completed, total)}/{total} 段"
     if failed > 0:
-        line += f", {failed} chunk{'s' if failed != 1 else ''} failed"
+        line += f"，{failed} 段失败"
     return line
 
 

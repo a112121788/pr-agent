@@ -167,7 +167,7 @@ def convert_to_markdown_v2(output_data: dict,
     markdown_text = ""
     markdown_text += f"{_ci.format_pr_review_header(incremental=bool(incremental_review))}\n\n"
     if incremental_review:
-        markdown_text += f"⏮️ Review for commits since previous PR-Agent review {incremental_review}.\n\n"
+        markdown_text += f"⏮️ 自上次 PR-Agent 审查以来的提交：{incremental_review}。\n\n"
     if not output_data or not output_data.get('review', {}):
         return ""
 

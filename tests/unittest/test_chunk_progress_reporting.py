@@ -170,14 +170,14 @@ def published_review():
 
 
 def test_chunk_progress_line_counts_completed_and_failed_chunks():
-    assert chunk_progress_line(2, 3) == "analyzed 2 of 3 chunks"
-    assert chunk_progress_line(2, 3, 1) == "analyzed 2 of 3 chunks, 1 chunk failed"
-    assert chunk_progress_line(2, 3, 2) == "analyzed 2 of 3 chunks, 2 chunks failed"
+    assert chunk_progress_line(2, 3) == "已分析 2/3 段"
+    assert chunk_progress_line(2, 3, 1) == "已分析 2/3 段，1 段失败"
+    assert chunk_progress_line(2, 3, 2) == "已分析 2/3 段，2 段失败"
 
 
 def test_chunk_progress_line_needs_a_total_and_never_exceeds_it():
     assert chunk_progress_line(0, 0) == ""
-    assert chunk_progress_line(4, 3) == "analyzed 3 of 3 chunks"
+    assert chunk_progress_line(4, 3) == "已分析 3/3 段"
 
 
 def test_edit_comment_safely_swallows_provider_failures():
@@ -248,7 +248,7 @@ async def test_reporter_serializes_concurrent_updates():
 
     await asyncio.gather(reporter.record_settled(), reporter.record_settled())
 
-    assert recorded == ["base analyzed 1 of 2 chunks", "base analyzed 2 of 2 chunks"]
+    assert recorded == ["base 已分析 1/2 段", "base 已分析 2/2 段"]
 
 
 @pytest.mark.asyncio
@@ -259,8 +259,8 @@ async def test_review_progress_comment_reports_each_settled_chunk(published_revi
     await _run_chunked_review(reviewer)
 
     assert edits == [
-        "正在准备审查... analyzed 1 of 2 chunks",
-        "正在准备审查... analyzed 2 of 2 chunks",
+        "正在准备审查... 已分析 1/2 段",
+        "正在准备审查... 已分析 2/2 段",
     ]
     # The placeholder stays temporary and is still removed before the review is published.
     provider.publish_comment.assert_any_call("正在准备审查...", is_temporary=True)
@@ -275,7 +275,7 @@ async def test_review_progress_comment_reports_a_failed_chunk(published_review):
     await _run_chunked_review(reviewer)
 
     assert reviewer.review_failed_chunk_count == 1
-    assert edits[-1] == "正在准备审查... analyzed 2 of 2 chunks, 1 chunk failed"
+    assert edits[-1] == "正在准备审查... 已分析 2/2 段，1 段失败"
     assert reviewer.review_chunk_count == 2
 
 
@@ -296,7 +296,7 @@ async def test_review_progress_counts_include_chunks_an_earlier_attempt_finished
 
     # One pending chunk remained, so the single new edit already reads as the full count
     # rather than restarting at 1.
-    assert edits == ["正在准备审查... analyzed 2 of 2 chunks"]
+    assert edits == ["正在准备审查... 已分析 2/2 段"]
 
 
 @pytest.mark.asyncio
@@ -396,7 +396,7 @@ def _make_suggestion_tool(provider, chunk_predictions):
     tool._chunk_progress = None
     tool.incremental = SimpleNamespace(is_incremental=False)
     tool._output_published = False
-    tool.progress = "## Generating PR code suggestions\n\nWork in progress ..."
+    tool.progress = "## 正在生成 PR 代码建议\n\n正在处理 ..."
     tool.vars = {"diff": "", "diff_no_line_numbers": ""}
     tool.pr_code_suggestions_prompt_system = "system"
     tool.pr_code_suggestions_prompt_user = "user"
@@ -458,9 +458,9 @@ async def test_suggestion_progress_comment_reports_each_settled_chunk(published_
     await _run_chunked_suggestions(tool)
 
     assert [body.splitlines()[-1] for body in edits] == [
-        "analyzed 1 of 3 chunks",
-        "analyzed 2 of 3 chunks",
-        "analyzed 3 of 3 chunks",
+        "已分析 1/3 段",
+        "已分析 2/3 段",
+        "已分析 3/3 段",
     ]
     # The GIF placeholder is preserved; only the progress line is appended to it.
     assert all(body.startswith(tool.progress) for body in edits)
@@ -477,7 +477,7 @@ async def test_suggestion_progress_comment_reports_a_failed_chunk(published_sugg
     await _run_chunked_suggestions(tool)
 
     assert tool.failed_chunk_count == 1
-    assert edits[-1].splitlines()[-1] == "analyzed 3 of 3 chunks, 1 chunk failed"
+    assert edits[-1].splitlines()[-1] == "已分析 3/3 段，1 段失败"
 
 
 @pytest.mark.asyncio
@@ -501,7 +501,7 @@ async def test_suggestion_retried_chunks_count_towards_the_total(published_sugge
     assert tool.failed_chunk_count == 0
     # 3 chunks plus the 1 retried: the recovery round finishes the work rather than
     # reporting more completions than there were chunks.
-    assert edits[-1].splitlines()[-1] == "analyzed 4 of 4 chunks"
+    assert edits[-1].splitlines()[-1] == "已分析 4/4 段"
 
 
 _DESCRIBE_KEYS = (
@@ -604,8 +604,8 @@ async def test_describe_progress_comment_reports_each_settled_chunk(published_de
     await _run_chunked_describe(tool)
 
     assert edits == [
-        "Preparing PR description... analyzed 1 of 2 chunks",
-        "Preparing PR description... analyzed 2 of 2 chunks",
+        "正在准备 PR 描述... 已分析 1/2 段",
+        "正在准备 PR 描述... 已分析 2/2 段",
     ]
 
 
@@ -620,7 +620,7 @@ async def test_describe_progress_comment_reports_a_failed_chunk(published_descri
     await _run_chunked_describe(tool)
 
     assert edits
-    assert any("1 chunk failed" in body for body in edits)
+    assert any("1 段失败" in body for body in edits)
     assert tool.description_failed_chunk_count == 1
 
 
@@ -651,7 +651,7 @@ async def test_describe_progress_falls_back_to_the_check_run_sink(published_desc
 
     assert edits == []
     assert tool._chunk_progress is not None
-    assert check_run_lines == ["analyzed 1 of 2 chunks", "analyzed 2 of 2 chunks"]
+    assert check_run_lines == ["已分析 1/2 段", "已分析 2/2 段"]
 
 
 @pytest.mark.asyncio
@@ -667,7 +667,7 @@ async def test_review_progress_without_a_comment_serves_the_check_run(published_
     await _run_chunked_review(reviewer)
 
     assert edits == []
-    assert check_run_lines == ["analyzed 1 of 2 chunks", "analyzed 2 of 2 chunks"]
+    assert check_run_lines == ["已分析 1/2 段", "已分析 2/2 段"]
 
 
 @pytest.mark.asyncio
@@ -682,10 +682,10 @@ async def test_review_progress_writes_the_comment_and_the_check_run_together(pub
     await _run_chunked_review(reviewer)
 
     assert edits == [
-        "正在准备审查... analyzed 1 of 2 chunks",
-        "正在准备审查... analyzed 2 of 2 chunks",
+        "正在准备审查... 已分析 1/2 段",
+        "正在准备审查... 已分析 2/2 段",
     ]
-    assert check_run_lines == ["analyzed 1 of 2 chunks", "analyzed 2 of 2 chunks"]
+    assert check_run_lines == ["已分析 1/2 段", "已分析 2/2 段"]
 
 
 @pytest.mark.asyncio
@@ -715,7 +715,7 @@ async def test_auto_suggestions_anchor_the_check_run_reporter(published_suggesti
     with patch("pr_agent.tools.pr_code_suggestions.retry_with_fallback_models", side_effect=capture):
         await tool.run()
 
-    assert seen == ["Preparing suggestions..."]
+    assert seen == ["正在准备代码建议..."]
 
 
 @pytest.mark.asyncio
@@ -739,8 +739,8 @@ async def test_describe_progress_reports_sync_chunk_settlement(published_describ
     await _run_chunked_describe(tool, async_ai_calls=False)
 
     assert edits == [
-        "Preparing PR description... analyzed 1 of 2 chunks",
-        "Preparing PR description... analyzed 2 of 2 chunks",
+        "正在准备 PR 描述... 已分析 1/2 段",
+        "正在准备 PR 描述... 已分析 2/2 段",
     ]
 
 
@@ -757,8 +757,8 @@ async def test_describe_fallback_attempt_restores_the_placeholder(published_desc
 
     assert edits[3:] == [
         DESCRIBE_PROGRESS_COMMENT,
-        "Preparing PR description... analyzed 1 of 2 chunks",
-        "Preparing PR description... analyzed 2 of 2 chunks",
+        "正在准备 PR 描述... 已分析 1/2 段",
+        "正在准备 PR 描述... 已分析 2/2 段",
     ]
 
 
@@ -807,7 +807,7 @@ async def test_suggestion_progress_counts_an_unparseable_chunk(published_suggest
 
     assert tool.parse_failure_count == 1
     assert tool.failed_chunk_count == 1
-    assert edits[-1].splitlines()[-1] == "analyzed 3 of 3 chunks, 1 chunk failed"
+    assert edits[-1].splitlines()[-1] == "已分析 3/3 段，1 段失败"
 
 
 @pytest.mark.asyncio
@@ -830,7 +830,7 @@ async def test_suggestion_progress_extends_the_total_per_fallback_round(publishe
     assert tool.failed_chunk_count == 0
     # 3 chunks plus one retry in each of two fallback rounds. Extending the total only once
     # up front would clamp the display while a retry was still running.
-    assert edits[-1].splitlines()[-1] == "analyzed 5 of 5 chunks"
+    assert edits[-1].splitlines()[-1] == "已分析 5/5 段"
 
 
 @pytest.mark.asyncio
@@ -849,9 +849,9 @@ async def test_suggestion_progress_resets_between_outer_model_attempts(published
 
     assert edits[0] == tool.progress
     assert [body.splitlines()[-1] for body in edits[1:]] == [
-        "analyzed 1 of 3 chunks",
-        "analyzed 2 of 3 chunks",
-        "analyzed 3 of 3 chunks",
+        "已分析 1/3 段",
+        "已分析 2/3 段",
+        "已分析 3/3 段",
     ]
 
 

@@ -128,7 +128,7 @@ class PRUpdateChangelog:
         temporary_comment_published = False
         if get_settings().config.publish_output:
             try:
-                self.git_provider.publish_comment("Preparing changelog updates...", is_temporary=True)
+                self.git_provider.publish_comment("正在准备变更日志...", is_temporary=True)
                 temporary_comment_published = True
             except Exception as progress_error:
                 if changelog_read_error is None:
@@ -165,11 +165,11 @@ class PRUpdateChangelog:
                 if self.commit_changelog:
                     await self._push_changelog_update(new_file_content, answer)
                 else:
-                    changelog_comment = f"**Changelog updates:** 🔄\n\n{answer}"
+                    changelog_comment = f"**变更日志更新：** 🔄\n\n{answer}"
                     if self.push_skipped_reason:
                         changelog_comment += (
-                            f"\n\n> ℹ️ These changes were not pushed to the repository "
-                            f"({self.push_skipped_reason})."
+                            f"\n\n> ℹ️ 这些变更未推送到仓库"
+                            f"（{self.push_skipped_reason}）。"
                         )
                     self.git_provider.publish_comment(changelog_comment)
         finally:
@@ -183,12 +183,11 @@ class PRUpdateChangelog:
 
     def _publish_changelog_read_error_fallback(self, answer: str = ""):
         if answer:
-            changelog_comment = f"**Changelog updates:** 🔄\n\n{answer}"
+            changelog_comment = f"**变更日志更新：** 🔄\n\n{answer}"
         else:
-            changelog_comment = "**Changelog update could not be generated.**"
+            changelog_comment = "**无法生成变更日志。**"
         changelog_comment += (
-            "\n\n> ⚠️ These changes were not pushed because the existing "
-            "CHANGELOG.md could not be read safely."
+            "\n\n> ⚠️ 未能安全读取现有 CHANGELOG.md，因此这些变更未推送。"
         )
         try:
             self.git_provider.publish_comment(changelog_comment)
@@ -198,10 +197,9 @@ class PRUpdateChangelog:
             )
 
     def _publish_changelog_write_error_fallback(self, answer: str):
-        changelog_comment = f"**Changelog updates:** 🔄\n\n{answer}"
+        changelog_comment = f"**变更日志更新：** 🔄\n\n{answer}"
         changelog_comment += (
-            "\n\n> ⚠️ The repository update could not be confirmed. "
-            "The generated changelog is preserved here for recovery."
+            "\n\n> ⚠️ 无法确认仓库更新是否成功。生成的变更日志保留在这里，便于恢复。"
         )
         try:
             self.git_provider.publish_comment(changelog_comment)
@@ -318,7 +316,7 @@ class PRUpdateChangelog:
             # cancellation authoritative.
             try:
                 if self.git_provider.supports_changelog_update_review():
-                    self.git_provider.publish_comment(f"**Changelog updates: 🔄**\n\n{answer}")
+                    self.git_provider.publish_comment(f"**变更日志更新：🔄**\n\n{answer}")
             except Exception as feedback_error:
                 get_logger().exception(
                     f"Failed to publish changelog fallback during cancellation: {feedback_error}"
@@ -338,7 +336,7 @@ class PRUpdateChangelog:
         except Exception:
             # we can't create a review for some reason, let's just publish a comment
             try:
-                fallback = self.git_provider.publish_comment(f"**Changelog updates: 🔄**\n\n{answer}")
+                fallback = self.git_provider.publish_comment(f"**变更日志更新：🔄**\n\n{answer}")
                 if self.git_provider.supports_comment_publish_confirmation() and fallback is None:
                     raise RuntimeError("The changelog fallback comment was not confirmed")
             except Exception as feedback_error:

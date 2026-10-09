@@ -230,7 +230,7 @@ async def test_improve_external_output_does_not_report_filtered_suggestions(emit
     tool.git_provider.is_supported.return_value = True
     tool._is_suggestion_line_range_valid = MagicMock(return_value=False)
     tool.pr_url = "https://github.com/org/repo/pull/1"
-    tool.progress = "Preparing suggestions..."
+    tool.progress = "正在准备代码建议..."
     tool.progress_response = None
     tool.remaining_files_list = ["omitted.py"]
     monkeypatch.setattr("pr_agent.tools.pr_code_suggestions.retry_with_fallback_models",

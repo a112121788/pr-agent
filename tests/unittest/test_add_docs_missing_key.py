@@ -282,7 +282,7 @@ def test_no_documentation_comment_return_value_is_not_terminal_publication_failu
 ])
 def test_clear_the_progress_comment_when_nothing_was_produced(publish_output, monkeypatch,
                                                               prediction, reason):
-    """The 'Generating Documentation...' placeholder must not be left behind."""
+    """The '正在生成文档...' placeholder must not be left behind."""
     provider = run(prediction, monkeypatch)
 
     assert provider.initial_comment_removed, reason

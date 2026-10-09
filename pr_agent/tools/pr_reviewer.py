@@ -90,37 +90,35 @@ REVIEW_PROGRESS_COMMENT = "正在准备审查..."
 _REVIEW_FAILURE_REASONS = (
     (
         ("credit balance is too low", "insufficient credits", "insufficient balance", "insufficient_quota"),
-        "The model provider rejected the request because the API account has insufficient credits. "
-        "Add credits, then retry the command.",
+        "模型服务因账户余额不足拒绝了请求。请补充额度后重试。",
     ),
     (
         ("authenticationerror", "authentication error", "invalid api key", "invalid x-api-key"),
-        "PR-Agent could not authenticate with the model provider. Check the configured API credentials, then retry.",
+        "PR-Agent 无法通过模型服务的身份验证。请检查 API 凭据后重试。",
     ),
     (
         ("ratelimiterror", "rate limit", "too many requests"),
-        "The model provider rate-limited the request. Wait for the limit to reset, then retry.",
+        "模型服务触发了请求频率限制。请等待限制恢复后重试。",
     ),
     (
         ("apitimeouterror", "timeout error", "timed out"),
-        "The model provider timed out before completing the review. Retry the command or adjust the provider timeout.",
+        "模型服务在完成审查前超时。请重试，或调整服务超时时间。",
     ),
     (
         ("context_length_exceeded", "maximum context length", "input is too long", "too many tokens"),
-        "The pull request exceeded the selected model's context limit. Retry with a larger-context model or an "
-        "incremental review.",
+        "拉取请求超出了所选模型的上下文限制。请换用上下文更大的模型，或使用增量审查后重试。",
     ),
     (
         ("apiconnectionerror", "connection error"),
-        "PR-Agent could not reach the model provider. Check provider availability and network access, then retry.",
+        "PR-Agent 无法连接模型服务。请检查服务状态和网络后重试。",
     ),
     (
         ("failed to generate prediction with any model",),
-        "Every configured model attempt failed. Check the PR-Agent service logs for the provider error, then retry.",
+        "所有已配置模型都调用失败。请查看 PR-Agent 服务日志中的模型错误后重试。",
     ),
 )
 _UNKNOWN_REVIEW_FAILURE_REASON = (
-    "PR-Agent encountered an unexpected internal error. Check the PR-Agent service logs for details."
+    "PR-Agent 遇到了未预期的内部错误。请查看 PR-Agent 服务日志。"
 )
 
 
@@ -337,8 +335,8 @@ class PRReviewer:
                 if hasattr(self.git_provider, "previous_review") and self.git_provider.previous_review is not None:
                     previous_review_url = getattr(self.git_provider.previous_review, "html_url", "") or ""
                 if get_settings().config.publish_output:
-                    self.git_provider.publish_comment(f"Incremental Review Skipped\n"
-                                    f"No files were changed since the [previous PR Review]({previous_review_url})")
+                    self.git_provider.publish_comment(f"已跳过增量审查\n"
+                                    f"自[上次 PR 审查]({previous_review_url})后没有文件变更")
                 return None
 
             if get_settings().config.publish_output and not get_settings().config.get('is_auto_command', False):
@@ -1727,8 +1725,8 @@ class PRReviewer:
             is_auto_approved = self.git_provider.auto_approve()
             if is_auto_approved:
                 get_logger().info("Auto-approved PR")
-                self.git_provider.publish_comment("Auto-approved PR")
+                self.git_provider.publish_comment("已自动批准 PR")
         else:
             get_logger().info("Auto-approval option is disabled")
-            self.git_provider.publish_comment("Auto-approval option for PR-Agent is disabled. "
-                                              "You can enable it via a [configuration file](https://docs.pr-agent.ai/usage-guide/configuration_reference/#config)")
+            self.git_provider.publish_comment("PR-Agent 的自动批准未启用。"
+                                              "可通过[配置文件](https://docs.pr-agent.ai/usage-guide/configuration_reference/#config)开启")

@@ -271,8 +271,8 @@ def test_render_suggestions_markdown_includes_score_why_when_present():
 
     markdown = render_suggestions_markdown(data)
 
-    assert "(score 7)" in markdown
-    assert "Why: Self-reflection unavailable; score not model-assigned" in markdown
+    assert "（评分 7）" in markdown
+    assert "原因：Self-reflection unavailable; score not model-assigned" in markdown
 
 
 @pytest.mark.asyncio
@@ -296,8 +296,8 @@ async def test_push_inline_publishes_partial_coverage_notice():
 
     git_provider.publish_code_suggestions.assert_called_once()
     coverage_comment = git_provider.publish_comment.call_args.args[0]
-    assert "1 of 2 analysis chunks failed" in coverage_comment
-    assert "successful chunks only" in coverage_comment
+    assert "2 段中有 1 段分析失败" in coverage_comment
+    assert "成功分析的部分" in coverage_comment
 
 
 @pytest.mark.asyncio
@@ -333,7 +333,7 @@ async def test_push_inline_publishes_no_suggestions_comment_when_empty():
 
     assert result is None
     git_provider.publish_comment.assert_called_once_with(
-        "No suggestions found to improve this PR."
+        "没有发现可改进此 PR 的建议。"
     )
     git_provider.publish_code_suggestions.assert_not_called()
 
@@ -348,9 +348,9 @@ async def test_push_inline_qualifies_empty_partial_results():
     await tool.push_inline_code_suggestions({"code_suggestions": []})
 
     body = git_provider.publish_comment.call_args.args[0]
-    assert "successfully analyzed chunks" in body
-    assert "1 of 3 analysis chunks failed" in body
-    assert "could not be analyzed" in body
+    assert "已成功分析的部分" in body
+    assert "3 段中有 1 段分析失败" in body
+    assert "未能分析" in body
 
 
 # ---------------------------------------------------------------------------
@@ -444,7 +444,7 @@ def test_generate_summarized_suggestions_empty_returns_placeholder():
     tool = _make_tool()
     out = tool.generate_summarized_suggestions({"code_suggestions": []})
     assert "PR 代码建议" in out
-    assert "No suggestions found to improve this PR." in out
+    assert "没有发现可改进此 PR 的建议。" in out
     # No table is rendered when empty
     assert "<table>" not in out
 
@@ -569,7 +569,7 @@ def test_generate_summarized_suggestions_all_anchorless_returns_placeholder():
 
     out = tool.generate_summarized_suggestions({"code_suggestions": [suggestion]})
 
-    assert "No suggestions found to improve this PR." in out
+    assert "没有发现可改进此 PR 的建议。" in out
     assert "<table>" not in out
 
 
@@ -605,7 +605,7 @@ def test_generate_summarized_suggestions_all_invalid_ranges_returns_placeholder(
 
     out = tool.generate_summarized_suggestions({"code_suggestions": [bad]})
 
-    assert "No suggestions found to improve this PR." in out
+    assert "没有发现可改进此 PR 的建议。" in out
     assert "<table>" not in out
 
 

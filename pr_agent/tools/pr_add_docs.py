@@ -63,7 +63,7 @@ class PRAddDocs:
         try:
             get_logger().info('Generating code Docs for PR...')
             if get_settings().config.publish_output:
-                self.git_provider.publish_comment("Generating Documentation...", is_temporary=True)
+                self.git_provider.publish_comment("正在生成文档...", is_temporary=True)
                 temporary_comment_published = True
 
             get_logger().info('Preparing PR documentation...')
@@ -81,7 +81,7 @@ class PRAddDocs:
                 publication_result = self.push_inline_docs(data)
                 if publication_result is False:
                     publication_failed = True
-                    self.git_provider.publish_comment("Failed to publish code documentation for this PR.")
+                    self.git_provider.publish_comment("发布此 PR 的代码文档失败。")
                     raise RuntimeError("Failed to publish code documentation after individual retries")
         except Exception as e:
             get_logger().error(f"Failed to generate code documentation for PR, error: {e}")
@@ -171,7 +171,7 @@ class PRAddDocs:
         docs = []
 
         if not data['Code Documentation']:
-            self.git_provider.publish_comment('No code documentation found to improve this PR.')
+            self.git_provider.publish_comment('没有发现可补充到此 PR 的代码文档。')
             return None
 
         for d in data['Code Documentation']:

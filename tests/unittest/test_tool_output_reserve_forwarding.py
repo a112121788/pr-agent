@@ -209,7 +209,7 @@ async def test_add_docs_removes_temporary_comment_after_terminal_failure(monkeyp
     await tool.run()
 
     tool.git_provider.publish_comment.assert_called_once_with(
-        "Generating Documentation...",
+        "正在生成文档...",
         is_temporary=True,
     )
     tool.git_provider.remove_initial_comment.assert_called_once_with()
@@ -225,13 +225,13 @@ async def test_add_docs_removes_temporary_comment_after_terminal_failure(monkeyp
                 "pr_url": "https://example.test/pr/1",
                 "identify_image_in_comment": MagicMock(return_value=None),
             },
-            "Preparing answer...",
+            "正在准备回答...",
         ),
         (
             update_changelog_module.PRUpdateChangelog,
             update_changelog_module,
             {"push_skipped_reason": None},
-            "Preparing changelog updates...",
+            "正在准备变更日志...",
         ),
     ],
     ids=["questions", "update-changelog"],

@@ -146,7 +146,7 @@ async def test_chunk_progress_does_not_hide_failed_persistent_summary_update(mon
             f"{PRCodeSuggestionsHeader.SUMMARY.value}\n{PRCodeSuggestionsIdentity.SUMMARY.value}\n<table>old</table>"
         )
         existing = SimpleNamespace(body=original_body)
-        progress = SimpleNamespace(body="Preparing suggestions...")
+        progress = SimpleNamespace(body="正在准备代码建议...")
         provider = _provider_with_anchored_diff(MagicMock())
         provider.get_files.return_value = [object()]
         provider.is_supported.return_value = True
@@ -188,8 +188,8 @@ async def test_chunk_progress_does_not_hide_failed_persistent_summary_update(mon
 
         await tool.run()
 
-        assert "analyzed 1 of 2 chunks" in progress_updates[0]
-        assert "analyzed 2 of 2 chunks" in progress_updates[1]
+        assert "已分析 1/2 段" in progress_updates[0]
+        assert "已分析 2/2 段" in progress_updates[1]
         assert "update could not be confirmed" in progress_updates[2]
         assert command_failed() is True
         assert existing.body == original_body
@@ -206,7 +206,7 @@ async def test_chunk_progress_does_not_hide_failed_persistent_summary_update(mon
 @pytest.mark.parametrize(
     ("supports_gfm", "progress_body", "progress_kwargs"),
     [
-        (False, "Preparing suggestions...", {"is_temporary": True}),
+        (False, "正在准备代码建议...", {"is_temporary": True}),
         (True, "progress body", {}),
     ],
 )
@@ -271,7 +271,7 @@ async def test_run_re_raises_incomplete_provider_diff_after_progress_cleanup(mon
         assert exc_info.value is incomplete_diff_error
         provider.remove_comment.assert_called_once_with(progress_comment)
         provider.publish_comment.assert_called_once_with(
-            "Preparing suggestions...", is_temporary=True
+            "正在准备代码建议...", is_temporary=True
         )
     finally:
         restore_settings(settings_snapshot)
@@ -304,7 +304,7 @@ async def test_run_preserves_incomplete_bitbucket_diff_when_progress_cleanup_fai
         assert exc_info.value is incomplete_diff_error
         provider.remove_comment.assert_called_once_with(progress_comment)
         provider.publish_comment.assert_called_once_with(
-            "Preparing suggestions...", is_temporary=True
+            "正在准备代码建议...", is_temporary=True
         )
     finally:
         restore_settings(settings_snapshot)
@@ -398,7 +398,7 @@ async def test_run_does_not_publish_failure_after_successful_inline_suggestions(
         provider.publish_code_suggestions.return_value = True
 
         def publish_comment(body, **_kwargs):
-            if body == "Failed to generate code suggestions for PR":
+            if body == "生成 PR 代码建议失败":
                 return MagicMock()
             raise RuntimeError("fallback comment rejected")
 
@@ -476,7 +476,7 @@ async def test_run_publishes_failure_when_inline_suggestions_never_publish(monke
 
         await tool.run()
 
-        provider.publish_comment.assert_called_once_with("Failed to generate code suggestions for PR")
+        provider.publish_comment.assert_called_once_with("生成 PR 代码建议失败")
         assert provider.remove_initial_comment.call_count == 2
     finally:
         restore_settings(settings_snapshot)
@@ -506,7 +506,7 @@ async def test_run_preserves_original_error_when_failure_comment_publish_fails(m
             await tool.run()
 
         assert exc_info.value is original_error
-        provider.publish_comment.assert_called_once_with("Failed to generate code suggestions for PR")
+        provider.publish_comment.assert_called_once_with("生成 PR 代码建议失败")
     finally:
         restore_settings(settings_snapshot)
 
@@ -708,9 +708,9 @@ async def test_run_reports_exhausted_inline_publication_retries(
         assert tool._output_published is True
         published_comments = [call.args[0] for call in provider.publish_comment.call_args_list]
         assert "Use the helper." in published_comments[-1]
-        assert "Failed to generate code suggestions for PR" not in published_comments[-1]
+        assert "生成 PR 代码建议失败" not in published_comments[-1]
         if show_progress:
-            assert published_comments[0] == "Preparing suggestions..."
+            assert published_comments[0] == "正在准备代码建议..."
             provider.remove_comment.assert_called_once_with(provider.publish_comment.return_value)
     finally:
         restore_settings(settings_snapshot)
@@ -771,7 +771,7 @@ async def test_failed_inline_retries_preserve_fallback_output(
 
         comments = [call.args[0] for call in provider.publish_comment.call_args_list]
         assert len(comments) == 2
-        assert comments[0] == "Preparing suggestions..."
+        assert comments[0] == "正在准备代码建议..."
         expected = "Coverage notice" if fallback_kind == "coverage" else "Fallback suggestion."
         assert expected in comments[1]
         assert "Failed to generate code suggestions" not in comments[1]
@@ -860,7 +860,7 @@ async def test_run_all_invalid_ranges_honors_quiet_gate_via_real_publish(
         if publish_output_no_suggestions:
             comments = [call.args[0] for call in provider.publish_comment.call_args_list]
             assert len(comments) == 1
-            assert "No code suggestions found for the PR." in comments[0]
+            assert "没有发现此 PR 的代码建议。" in comments[0]
         else:
             provider.publish_comment.assert_not_called()
             assert get_settings().data["artifact"] == ""
@@ -892,7 +892,7 @@ async def test_run_plain_diff_leaks_no_progress_when_all_ranges_invalid(monkeypa
         tool.pr_url = "https://example.invalid/pull/1"
         tool.progress_response = None
         tool.incremental = SimpleNamespace(is_incremental=False)
-        tool.progress = "## Generating PR code suggestions"
+        tool.progress = "## 正在生成 PR 代码建议"
 
         monkeypatch.setattr(
             pr_code_suggestions_module, "retry_with_fallback_models",
@@ -912,9 +912,9 @@ async def test_run_plain_diff_leaks_no_progress_when_all_ranges_invalid(monkeypa
         out = capsys.readouterr().out
         # The output-only provider cannot edit/remove a previously published comment, so
         # the progress placeholder must never be persisted and only the final document remains.
-        assert "Generating PR code suggestions" not in out
+        assert "正在生成 PR 代码建议" not in out
         assert out.count("## PR Code Suggestions") == 1
-        assert out.count("No code suggestions found for the PR.") == 1
+        assert out.count("没有发现此 PR 的代码建议。") == 1
     finally:
         restore_settings(settings_snapshot)
 

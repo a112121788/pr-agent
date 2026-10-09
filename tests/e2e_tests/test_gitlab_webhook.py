@@ -68,7 +68,7 @@ def test_e2e_run_github_app():
             comments = [comment for comment in comments if comment.system is False]
             if len(comments) == 2: # "changed the description" is received as the first comment
                 comments_body = [comment.body for comment in comments]
-                if 'Work in progress' in comments_body[1]:
+                if '正在处理' in comments_body[1]:
                     continue
                 assert mr_header_body.startswith(PR_HEADER_START_WITH), "DESCRIBE feedback is invalid"
                 assert comments_body[0].startswith(REVIEW_START_WITH), "REVIEW feedback is invalid"

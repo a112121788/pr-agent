@@ -265,7 +265,7 @@ async def test_pr_code_suggestions_appends_run_details_when_no_suggestions(monke
         await suggestions.run()
         with_details = suggestions.git_provider.publish_comment.call_args[0][0]
 
-        assert "No code suggestions found for the PR." in without_details
+        assert "没有发现此 PR 的代码建议。" in without_details
         assert "⚙️ Agent run details" not in without_details
         assert "⚙️ Agent run details" in with_details
         # Confirm the markup actually matches the branch under test, not just that

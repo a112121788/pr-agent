@@ -247,7 +247,7 @@ class TestPRUpdateChangelog:
         mock_git_provider.remove_initial_comment.assert_called_once_with()
         sleep.assert_not_awaited()
         fallbacks = [c.args[0] for c in mock_git_provider.publish_comment.call_args_list
-                     if "could not be confirmed" in c.args[0]]
+                     if "无法确认仓库更新是否成功" in c.args[0]]
         assert len(fallbacks) == 1 and "Generated entry" in fallbacks[0]
 
     @pytest.mark.asyncio
@@ -276,7 +276,7 @@ class TestPRUpdateChangelog:
         assert retry.await_count == 1
         fallback_calls = [
             call for call in provider.publish_comment.call_args_list
-            if "not pushed" in call.args[0]
+            if "未推送" in call.args[0]
         ]
         assert len(fallback_calls) == 1
         assert "Safe generated entry" in fallback_calls[0].args[0]
@@ -307,7 +307,7 @@ class TestPRUpdateChangelog:
         provider.create_or_update_pr_file.assert_not_called()
         fallback_calls = [
             call for call in provider.publish_comment.call_args_list
-            if "not pushed" in call.args[0]
+            if "未推送" in call.args[0]
         ]
         assert len(fallback_calls) == 1
         assert "Safe generated entry" in fallback_calls[0].args[0]
@@ -334,10 +334,10 @@ class TestPRUpdateChangelog:
         provider.create_or_update_pr_file.assert_not_called()
         fallback_calls = [
             call for call in provider.publish_comment.call_args_list
-            if "not pushed" in call.args[0]
+            if "未推送" in call.args[0]
         ]
         assert len(fallback_calls) == 1
-        assert "could not be generated" in fallback_calls[0].args[0]
+        assert "无法生成变更日志" in fallback_calls[0].args[0]
         mock_get_logger.return_value.exception.assert_called_once_with(
             "Failed to initialize changelog generation after a read error: handler unavailable"
         )
@@ -404,7 +404,7 @@ class TestPRUpdateChangelog:
         provider.create_or_update_pr_file.assert_not_called()
         fallback_calls = [
             call for call in provider.publish_comment.call_args_list
-            if "not pushed" in call.args[0]
+            if "未推送" in call.args[0]
         ]
         assert len(fallback_calls) == 1
         assert "Safe generated entry" in fallback_calls[0].args[0]
@@ -438,10 +438,10 @@ class TestPRUpdateChangelog:
         provider.create_or_update_pr_file.assert_not_called()
         fallback_calls = [
             call for call in provider.publish_comment.call_args_list
-            if "not pushed" in call.args[0]
+            if "未推送" in call.args[0]
         ]
         assert len(fallback_calls) == 1
-        assert "could not be generated" in fallback_calls[0].args[0]
+        assert "无法生成变更日志" in fallback_calls[0].args[0]
         provider.remove_initial_comment.assert_called_once_with()
         mock_get_logger.return_value.exception.assert_called_once_with(
             "Failed to generate changelog fallback after a read error: generation unavailable"
@@ -531,8 +531,8 @@ class TestPRUpdateChangelog:
             await tool.run()
 
             published = " ".join(str(c) for c in provider.publish_comment.call_args_list)
-            assert "Changelog updates" in published  # the generated changelog was posted
-            assert "not pushed" in published          # with a note it wasn't committed
+            assert "变更日志更新" in published  # the generated changelog was posted
+            assert "未推送" in published          # with a note it wasn't committed
 
     @pytest.mark.asyncio
     async def test_run_restricted_mode_publishes_comment_instead_of_pushing(self, mock_ai_handler):
@@ -562,8 +562,8 @@ class TestPRUpdateChangelog:
 
             provider.create_or_update_pr_file.assert_not_called()  # never pushed
             published = " ".join(str(c) for c in provider.publish_comment.call_args_list)
-            assert "Changelog updates" in published
-            assert "not pushed" in published
+            assert "变更日志更新" in published
+            assert "未推送" in published
 
     @pytest.mark.asyncio
     async def test_run_with_push_support(self, changelog_tool, mock_git_provider):
@@ -720,7 +720,7 @@ class TestPRUpdateChangelog:
                 await asyncio.gather(update_task)
 
         mock_git_provider.publish_comment.assert_called_once_with(
-            "**Changelog updates: 🔄**\n\nanswer"
+            "**变更日志更新：🔄**\n\nanswer"
         )
         mock_git_provider.pr.get_commits.assert_not_called()
         mock_git_provider.pr.create_review.assert_not_called()
@@ -755,8 +755,8 @@ class TestPRUpdateChangelog:
                 await asyncio.gather(run_task)
 
         assert mock_git_provider.publish_comment.call_args_list == [
-            call("Preparing changelog updates...", is_temporary=True),
-            call("**Changelog updates: 🔄**\n\n## v1.1.0\n- New feature"),
+            call("正在准备变更日志...", is_temporary=True),
+            call("**变更日志更新：🔄**\n\n## v1.1.0\n- New feature"),
         ]
         mock_git_provider.pr.create_review.assert_not_called()
         mock_git_provider.remove_initial_comment.assert_called_once_with()
@@ -819,8 +819,8 @@ class TestPRUpdateChangelog:
         mock_git_provider.publish_comment.assert_called_once()
         fallback = mock_git_provider.publish_comment.call_args.args[0]
         assert "answer" in fallback
-        assert "could not be confirmed" in fallback
-        assert "not pushed" not in fallback
+        assert "无法确认仓库更新是否成功" in fallback
+        assert "未推送" not in fallback
 
     @pytest.mark.asyncio
     async def test_push_changelog_update_fallback_failure_does_not_mask_write_error(
@@ -870,11 +870,10 @@ class TestPRUpdateChangelog:
 
         assert raised.value is write_error
         assert mock_git_provider.publish_comment.call_args_list == [
-            call("Preparing changelog updates...", is_temporary=True),
+            call("正在准备变更日志...", is_temporary=True),
             call(
-                "**Changelog updates:** 🔄\n\n## v1.1.0\n- New feature"
-                "\n\n> ⚠️ The repository update could not be confirmed. "
-                "The generated changelog is preserved here for recovery."
+                "**变更日志更新：** 🔄\n\n## v1.1.0\n- New feature"
+                "\n\n> ⚠️ 无法确认仓库更新是否成功。生成的变更日志保留在这里，便于恢复。"
             ),
         ]
         mock_git_provider.remove_initial_comment.assert_called_once_with()
@@ -928,7 +927,7 @@ class TestPRUpdateChangelog:
             await changelog_tool._push_changelog_update(new_content, answer)
 
             mock_git_provider.pr.get_commits.assert_not_called()
-            mock_git_provider.publish_comment.assert_called_once_with(f"**Changelog updates: 🔄**\n\n{answer}")
+            mock_git_provider.publish_comment.assert_called_once_with(f"**变更日志更新：🔄**\n\n{answer}")
 
     @pytest.mark.asyncio
     async def test_push_changelog_update_falls_back_to_comment_on_review_exception(
@@ -949,7 +948,7 @@ class TestPRUpdateChangelog:
             await changelog_tool._push_changelog_update("new content", answer)
 
         mock_git_provider.pr.get_commits.assert_not_called()
-        mock_git_provider.publish_comment.assert_called_once_with(f"**Changelog updates: 🔄**\n\n{answer}")
+        mock_git_provider.publish_comment.assert_called_once_with(f"**变更日志更新：🔄**\n\n{answer}")
 
     @pytest.mark.asyncio
     async def test_push_changelog_update(self, changelog_tool, mock_git_provider):
@@ -1022,7 +1021,7 @@ class TestPRUpdateChangelog:
 
         mock_git_provider.create_or_update_pr_file.assert_called_once()
         assert mock_git_provider.pr.create_review.call_count == int(has_commit)
-        mock_git_provider.publish_comment.assert_called_once_with("**Changelog updates: 🔄**\n\nanswer")
+        mock_git_provider.publish_comment.assert_called_once_with("**变更日志更新：🔄**\n\nanswer")
         mock_git_provider.pr.get_commits.assert_not_called()
 
     @pytest.mark.parametrize("fallback_result,confirms", [(None, False), (False, True)])

@@ -47,7 +47,7 @@ from pr_agent.tools.ticket_pr_compliance_check import (
 )
 
 MAX_DESCRIPTION_COVERAGE_FILES = 50
-DESCRIBE_PROGRESS_COMMENT = "Preparing PR description..."
+DESCRIBE_PROGRESS_COMMENT = "正在准备 PR 描述..."
 
 
 def _build_unprocessed_files_block(file_list: list, label: str, max_files: int = 50) -> str:
@@ -268,7 +268,7 @@ class PRDescription:
                         self.git_provider.publish_description(title_to_publish, pr_body)
                     except Exception:
                         try:
-                            self.git_provider.publish_comment("Failed to update PR description")
+                            self.git_provider.publish_comment("更新 PR 描述失败")
                         except Exception as publication_error:
                             get_logger().exception(
                                 f"Failed to publish PR description failure result, error: {publication_error}"
@@ -940,7 +940,7 @@ class PRDescription:
                 pr_body += f"### **{key_publish}**\n"
             if 'walkthrough' in key.lower():
                 if self.git_provider.is_supported("gfm_markdown"):
-                    pr_body += "<details> <summary>files:</summary>\n\n"
+                    pr_body += "<details> <summary>文件：</summary>\n\n"
                 for file in value:
                     filename = file['filename'].replace("'", "`")
                     description = file['changes_in_file']

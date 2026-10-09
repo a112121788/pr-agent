@@ -190,7 +190,7 @@ def render_suggestions_markdown(data: dict) -> str:
     for suggestion in suggestions:
         if not isinstance(suggestion, dict):
             continue
-        location = str(suggestion.get("relevant_file") or "").strip() or "(file not reported)"
+        location = str(suggestion.get("relevant_file") or "").strip() or "（未报告文件）"
         start = suggestion.get("relevant_lines_start")
         end = suggestion.get("relevant_lines_end")
         if start and end:
@@ -201,18 +201,18 @@ def render_suggestions_markdown(data: dict) -> str:
             header += f" — {label}"
         score = suggestion.get("score")
         if score not in (None, ""):
-            header += f" (score {score})"
+            header += f"（评分 {score}）"
         lines.append(header)
         summary = str(suggestion.get("one_sentence_summary") or suggestion.get("suggestion_content") or "").strip()
         if summary:
             lines.append(summary)
         score_why = str(suggestion.get("score_why") or "").strip()
         if score_why:
-            lines.append(f"Why: {score_why}")
+            lines.append(f"原因：{score_why}")
         lines.append("")
     if not lines:
-        return "## PR Code Suggestions\n\nNo suggestions to report."
-    return "## PR Code Suggestions\n\n" + "\n".join(lines).strip()
+        return "## PR 代码建议\n\n没有可报告的建议。"
+    return "## PR 代码建议\n\n" + "\n".join(lines).strip()
 
 
 def _supports_code_suggestion_state(git_provider) -> bool:
@@ -414,13 +414,13 @@ class PRCodeSuggestions:
                         self.progress_response = self.git_provider.publish_comment(
                             self.progress, is_temporary=True, **self._improve_thread_kwargs())
                 else:
-                    self._progress_base_body = "Preparing suggestions..."
+                    self._progress_base_body = "正在准备代码建议..."
                     self.progress_response = self.git_provider.publish_comment(
                         self._progress_base_body, is_temporary=True)
             elif get_settings().config.publish_output_progress:
                 # No comment was published (an automatic command publishes none); the base
                 # body still anchors the reporter's dedup, so the check-run sink alone can serve.
-                self._progress_base_body = "Preparing suggestions..."
+                self._progress_base_body = "正在准备代码建议..."
 
             # # call the model to get the suggestions, and self-reflect on them
             # if not self.is_extended:
@@ -580,7 +580,7 @@ class PRCodeSuggestions:
                     try:
                         if not self.progress_response:
                             self.git_provider.remove_initial_comment()
-                        self.git_provider.publish_comment("Failed to generate code suggestions for PR")
+                        self.git_provider.publish_comment("生成 PR 代码建议失败")
                     except Exception as publish_error:
                         get_logger().exception(f"Failed to update persistent review, error: {publish_error}")
             # The status of the whole run must not read as success just because the error stopped here.
@@ -613,28 +613,26 @@ class PRCodeSuggestions:
         details = []
         if failed_chunk_count:
             total_chunk_count = getattr(self, "total_chunk_count", failed_chunk_count)
-            coverage_detail = ("the suggestions above are based on the successful chunks only."
+            coverage_detail = ("以上建议只基于成功分析的部分。"
                                if suggestions_present else
-                               "no suggestions were found in the successful chunks; "
-                               "failed chunks could not be analyzed.")
-            details.append(f"{failed_chunk_count} of {total_chunk_count} analysis chunks failed; {coverage_detail}")
+                               "成功分析的部分没有发现建议；失败部分未能分析。")
+            details.append(f"{total_chunk_count} 段中有 {failed_chunk_count} 段分析失败；{coverage_detail}")
         if remaining_files:
             displayed_files = remaining_files[:50]
             file_list = ", ".join(_markdown_code_span(name) for name in displayed_files)
             extra_count = len(remaining_files) - len(displayed_files)
             if extra_count:
-                file_list += f", and {extra_count} more"
-            details.append(f"{len(remaining_files)} file(s) were not analyzed because of the token budget or "
-                           f"maximum chunk calls: {file_list}.")
-        return "\n\n⚠️ **Suggestion coverage:** " + " ".join(details)
+                file_list += f"，另有 {extra_count} 个文件"
+            details.append(f"{len(remaining_files)} 个文件因 token 预算或最大分段次数未分析：{file_list}。")
+        return "\n\n⚠️ **建议覆盖范围：** " + " ".join(details)
 
     async def publish_no_suggestions(self):
         coverage_footer = self._get_suggestions_coverage_footer(suggestions_present=False)
-        no_suggestions_message = ("No code suggestions found in the successfully analyzed chunks."
-                                  if coverage_footer else "No code suggestions found for the PR.")
+        no_suggestions_message = ("已成功分析的部分没有发现代码建议。"
+                                  if coverage_footer else "没有发现此 PR 的代码建议。")
         pr_body = f"{format_pr_code_suggestions_header()}\n\n{no_suggestions_message}{coverage_footer}"
         if get_settings().config.publish_output:
-            markdown = f"## PR Code Suggestions\n\n{no_suggestions_message}{coverage_footer}"
+            markdown = f"## PR 代码建议\n\n{no_suggestions_message}{coverage_footer}"
             push_outputs("improve", payload=getattr(self, "data", None) or {"code_suggestions": []},
                          markdown=markdown)
         if (get_settings().config.publish_output and
@@ -1400,8 +1398,8 @@ class PRCodeSuggestions:
             get_logger().info('No suggestions found to improve this PR.')
             empty_coverage_footer = (self._get_suggestions_coverage_footer(suggestions_present=False)
                                      if include_coverage_footer else "")
-            no_suggestions_message = ("No suggestions found in the successfully analyzed chunks."
-                                      if empty_coverage_footer else "No suggestions found to improve this PR.")
+            no_suggestions_message = ("已成功分析的部分没有发现建议。"
+                                      if empty_coverage_footer else "没有发现可改进此 PR 的建议。")
             pr_body = no_suggestions_message + empty_coverage_footer
             if self.progress_response:
                 if not _edit_comment_safely(self.git_provider, self.progress_response, pr_body):
@@ -2265,7 +2263,7 @@ class PRCodeSuggestions:
             pr_body = f"{format_pr_code_suggestions_header()}\n\n"
 
             if len(data.get('code_suggestions', [])) == 0:
-                pr_body += "No suggestions found to improve this PR."
+                pr_body += "没有发现可改进此 PR 的建议。"
                 return pr_body
 
             if get_settings().config.is_auto_command:
@@ -2301,7 +2299,7 @@ class PRCodeSuggestions:
 
             if not suggestions_labels:
                 pr_body = f"{format_pr_code_suggestions_header()}\n\n"
-                pr_body += "No suggestions found to improve this PR."
+                pr_body += "没有发现可改进此 PR 的建议。"
                 return pr_body
 
             # sort suggestions_labels by the suggestion with the highest score

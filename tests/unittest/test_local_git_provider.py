@@ -259,7 +259,7 @@ def test_publish_code_suggestions_artifact_includes_partial_coverage(tmp_path):
 
     assert provider.publish_code_suggestions_artifact(
         [],
-        artifact_footer="\n\n⚠️ **Suggestion coverage:** 1 of 2 analysis chunks failed.",
+        artifact_footer="\n\n⚠️ **建议覆盖范围:** 1 of 2 analysis chunks failed.",
         no_suggestions_message="No code suggestions found in the successfully analyzed chunks.",
     ) is True
 
@@ -356,20 +356,20 @@ async def test_publish_no_suggestions_routes_local_git_output_to_improve_file(tm
     assert provider.supports_code_suggestions_artifact() is True
     content = improve_path.read_text()
     assert content.startswith("# Team Suggestions ✨\n\n")
-    assert "No code suggestions found for the PR." in content
+    assert "没有发现此 PR 的代码建议。" in content
     assert "Run details" in content
     assert "<!-- pr-agent:improve" not in content
     assert not review_path.exists()
 
 
 def test_publish_comment_skips_temporary(tmp_path):
-    # Temporary progress comments ("Preparing suggestions...") must not clobber
+    # Temporary progress comments ("正在准备代码建议...") must not clobber
     # the persisted review.md; only real output is written.
     review_path = tmp_path / "review.md"
     provider = object.__new__(LocalGitProvider)
     provider.review_path = review_path
 
-    provider.publish_comment("Preparing suggestions...", is_temporary=True)
+    provider.publish_comment("正在准备代码建议...", is_temporary=True)
     assert not review_path.exists()
 
     provider.publish_comment("real review body")

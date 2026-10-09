@@ -493,7 +493,7 @@ class PRHelpMessage:
             else:
                 supports_gfm_markdown = self.git_provider.is_supported("gfm_markdown")
                 if not supports_gfm_markdown and not self.git_provider.supports_markdown_tables():
-                    notice = "The `Help` tool requires gfm markdown, which is not supported by your code platform."
+                    notice = "`Help` 工具需要 GFM Markdown，但当前代码平台不支持。"
                     if get_settings().config.publish_output:
                         self.git_provider.publish_comment(notice)
                     else:
@@ -504,10 +504,9 @@ class PRHelpMessage:
                 relevant_configs = {'pr_help': dict(get_settings().get("pr_help", {})),
                                     'config': dict(get_settings().config)}
                 get_logger().debug("Relevant configs", artifacts=relevant_configs)
-                pr_comment = "## PR Agent Walkthrough 🤖\n\n"
-                pr_comment += ("Welcome to the PR Agent, an AI-powered tool for automated pull request analysis, "
-               "feedback, suggestions and more.")
-                pr_comment += "\n\nHere is a list of tools you can use to interact with the PR Agent:\n"
+                pr_comment = "## PR Agent 使用导览 🤖\n\n"
+                pr_comment += "欢迎使用 PR Agent。它是一个由 AI 驱动的工具，用于自动分析拉取请求、提供反馈和建议。"
+                pr_comment += "\n\n可以使用以下工具与 PR Agent 交互：\n"
                 base_path = f"{DOCS_SITE_URL}/tools"
 
                 tool_names = []

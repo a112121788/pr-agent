@@ -224,7 +224,7 @@ def test_live_note_fallback_repeats_the_score_why_disclosure():
 
     fallback_body = p.mr.notes.create.call_args.args[0]['body']
     assert "importance: 7" in fallback_body
-    assert "Why: Self-reflection unavailable; score not model-assigned" in fallback_body
+    assert "原因：Self-reflection unavailable; score not model-assigned" in fallback_body
 
 
 def test_bulk_publish_failure_is_caught_and_does_not_propagate():

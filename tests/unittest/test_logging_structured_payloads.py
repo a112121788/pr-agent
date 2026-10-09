@@ -143,7 +143,7 @@ async def test_improve_reports_a_provider_error_to_the_pr(publishing):
 
     await tool.run()
 
-    provider.publish_comment.assert_called_once_with("Failed to generate code suggestions for PR")
+    provider.publish_comment.assert_called_once_with("生成 PR 代码建议失败")
 
 
 async def test_one_unreadable_ticket_link_keeps_the_others(monkeypatch):

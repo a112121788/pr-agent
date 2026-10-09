@@ -2263,7 +2263,7 @@ class TestGitLabIncrementalReview:
     def test_all_post_review_commits_dateless_falls_back_to_full(self, gitlab_provider, mock_project):
         # If every commit after the previous review has an unparseable timestamp, we can't
         # anchor a last_seen_commit. The fix must fall back to full review, not produce a
-        # spurious "Incremental Review Skipped" message.
+        # spurious "已跳过增量审查" message.
         gitlab_provider.mr.notes.list.return_value = [
             self._make_note(7, "## PR Reviewer Guide 🔍\nbody", "2024-05-01T10:00:00Z"),
         ]
@@ -2398,7 +2398,7 @@ class TestGitLabIncrementalReview:
         # PRReviewer's skip path checks `hasattr(provider, "unreviewed_files_map")` and its
         # falsiness (pr_reviewer.py), matching GithubProvider/AzureDevopsProvider. The name
         # must match exactly, or the "no new commits" path silently degrades to a full
-        # review instead of publishing "Incremental Review Skipped".
+        # review instead of publishing "已跳过增量审查".
         gitlab_provider.mr.notes.list.return_value = [
             self._make_note(7, "## PR Reviewer Guide 🔍\nbody", "2024-05-01T10:00:00Z"),
         ]
@@ -2578,7 +2578,7 @@ class TestGitLabIncrementalReview:
                 9,
                 "## Team Suggestions ✨\n\n"
                 f"{PRCodeSuggestionsIdentity.NO_SUGGESTIONS.value}\n\n"
-                "No code suggestions found for the PR.",
+                "没有发现此 PR 的代码建议。",
                 "2026-05-15T12:00:00Z",
             ),
             self._make_note(

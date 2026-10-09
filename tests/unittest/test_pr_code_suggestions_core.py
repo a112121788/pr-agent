@@ -912,12 +912,12 @@ def test_suggestions_coverage_footer_reports_partial_runs_and_respects_flag():
     try:
         settings.set("pr_code_suggestions.enable_suggestions_coverage_footer", True)
         footer = tool._get_suggestions_coverage_footer()
-        assert "1 of 3 analysis chunks failed" in footer
-        assert "successful chunks only" in footer
+        assert "3 段中有 1 段分析失败" in footer
+        assert "成功分析的部分" in footer
 
         empty_footer = tool._get_suggestions_coverage_footer(suggestions_present=False)
-        assert "no suggestions were found in the successful chunks" in empty_footer
-        assert "failed chunks could not be analyzed" in empty_footer
+        assert "成功分析的部分没有发现建议" in empty_footer
+        assert "失败部分未能分析" in empty_footer
 
         settings.set("pr_code_suggestions.enable_suggestions_coverage_footer", False)
         assert tool._get_suggestions_coverage_footer() == ""
@@ -944,7 +944,7 @@ def test_suggestions_coverage_footer_reports_unanalyzed_files_without_failed_chu
         restore_settings(snapshot)
 
     assert "unreviewed.py" in footer
-    assert "not analyzed" in footer
+    assert "未分析" in footer
 
 
 @pytest.mark.asyncio
@@ -971,7 +971,7 @@ async def test_run_appends_partial_suggestions_coverage_to_the_summary():
 
         artifact = get_settings().data["artifact"]
         assert artifact.startswith("Base suggestions body")
-        assert "1 of 2 analysis chunks failed" in artifact
+        assert "2 段中有 1 段分析失败" in artifact
     finally:
         restore_settings(snapshot)
 
@@ -1952,7 +1952,7 @@ async def test_run_tracks_non_gfm_progress_comment_when_quiet(publish_output_no_
     git_provider.publish_comment.return_value = progress_comment
     tool = _make_tool(git_provider)
     tool.pr_url = "https://example.test/pull/1"
-    tool.progress = "Preparing suggestions..."
+    tool.progress = "正在准备代码建议..."
     tool.prepare_prediction_main = AsyncMock()
 
     try:
@@ -1965,7 +1965,7 @@ async def test_run_tracks_non_gfm_progress_comment_when_quiet(publish_output_no_
         settings.config.publish_output_progress = original_publish_output_progress
         settings.config.is_auto_command = original_is_auto_command
 
-    git_provider.publish_comment.assert_called_once_with("Preparing suggestions...", is_temporary=True)
+    git_provider.publish_comment.assert_called_once_with("正在准备代码建议...", is_temporary=True)
     git_provider.remove_comment.assert_called_once_with(progress_comment)
 
 
@@ -1996,7 +1996,7 @@ async def test_publish_no_suggestions_still_overwrites_the_progress_comment_when
 
     call = git_provider.edit_comment.call_args
     edited_body = call.kwargs.get("body", call.args[1])
-    assert "No code suggestions found for the PR." in edited_body
+    assert "没有发现此 PR 的代码建议。" in edited_body
     git_provider.remove_comment.assert_not_called()
 
 
@@ -2017,9 +2017,9 @@ async def test_publish_no_suggestions_qualifies_partial_results(publish_output_n
         restore_settings(snapshot)
 
     body = git_provider.publish_comment.call_args.args[0]
-    assert "No code suggestions found in the successfully analyzed chunks." in body
-    assert "1 of 2 analysis chunks failed" in body
-    assert "failed chunks could not be analyzed" in body
+    assert "已成功分析的部分没有发现代码建议。" in body
+    assert "2 段中有 1 段分析失败" in body
+    assert "失败部分未能分析" in body
 
 
 @pytest.mark.asyncio
@@ -2039,7 +2039,7 @@ async def test_publish_no_suggestions_qualifies_omitted_files(publish_output_no_
         restore_settings(snapshot)
 
     body = git_provider.publish_comment.call_args.args[0]
-    assert "No code suggestions found in the successfully analyzed chunks." in body
+    assert "已成功分析的部分没有发现代码建议。" in body
     assert "unreviewed.py" in body
 
 
@@ -2080,7 +2080,7 @@ async def test_publish_no_suggestions_uses_provider_artifact_capability(publish_
     await tool.publish_no_suggestions()
 
     git_provider.publish_code_suggestions_artifact.assert_called_once_with(
-        [], artifact_footer="", no_suggestions_message="No code suggestions found for the PR.")
+        [], artifact_footer="", no_suggestions_message="没有发现此 PR 的代码建议。")
     git_provider.publish_code_suggestions.assert_not_called()
     git_provider.publish_comment.assert_not_called()
     git_provider.edit_comment.assert_not_called()
@@ -2107,8 +2107,8 @@ async def test_publish_no_suggestions_keeps_partial_notice_in_disabled_output_ar
     finally:
         restore_settings(snapshot)
 
-    assert "No code suggestions found in the successfully analyzed chunks." in artifact
-    assert "1 of 2 analysis chunks failed" in artifact
+    assert "已成功分析的部分没有发现代码建议。" in artifact
+    assert "2 段中有 1 段分析失败" in artifact
 
 
 def test_setup_incremental_scope_calls_provider_when_supported():
@@ -2556,10 +2556,10 @@ async def test_azure_no_suggestions_uses_current_result_identity():
 
         published = provider.publish_comment.call_args.args[0]
         assert published.startswith(
-            "## PR Code Suggestions ✨\n\n"
+            "## PR 代码建议 ✨\n\n"
             f"{PRCodeSuggestionsIdentity.NO_SUGGESTIONS.value}\n\n"
         )
-        assert published.endswith("No code suggestions found for the PR.")
+        assert published.endswith("没有发现此 PR 的代码建议。")
         provider.publish_persistent_comment.assert_not_called()
     finally:
         settings.pr_code_suggestions.persistent_comment = original_persistent
@@ -2894,7 +2894,7 @@ def test_persistent_improve_edit_failure_does_not_publish_duplicate_summary(edit
     details = init_run_details()
     existing = _lifecycle_suggestion_comment("existing")
     old_body = existing.body
-    progress = SimpleNamespace(body="Preparing suggestions...", name="progress")
+    progress = SimpleNamespace(body="正在准备代码建议...", name="progress")
     provider = _LifecycleSuggestionProvider([existing], edit_results=[edit_result, False])
 
     result = PRCodeSuggestions.publish_persistent_comment_with_history(
@@ -2920,7 +2920,7 @@ def test_persistent_improve_edit_failure_does_not_publish_duplicate_summary(edit
 def test_failed_persistent_improve_update_relabels_retained_progress():
     details = init_run_details()
     existing = _lifecycle_suggestion_comment("existing")
-    progress = SimpleNamespace(body="Preparing suggestions...", name="progress")
+    progress = SimpleNamespace(body="正在准备代码建议...", name="progress")
     provider = _persistent_provider([existing])
     provider.supports_code_suggestion_state.return_value = False
     provider.edit_comment.side_effect = [False, None]
@@ -2946,7 +2946,7 @@ def test_failed_persistent_improve_update_relabels_retained_progress():
 def test_persistent_improve_update_failure_preserves_cancellation(cancel_at):
     details = init_run_details()
     existing = _lifecycle_suggestion_comment("existing")
-    progress = SimpleNamespace(body="Preparing suggestions...", name="progress")
+    progress = SimpleNamespace(body="正在准备代码建议...", name="progress")
     provider = _persistent_provider([existing])
     provider.supports_code_suggestion_state.return_value = False
     provider.edit_comment.side_effect = (
@@ -2987,14 +2987,14 @@ async def test_no_suggestions_failure_removes_stale_progress_comment():
         provider = _LifecycleSuggestionProvider(
             edit_results=[False],
         )
-        progress = SimpleNamespace(body="Preparing suggestions...", name="progress")
+        progress = SimpleNamespace(body="正在准备代码建议...", name="progress")
         tool = _make_tool(provider)
         tool.progress_response = progress
 
         await tool.publish_no_suggestions()
 
         assert len(provider.published) == 1
-        assert "No code suggestions found" in provider.published[0][0]
+        assert "没有发现此 PR 的代码建议" in provider.published[0][0]
         assert provider.removed == [progress]
         assert tool.progress_response is None
     finally:

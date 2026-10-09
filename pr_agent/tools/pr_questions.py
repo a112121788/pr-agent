@@ -79,7 +79,7 @@ class PRQuestions:
         get_logger().debug("Relevant configs", artifacts=relevant_configs)
         temporary_comment_published = False
         if get_settings().config.publish_output:
-            self.git_provider.publish_comment("Preparing answer...", is_temporary=True)
+            self.git_provider.publish_comment("正在准备回答...", is_temporary=True)
             temporary_comment_published = True
 
         try:

@@ -61,7 +61,7 @@ class TestLeadingContentTolerance:
         assert _make_provider(desc)._is_generated_by_pr_agent(desc.lower()) is True
 
     def test_leading_sentence_before_pr_labels(self):
-        desc = "Please review.\n### **PR Labels**\nbug, urgent"
+        desc = "Please review.\n### **PR 标签**\nbug, urgent"
         assert _make_provider(desc)._is_generated_by_pr_agent(desc.lower()) is True
 
     def test_leading_sentence_before_user_description(self):

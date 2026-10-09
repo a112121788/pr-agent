@@ -82,7 +82,7 @@ async def test_generate_labels_filters_before_publication(supports_labels):
             tool.git_provider.publish_labels.assert_called_once_with(["Bug fix", "P0"])
         else:
             tool.git_provider.publish_labels.assert_not_called()
-            tool.git_provider.publish_comment.assert_any_call("## PR Labels:\nBug fix\n", is_temporary=False)
+            tool.git_provider.publish_comment.assert_any_call("## PR 标签:\nBug fix\n", is_temporary=False)
     finally:
         restore_settings(snapshot)
 

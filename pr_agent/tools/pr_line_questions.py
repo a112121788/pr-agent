@@ -130,8 +130,8 @@ class PR_LineQuestions:
                               f"'{file_name}'; skipping the /ask_line model call")
             # Without this the run is silent and the asker cannot tell us apart from a
             # broken bot, so say why nothing was answered.
-            no_hunk_message = (f"Could not find the requested lines of `{file_name}` in this "
-                               "pull request's diff, so there is nothing to answer about.")
+            no_hunk_message = (f"在此拉取请求的 diff 中找不到 `{file_name}` 的请求行，"
+                               "因此没有可回答的内容。")
             if not get_settings().config.publish_output:
                 get_logger().info(no_hunk_message)
                 return ""

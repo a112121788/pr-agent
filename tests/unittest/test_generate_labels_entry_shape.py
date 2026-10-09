@@ -128,7 +128,7 @@ async def test_malformed_primary_uses_valid_fallback_and_preserves_user_labels(f
 
     assert tool._get_prediction.await_args_list == [call("primary-model"), call("fallback-model")]
     provider.publish_labels.assert_called_once_with(["bug fix", "keep-me"])
-    provider.publish_comment.assert_called_once_with("Preparing PR labels...", is_temporary=True)
+    provider.publish_comment.assert_called_once_with("正在准备 PR 标签...", is_temporary=True)
     provider.remove_initial_comment.assert_called_once_with()
 
 
@@ -206,7 +206,7 @@ async def test_all_invalid_attempts_clear_state_and_cleanup_progress_once(fallba
     assert tool.prediction is None
     assert tool.data is None
     provider.publish_labels.assert_not_called()
-    provider.publish_comment.assert_called_once_with("Preparing PR labels...", is_temporary=True)
+    provider.publish_comment.assert_called_once_with("正在准备 PR 标签...", is_temporary=True)
     provider.remove_initial_comment.assert_called_once_with()
 
 
@@ -227,7 +227,7 @@ async def test_all_invalid_attempts_do_not_cleanup_without_progress_handle(fallb
     assert tool.prediction is None
     assert tool.data is None
     provider.publish_labels.assert_not_called()
-    provider.publish_comment.assert_called_once_with("Preparing PR labels...", is_temporary=True)
+    provider.publish_comment.assert_called_once_with("正在准备 PR 标签...", is_temporary=True)
     provider.remove_initial_comment.assert_not_called()
     provider.remove_comment.assert_not_called()
 
@@ -246,7 +246,7 @@ async def test_valid_attempt_does_not_cleanup_without_progress_handle(fallback_m
 
     tool._get_prediction.assert_awaited_once_with("primary-model")
     provider.publish_labels.assert_called_once_with(["bug fix"])
-    provider.publish_comment.assert_called_once_with("Preparing PR labels...", is_temporary=True)
+    provider.publish_comment.assert_called_once_with("正在准备 PR 标签...", is_temporary=True)
     provider.remove_initial_comment.assert_not_called()
     provider.remove_comment.assert_not_called()
 
@@ -287,6 +287,6 @@ async def test_cancellation_after_progress_handle_cleans_up_before_propagating(f
     ):
         await tool.run()
 
-    provider.publish_comment.assert_called_once_with("Preparing PR labels...", is_temporary=True)
+    provider.publish_comment.assert_called_once_with("正在准备 PR 标签...", is_temporary=True)
     provider.remove_initial_comment.assert_called_once_with()
     provider.publish_labels.assert_not_called()

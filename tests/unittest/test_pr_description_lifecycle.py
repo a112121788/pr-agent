@@ -74,7 +74,7 @@ async def test_run_removes_progress_comment_when_description_generation_fails(
         await description.run()
 
         provider.publish_comment.assert_called_once_with(
-            "Preparing PR description...", is_temporary=True
+            "正在准备 PR 描述...", is_temporary=True
         )
         provider.remove_comment.assert_called_once_with(progress_comment)
     finally:
@@ -252,7 +252,7 @@ async def test_run_reports_description_publication_failure(monkeypatch, propagat
             assert await description.run() == ""
 
         provider.publish_description.assert_called_once()
-        assert call("Failed to update PR description") in provider.publish_comment.call_args_list
+        assert call("更新 PR 描述失败") in provider.publish_comment.call_args_list
         assert not any(
             "updated to latest commit" in str(published) for published in provider.publish_comment.call_args_list
         )

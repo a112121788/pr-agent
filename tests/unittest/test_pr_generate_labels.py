@@ -50,7 +50,7 @@ async def test_labels_are_published_as_a_comment_when_the_provider_has_no_label_
     provider.get_pr_labels.assert_not_called()
     provider.publish_labels.assert_not_called()
     published = [call.args[0] for call in provider.publish_comment.call_args_list]
-    assert any("PR Labels" in body and "Bug fix" in body for body in published)
+    assert any("PR 标签" in body and "Bug fix" in body for body in published)
     provider.remove_initial_comment.assert_called_once()
 
 

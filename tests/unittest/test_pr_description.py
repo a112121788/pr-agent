@@ -993,7 +993,7 @@ description: |
         footer = obj._get_description_coverage_footer()
 
         assert "1 of 2 file-description chunks failed" in footer
-        assert "based on the successful chunks only" in footer
+        assert "based on the 成功分析的部分" in footer
         assert "`src/file2.py`" in footer
         assert "<hr>" not in footer
 
