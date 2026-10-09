@@ -13,6 +13,7 @@ There are several ways to use PR-Agent:
 - <span class="pra-logo pra-logo--bitbucket" aria-hidden="true"></span> [Bitbucket](./bitbucket.md)
 - <span class="pra-logo pra-logo--azuredevops" aria-hidden="true"></span> [Azure DevOps](./azure.md)
 - <span class="pra-logo pra-logo--gitea" aria-hidden="true"></span> [Gitea](./gitea.md)
+- [Gitee](./gitee.md)
 
 </div>
 
@@ -31,7 +32,7 @@ behavior, not Requests-specific environment settings.
 
 ## Sizing a self-hosted webhook server
 
-The GitHub, GitLab, Gitea and Bitbucket Server webhook servers (the `github_app`, `gitlab_webhook`, `gitea_app` and `bitbucket_server_webhook` Docker targets) run under gunicorn with multiple worker processes, so that a worker busy handling a request cannot block the health check served by another. The other deployments — Bitbucket Cloud, Azure DevOps, GitHub polling, and the Lambda variants — do not use this gunicorn worker configuration.
+The GitHub, GitLab, Gitea, Gitee and Bitbucket Server webhook servers (the `github_app`, `gitlab_webhook`, `gitea_app`, `gitee_app` and `bitbucket_server_webhook` Docker targets) run under gunicorn with multiple worker processes, so that a worker busy handling a request cannot block the health check served by another. The other deployments — Bitbucket Cloud, Azure DevOps, GitHub polling, and the Lambda variants — do not use this gunicorn worker configuration.
 
 | Variable               | Default   | Description                                                                               |
 |------------------------|-----------|-------------------------------------------------------------------------------------------|
@@ -77,7 +78,7 @@ Releases **`0.34.2` and later** are published under [`pragent/pr-agent`](https:/
 - **GitHub releases** — the Git tag cannot be moved or deleted, and attached assets cannot be added, replaced, or removed. The protection also survives repository deletion, so a tag from an immutable release can never be reused by a repository recreated under the same name. (Release titles and notes stay editable; immutability covers the tag and the assets.)
 - **Docker images** — version tags such as `0.40.0` and `0.40.0-github_app` always resolve to the same image. Once pushed, they cannot be overwritten or repointed.
 
-**Rolling tags stay mutable by design.** `latest`, `github_action`, `github_lambda`, `gitlab_lambda`, `gitlab_webhook`, `gitea_app`, `mosaico_agent` and `bitbucket_server_webhook` move to the newest build on every release. They are convenient for trying things out, but a `docker pull` of the same rolling tag on two different days can give you two different images.
+**Rolling tags stay mutable by design.** `latest`, `github_action`, `github_lambda`, `gitlab_lambda`, `gitlab_webhook`, `gitea_app`, `gitee_app`, `mosaico_agent` and `bitbucket_server_webhook` move to the newest build on every release. They are convenient for trying things out, but a `docker pull` of the same rolling tag on two different days can give you two different images.
 
 For anything you depend on — CI, production webhooks, pinned Action steps — reference a version tag (or a digest) rather than a rolling one. Upgrading then becomes a deliberate change you make, not something that happens underneath you.
 :::

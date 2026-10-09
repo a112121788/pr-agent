@@ -25,6 +25,7 @@ const sidebars = {
         {type: 'doc', id: 'installation/bitbucket', label: 'Bitbucket', className: 'pra-side-provider pra-side-bitbucket'},
         {type: 'doc', id: 'installation/azure', label: 'Azure DevOps', className: 'pra-side-provider pra-side-azuredevops'},
         {type: 'doc', id: 'installation/gitea', label: 'Gitea', className: 'pra-side-provider pra-side-gitea'},
+        {type: 'doc', id: 'installation/gitee', label: 'Gitee'},
       ],
     },
     {
