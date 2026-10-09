@@ -612,3 +612,8 @@ mark {
     animation-duration: 0.01ms !important;
   }
 }
+
+.markdown img[src$=".svg"] {
+  width: 100%;
+  height: auto;
+}

@@ -3,7 +3,7 @@ title: "Usage guide"
 sidebar_position: 1
 ---
 
-This section is the usage guide for Gitee PR-Agent. This build supports Gitee only. It covers how to run tools, which commands start automatically, and how to change configuration.
+This section is the usage guide for Gitee PR-Agent, the core machine of the review factory. This build supports Gitee only. It covers how to run tools, which commands start automatically, and how to change configuration.
 
 - [Introduction](./introduction.md)
 - [Configuration File](./configuration_options.md)

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" role="img" aria-labelledby="title">
+  <title id="title">第一次使用的六步：复制地址、收集三项信息、运行命令、查看评论、写下判定、再决定是否合并。</title>
+  <style>
+    text { font-family: "PingFang SC", "Noto Sans SC", sans-serif; }
+  </style>
+  <rect width="760" height="520" rx="16" fill="#f7f4ee"/>
+  <g font-size="20" fill="#243036">
+    <circle cx="58" cy="58" r="22" fill="#243036"/>
+    <text x="58" y="65" text-anchor="middle" fill="#fff" font-weight="700">1</text>
+    <text x="98" y="65">打开 Gitee 上的拉取请求，复制浏览器地址</text>
+    <circle cx="58" cy="138" r="22" fill="#243036"/>
+    <text x="58" y="145" text-anchor="middle" fill="#fff" font-weight="700">2</text>
+    <text x="98" y="145">向同事要三项：模型密钥、模型地址、Gitee 令牌</text>
+    <circle cx="58" cy="218" r="22" fill="#0f6b4c"/>
+    <text x="58" y="225" text-anchor="middle" fill="#fff" font-weight="700">3</text>
+    <text x="98" y="225" fill="#0f6b4c">把三项和地址填进命令，在终端回车</text>
+    <circle cx="58" cy="298" r="22" fill="#0f6b4c"/>
+    <text x="58" y="305" text-anchor="middle" fill="#fff" font-weight="700">4</text>
+    <text x="98" y="305" fill="#0f6b4c">回到 Gitee，等待评论出现</text>
+    <circle cx="58" cy="378" r="22" fill="#243036"/>
+    <text x="58" y="385" text-anchor="middle" fill="#fff" font-weight="700">5</text>
+    <text x="98" y="385">阅读「PR 审查指南」，它只是证据</text>
+    <circle cx="58" cy="458" r="22" fill="#243036"/>
+    <text x="58" y="465" text-anchor="middle" fill="#fff" font-weight="700">6</text>
+    <text x="98" y="465">负责人写「放行」「退回」或「等待」</text>
+  </g>
+  <path d="M58 82v32M58 162v32M58 242v32M58 322v32M58 402v32" stroke="#c8c1b4" stroke-width="3"/>
+</svg>

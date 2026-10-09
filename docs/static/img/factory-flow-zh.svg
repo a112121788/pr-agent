@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 230" role="img" aria-labelledby="title">
+  <title id="title">审核工厂的四段：受理、取证、判定、汇入。机器只负责取证。</title>
+  <style>
+    text { font-family: "PingFang SC", "Noto Sans SC", sans-serif; }
+  </style>
+  <rect width="980" height="230" rx="16" fill="#f7f4ee"/>
+  <g>
+    <rect x="24" y="48" width="200" height="128" rx="14" fill="#fff" stroke="#d9d3c7"/>
+    <text x="124" y="92" text-anchor="middle" font-size="28" font-weight="700" fill="#243036">1 受理</text>
+    <text x="124" y="128" text-anchor="middle" font-size="16" fill="#66717a">写下意图</text>
+    <text x="124" y="152" text-anchor="middle" font-size="16" fill="#66717a">由提出人完成</text>
+  </g>
+  <g>
+    <rect x="268" y="48" width="200" height="128" rx="14" fill="#e7f4ee" stroke="#0f6b4c" stroke-width="3"/>
+    <text x="368" y="92" text-anchor="middle" font-size="28" font-weight="700" fill="#0f6b4c">2 取证</text>
+    <text x="368" y="128" text-anchor="middle" font-size="16" fill="#0f6b4c">核心机写评论</text>
+    <text x="368" y="152" text-anchor="middle" font-size="16" fill="#0f6b4c">Gitee PR-Agent</text>
+  </g>
+  <g>
+    <rect x="512" y="48" width="200" height="128" rx="14" fill="#fff" stroke="#d9d3c7"/>
+    <text x="612" y="92" text-anchor="middle" font-size="28" font-weight="700" fill="#243036">3 判定</text>
+    <text x="612" y="128" text-anchor="middle" font-size="16" fill="#66717a">放行 / 退回 / 等待</text>
+    <text x="612" y="152" text-anchor="middle" font-size="16" fill="#66717a">由负责人写下</text>
+  </g>
+  <g>
+    <rect x="756" y="48" width="200" height="128" rx="14" fill="#fff" stroke="#d9d3c7"/>
+    <text x="856" y="92" text-anchor="middle" font-size="28" font-weight="700" fill="#243036">4 汇入</text>
+    <text x="856" y="128" text-anchor="middle" font-size="16" fill="#66717a">合并这张请求</text>
+    <text x="856" y="152" text-anchor="middle" font-size="16" fill="#66717a">只在 Gitee 上点</text>
+  </g>
+  <path d="M228 112h32M472 112h32M716 112h32" stroke="#243036" stroke-width="2" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#243036"/>
+    </marker>
+  </defs>
+</svg>

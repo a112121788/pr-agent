@@ -17,9 +17,33 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 <div className="pra-landing-body">
 
-## Quick start
+## Start with the picture
 
-Gitee PR-Agent is the core machine of the review factory. It collects evidence for one Gitee pull request. A person still writes the verdict, and Gitee still performs the merge. The default model is `gpt-6.1-sol`, with `glm-5.3` as the fallback.
+Gitee PR-Agent is the core machine of the review factory. It performs the evidence stage: it reads one Gitee pull request and writes the evidence in Chinese. A person still writes the verdict, and a person still presses merge on Gitee.
+
+<img src="/img/factory-flow-zh.svg" alt="The review has four stages. Gitee PR-Agent performs only the green evidence stage." />
+
+| Word | Meaning | Who does it |
+|---|---|---|
+| Pull request | A change waiting on Gitee | The author already opened it |
+| Evidence | Comments describing risk and suggestions | The core machine |
+| Pass / return / wait | The only three verdict words | The responsible person |
+| Merge | Put the judged change into the target branch | A person with permission on Gitee |
+
+## First run
+
+<img src="/img/first-run-zh.svg" alt="Six steps: copy the address, collect three secrets, run the command, read the comment, then write a verdict." />
+
+1. Copy the full address from the browser.
+2. Ask a colleague for the model key, model address, and Gitee token.
+3. Replace every angle-bracket placeholder below and press Enter. Docker must already be installed.
+4. Refresh the pull request and read **PR 审查指南**. It is evidence, not approval.
+5. Change the final word from `review` to `improve` when code suggestions are needed.
+6. The responsible person writes one word: pass, return, or wait. Without that word, nobody merges.
+
+## Command
+
+The default model is `gpt-6.1-sol`, with `glm-5.3` as the fallback.
 
 ```bash
 docker run --rm -it \

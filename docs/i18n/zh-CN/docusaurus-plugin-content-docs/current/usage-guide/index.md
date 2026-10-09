@@ -3,7 +3,7 @@ title: "使用指南"
 sidebar_position: 1
 ---
 
-本节是 Gitee PR-Agent 的使用指南。本构建只支持 Gitee，说明如何运行工具、打开拉取请求时会自动执行哪些命令，以及如何修改配置。
+本节是 Gitee PR-Agent 的使用指南。它是审核工厂的核心机，本构建只支持 Gitee。这里说明如何运行工具、打开拉取请求时会自动执行哪些命令，以及如何修改配置。
 
 - [简介](./introduction.md)
 - [配置文件](./configuration_options.md)
