@@ -64,6 +64,10 @@ FROM service AS gitea_app
 COPY pr_agent pr_agent
 CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py","pr_agent.servers.gitea_app:app"]
 
+FROM service AS gitee_app
+COPY pr_agent pr_agent
+CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "pr_agent.servers.gitee_app:app"]
+
 FROM service AS mosaico_agent
 COPY pr_agent pr_agent
 EXPOSE 9000

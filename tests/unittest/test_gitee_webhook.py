@@ -61,11 +61,13 @@ async def test_missing_secret_rejects_every_webhook(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_bad_signature_is_rejected(monkeypatch):
+async def test_bad_signature_is_rejected_before_the_body_is_parsed(monkeypatch):
     monkeypatch.setattr("pr_agent.servers.gitee_app.get_settings", lambda: _settings())
+    request = _request({"hook_name": "merge_request_hooks"}, signature="not-the-signature")
+    request.json = AsyncMock(side_effect=AssertionError("body parsed before signature verification"))
 
     with pytest.raises(HTTPException) as error:
-        await get_body(_request({"hook_name": "merge_request_hooks"}, signature="not-the-signature"))
+        await get_body(request)
 
     assert error.value.status_code == 401
 

@@ -249,6 +249,7 @@ def test_github_still_rejects_malformed_json_after_valid_signature(monkeypatch):
         "bitbucket_server_webhook.py",
         "gerrit_server.py",
         "gitea_app.py",
+        "gitee_app.py",
         "github_app.py",
         "github_lambda_webhook.py",
         "gitlab_lambda_webhook.py",

@@ -95,11 +95,22 @@ async def handle_gitee_webhooks(background_tasks: BackgroundTasks, request: Requ
 
 
 async def get_body(request: Request) -> dict:
-    """Reject webhooks whose signature does not match the host secret."""
+    """Reject webhooks whose signature does not match the host secret.
+
+    The signature is checked before the body is parsed. A forged request must not be able to
+    force JSON parsing, and its body must not reach a log line.
+    """
     secret = get_settings().get("GITEE.WEBHOOK_SECRET", None)
     if not secret:
         get_logger().error("Rejecting Gitee webhook: GITEE.WEBHOOK_SECRET is not configured")
         raise HTTPException(status_code=403, detail="Webhook secret not configured")
+
+    timestamp = request.headers.get("X-Gitee-Timestamp", "")
+    signature = request.headers.get("X-Gitee-Token", "")
+    if not gitee_signature_is_valid(timestamp, signature, str(secret)):
+        get_logger().error("Rejecting Gitee webhook: signature did not match")
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
     try:
         body = await request.json()
     except Exception as error:
@@ -107,12 +118,6 @@ async def get_body(request: Request) -> dict:
         raise HTTPException(status_code=400, detail="Error parsing request body") from error
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="Webhook body must be an object")
-
-    timestamp = request.headers.get("X-Gitee-Timestamp") or str(body.get("timestamp") or "")
-    signature = request.headers.get("X-Gitee-Token") or str(body.get("sign") or "")
-    if not gitee_signature_is_valid(timestamp, signature, str(secret)):
-        get_logger().error("Rejecting Gitee webhook: signature did not match")
-        raise HTTPException(status_code=401, detail="Invalid signature")
     return body
 
 
