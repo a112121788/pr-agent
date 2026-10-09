@@ -7,7 +7,7 @@ sidebar_position: 9
 
 `/help` 有两种用法。
 
-不带问题时，它会发一条评论，列出可以在该拉取请求上运行的命令：`/describe`、`/review`、`/improve`、`/ask`、`/add_docs`、`/generate_labels` 和 `/update_changelog`。
+不带问题时，它会发一条评论，列出可以在该拉取请求上运行的命令：`/describe`、`/review`、`/improve`、`/ask`、`/add_docs`、`/generate_labels`、`/update_changelog`、`/intake`、`/verdict` 和 `/merge-check`。
 
 带上问题时，它根据随包文档作答，并把答案发成评论，同时附上用到的文档段落。
 

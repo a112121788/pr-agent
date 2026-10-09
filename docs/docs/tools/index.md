@@ -47,8 +47,11 @@ docker run --rm -it \
 | 工具 | 在 Gitee 上发布什么 |
 |------|---------------------|
 | **[`/describe`](./describe.md)** | 拉取请求类型、摘要、文件导览，以及可选的图。 |
-| **[`/review`](./review.md)** | 标题为 `PR 审查指南` 的中文审查，并在适用时打上 `审查工作量N/5` 和 `可能存在安全问题`。 |
+| **[`/intake`](./factory.md)** | 受理记录。只保存四个意图之一和提出人的原话。 |
+| **[`/review`](./review.md)** | 标题为 `PR 审查指南` 的中文审查，评论绑定当前提交号。 |
 | **[`/improve`](./improve.mdx)** | `PR 代码建议`，以评论和行内评论发布。Gitee 不能提交建议代码。 |
+| **[`/verdict`](./factory.md)** | 判定记录。只接受放行、退回、等待。 |
+| **[`/merge-check`](./factory.md)** | 汇入检查。只报告能否由人合并，不会点击合并。 |
 | **[`/ask`](./ask.md)** | 针对该拉取请求的一个回答。 |
 | **[`/add_docs`](./add_docs.md)** | 以行内评论发布的文档建议。 |
 | **[`/generate_labels`](./generate_labels.md)** | 与本次变更匹配的标签。 |

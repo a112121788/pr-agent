@@ -74,6 +74,7 @@ const sidebars = {
         {type: 'doc', id: 'tools/review', label: '审查'},
         {type: 'doc', id: 'tools/improve', label: '改进'},
         {type: 'doc', id: 'tools/ask', label: '提问'},
+        {type: 'doc', id: 'tools/factory', label: '审核记录'},
       ],
     },
     {

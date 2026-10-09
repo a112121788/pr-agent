@@ -517,6 +517,7 @@ class PRHelpMessage:
                 tool_names.append(f"[ADD DOCS]({base_path}/add_docs/)")
                 tool_names.append(f"[ASK]({base_path}/ask/)")
                 tool_names.append(f"[GENERATE CUSTOM LABELS]({base_path}/generate_labels/)")
+                tool_names.append(f"[FACTORY RECORDS]({base_path}/factory/)")
 
                 descriptions = []
                 descriptions.append(COMMAND_DESCRIPTIONS["describe"])
@@ -528,6 +529,7 @@ class PRHelpMessage:
                 descriptions.append(
                     "Generates custom labels for the PR, based on specific guidelines defined by the user"
                 )
+                descriptions.append("记录受理、判定和汇入检查")
 
                 commands  =[]
                 commands.append("`/describe`")
@@ -537,6 +539,7 @@ class PRHelpMessage:
                 commands.append("`/add_docs`")
                 commands.append("`/ask`")
                 commands.append("`/generate_labels`")
+                commands.append("`/intake`、`/verdict`、`/merge-check`")
 
                 checkbox_list = []
                 checkbox_list.append(" - [ ] Run <!-- /describe -->")
@@ -547,7 +550,7 @@ class PRHelpMessage:
                 checkbox_list.append("[*]")
                 checkbox_list.append("[*]")
                 checkbox_list.append("[*]")
-                checkbox_list.append("[*]")
+                checkbox_list.append(" - [ ] Run <!-- /intake -->")
 
                 if (supports_gfm_markdown and self.git_provider.supports_checkbox_commands()
                         and not get_settings().config.get('disable_checkboxes', False)):
