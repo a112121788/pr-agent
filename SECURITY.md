@@ -1,83 +1,40 @@
-# Security Policy
+# 安全策略
 
-PR-Agent is an open-source tool to help efficiently review and handle pull requests.
+Gitee PR-Agent 是审核工厂的核心机，只为 Gitee 拉取请求收集审查证据。
 
-This document describes the security policy of the open-source PR-Agent project. It does not cover [Qodo](https://www.qodo.ai/), the separate commercial product that evolved out of the hosted Qodo Merge offering — for that, see Qodo's own security policy.
+本文描述开源项目 Gitee PR-Agent 的安全策略，不覆盖独立商业产品 [Qodo](https://www.qodo.ai/)。
 
-## PR-Agent Self-Hosted Solutions
+## 自托管
 
-When using PR-Agent with your OpenAI (or other LLM provider) API key, the security relationship is directly between you and the provider. PR-Agent does not send your code to any servers operated by the project.
+使用你自己的模型密钥时，安全关系存在于你和模型服务之间。Gitee PR-Agent 不会把代码发送到项目运营的服务器。
 
-Types of [self-hosted solutions](https://docs.pr-agent.ai/installation/):
+当前部署方式：
 
-- Locally
-- GitHub integration
-- GitLab integration
-- BitBucket integration
-- Azure DevOps integration
+- 本地命令行
+- Gitee Webhook 服务 `gitee_app`
 
-## PR-Agent Supported Versions
+镜像发布在：
 
-This section outlines which versions of PR-Agent are currently supported with security updates.
-
-### Docker Deployment Options
-
-#### Latest Version
-
-For the most recent release, use the rolling GitHub Action. Its underlying `github_action` Docker image is updated
-whenever a release is published:
-
-```yaml
-uses: the-pr-agent/pr-agent@main
+```text
+ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent
 ```
 
-#### Specific Release Version
+`latest` 会随新构建移动。需要固定版本时，使用提交标签或镜像摘要。
 
-For a fixed version, you can pin your action to a specific release version. Browse available releases at:
-[PR-Agent Releases](https://github.com/the-pr-agent/pr-agent/releases)
-
-For example, to github action:
-
-```yaml
-steps:
-  - name: PR Agent action step
-    id: pragent
-    uses: docker://pragent/pr-agent:0.41.0-github_action
+```bash
+docker buildx imagetools inspect \
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --format '{{.Manifest.Digest}}'
 ```
 
-Version tags are immutable — once published, `0.41.0-github_action` always resolves to the same image. Rolling tags such as `latest` and `github_action` are not; see the "Immutable releases and version tags" note on the [Installation page](https://docs.pr-agent.ai/installation/).
+## 支持的版本
 
-#### Enhanced Security with Docker Digest
+安全更新面向当前仓库的最新提交和由它构建的镜像。历史 Docker Hub 标签不再接收本仓库的新镜像。
 
-For maximum security, you can specify the Docker image using its digest. Resolve the digest for the version you want to pin:
+## 报告漏洞
 
-```sh
-docker buildx imagetools inspect pragent/pr-agent:0.41.0-github_action --format '{{.Manifest.Digest}}'
-```
+请通过 GitHub 的私人漏洞报告提交：
 
-Then reference it instead of the tag:
+[**报告漏洞**](https://github.com/The-PR-Agent/pr-agent/security/advisories/new)
 
-```yaml
-steps:
-  - name: PR Agent action step
-    id: pragent
-    uses: docker://pragent/pr-agent@sha256:<digest>
-```
-
-Official Docker Hub release images also publish GitHub Artifact Attestations, so you can verify a pinned digest before using it:
-
-```sh
-gh attestation verify \
-  "oci://index.docker.io/pragent/pr-agent@sha256:<digest>" \
-  --repo The-PR-Agent/pr-agent
-```
-
-## Reporting a Vulnerability
-
-We take the security of PR-Agent seriously. If you discover a security vulnerability, please report it privately through GitHub's private vulnerability reporting, which is enabled on this repository:
-
-[**Report a vulnerability**](https://github.com/The-PR-Agent/pr-agent/security/advisories/new)
-
-Please include a description of the vulnerability, steps to reproduce, and the affected PR-Agent version.
-
-Do not open a public issue for a security report — a public issue discloses the vulnerability before a fix is available.
+请包含漏洞描述、复现步骤和受影响版本。不要先开公开议题，以免修复发布前暴露漏洞。

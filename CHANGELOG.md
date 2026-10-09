@@ -1,67 +1,63 @@
-# Changelog
+# 变更日志
 
-**Release notes now live on GitHub.** The authoritative, per-release changelog is the
-[Releases page](https://github.com/The-PR-Agent/pr-agent/releases), which is generated from the
-merged pull requests of each release. This file is no longer updated per release.
+**发布说明现已放在 GitHub。** 每个版本的权威变更记录是
+[Releases 页面](https://github.com/The-PR-Agent/pr-agent/releases)，由该版本合并的拉取请求生成。本文件不再按版本更新。
 
-To see what changed between two versions, use the compare view — for example
-[`v0.40.0...v0.41.0`](https://github.com/The-PR-Agent/pr-agent/compare/v0.40.0...v0.41.0).
+查看两个版本之间的差异时，使用 compare 视图，例如
+[`v0.40.0...v0.41.0`](https://github.com/The-PR-Agent/pr-agent/compare/v0.40.0...v0.41.0)。
 
 ---
 
-## Archive
+## 历史存档
 
-The entries below are a partial, date-based log kept in this file during July–August 2023, before
-the project switched to GitHub Releases. They stop at `2023-08-03` and are retained for history
-only; they do **not** describe any release after that date.
+以下条目是 2023 年 7 月至 8 月保存在本文件中的部分日志，记录止于 `2023-08-03`。它们只保留历史，不描述此后的任何版本。
 
 ### 2023-08-03
 
-#### Optimized
+#### 优化
 
-- Optimized PR diff processing by introducing caching for diff files, reducing the number of API calls.
-- Refactored `load_large_diff` function to generate a patch only when necessary.
-- Fixed a bug in the GitLab provider where the new file was not retrieved correctly.
+- 为 diff 文件增加缓存，减少 API 调用。
+- 重构 `load_large_diff`，只在必要时生成 patch。
+- 修复 GitLab provider 未能正确获取新文件的问题。
 
 ### 2023-08-02
 
-#### Enhanced
+#### 增强
 
-- Updated several tools in the `pr_agent` package to use commit messages in their functionality.
-- Commit messages are now retrieved and stored in the `vars` dictionary for each tool.
-- Added a section to display the commit messages in the prompts of various tools.
+- 多个工具开始使用提交说明。
+- 提交说明保存到每个工具的 `vars`。
+- 在多个工具提示词中展示提交说明。
 
 ### 2023-08-01
 
-#### Enhanced
+#### 增强
 
-- Introduced the ability to retrieve commit messages from pull requests across different git providers.
-- Implemented commit messages retrieval for GitHub and GitLab providers.
-- Updated the PR description template to include a section for commit messages if they exist.
-- Added support for repository-specific configuration files (.pr_agent.yaml) for the PR Agent.
-- Implemented this feature for both GitHub and GitLab providers.
-- Added a new configuration option 'use_repo_settings_file' to enable or disable the use of a repo-specific settings file.
+- 增加从拉取请求读取提交说明的能力。
+- 为 GitHub 和 GitLab provider 实现提交说明读取。
+- PR 描述模板在存在提交说明时展示该部分。
+- 增加仓库级 `.pr_agent.yaml` 配置。
+- 增加 `use_repo_settings_file`，用于启用或禁用仓库级配置。
 
 ### 2023-07-30
 
-#### Enhanced
+#### 增强
 
-- Added the ability to modify any configuration parameter from 'configuration.toml' on-the-fly.
-- Updated the command line interface and bot commands to accept configuration changes as arguments.
-- Improved the PR agent to handle additional arguments for each action.
+- 允许在运行时修改 `configuration.toml` 中的配置参数。
+- 命令行和机器人命令接受配置参数。
+- PR Agent 可以处理每个动作的附加参数。
 
 ### 2023-07-28
 
-#### Improved
+#### 改进
 
-- Enhanced error handling and logging in the GitLab provider.
-- Improved handling of inline comments and code suggestions in GitLab.
-- Fixed a bug where an additional unneeded line was added to code suggestions in GitLab.
+- 改善 GitLab provider 的错误处理和日志。
+- 改善 GitLab 行内评论和代码建议处理。
+- 修复 GitLab 代码建议多出一行的问题。
 
 ### 2023-07-26
 
-#### Added
+#### 新增
 
-- New feature for updating the CHANGELOG.md based on the contents of a PR.
-- Added support for this feature for the GitHub provider.
-- New configuration settings and prompts for the changelog update feature.
+- 根据 PR 内容更新 `CHANGELOG.md`。
+- 为 GitHub provider 增加该功能。
+- 为变更日志更新增加配置和提示词。

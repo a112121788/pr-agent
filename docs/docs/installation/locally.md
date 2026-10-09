@@ -3,64 +3,27 @@ title: "本地运行"
 sidebar_position: 3
 ---
 
-要在本地运行 PR-Agent，你首先需要获取两把密钥：
+本地运行 Gitee PR-Agent 需要三项信息：
 
-本地执行使用下面的 Gitee 拉取请求示例。
-
-1. 你所配置的[语言模型提供商](../usage-guide/changing_a_model.md)的 API 密钥。对于 OpenAI，可在<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">此处</a>创建。
-2. 来自你的 Git 平台（GitHub、GitLab、BitBucket、Gitea）且具有 repo 范围的个人访问令牌。例如 GitHub 令牌可在<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">此处</a>签发
+1. [语言模型](../usage-guide/changing_a_model.md)的 API 密钥。
+2. OpenAI 兼容接口地址，通常以 `/v1` 结尾。
+3. Gitee 个人访问令牌，可在 <a href="https://gitee.com/personal_access_tokens" target="_blank" rel="noopener noreferrer">Gitee 个人访问令牌</a>页面创建。
 
 ## 使用 Docker 镜像 {#using-docker-image}
 
-相关工具列表见[工具指南](../tools/index.md)。
+相关工具见[工具指南](../tools/index.md)。审查一张 Gitee 拉取请求：
 
-要调用某个工具（例如 `review`），可以直接从 Docker 镜像运行 PR-Agent。方法如下：
+```bash
+docker run --rm -it \
+  -e OPENAI__KEY=<模型密钥> \
+  -e OPENAI__API_BASE=<模型地址> \
+  -e CONFIG__GIT_PROVIDER=gitee \
+  -e GITEE__PERSONAL_ACCESS_TOKEN=<Gitee 令牌> \
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/7 review
+```
 
-- 对于 GitHub：
-
-    ```bash
-    docker run --rm -it -e OPENAI__KEY=<your_openai_key> -e GITHUB__USER_TOKEN=<your_github_token> pragent/pr-agent:latest --pr_url <pr_url> review
-    ```
-
-    如果你使用 GitHub Enterprise Server，需要把自定义 URL 指定为变量。
-    例如，如果你的 GitHub 服务器位于 `https://github.mycompany.com`，请在命令中加入：
-
-    ```bash
-    -e GITHUB__BASE_URL=https://github.mycompany.com/api/v3
-    ```
-
-- 对于 GitLab：
-
-    ```bash
-    docker run --rm -it -e OPENAI__KEY=<your key> -e CONFIG__GIT_PROVIDER=gitlab -e GITLAB__PERSONAL_ACCESS_TOKEN=<your token> pragent/pr-agent:latest --pr_url <pr_url> review
-    ```
-
-    如果你有专用的 GitLab 实例，需要把自定义 URL 指定为变量：
-
-    ```bash
-    -e GITLAB__URL=<your gitlab instance url>
-    ```
-
-- 对于 BitBucket：
-
-    ```bash
-    docker run --rm -it -e CONFIG__GIT_PROVIDER=bitbucket -e OPENAI__KEY=$OPENAI_API_KEY -e BITBUCKET__BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN pragent/pr-agent:latest --pr_url=<pr_url> review
-    ```
-
-- 对于 Gitea：
-
-    ```bash
-    docker run --rm -it -e OPENAI__KEY=<your key> -e CONFIG__GIT_PROVIDER=gitea -e GITEA__PERSONAL_ACCESS_TOKEN=<your token> pragent/pr-agent:latest --pr_url <pr_url> review
-    ```
-
-    如果你有专用的 Gitea 实例，需要把自定义 URL 指定为变量：
-
-    ```bash
-    -e GITEA__URL=<your gitea instance url>
-    ```
-
-
-对于其他 Git 提供商，请相应更新 `CONFIG__GIT_PROVIDER`，并查看 [`pr_agent/settings/.secrets_template.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/.secrets_template.toml) 文件，了解环境变量的预期名称和取值。
+企业版地址使用 `https://e.gitee.com/<企业名>/repos/owner/repo/pulls/7`。把最后的 `review` 换成 `describe`、`improve`、`ask`、`add_docs` 或 `generate_labels`，即可运行对应工具。
 
 ### 使用环境变量
 
@@ -68,20 +31,21 @@ sidebar_position: 3
 你可以按以下约定定义对应的环境变量：`<TABLE>__<KEY>=<VALUE>` 或 `<TABLE>.<KEY>=<VALUE>`。
 `<TABLE>` 指配置文件中的表/小节，`<KEY>=<VALUE>` 指配置文件中某项设置的键/值对。
 
-例如，假设你要运行连接到自托管 GitLab 实例的 `pr_agent`，类似上面的示例。
-你可以在名为 `.env` 的纯文本文件中定义环境变量，内容如下：
+例如，把 Gitee 审查所需的变量写入 `.env`：
 
 ```bash
-CONFIG__GIT_PROVIDER="gitlab"
-GITLAB__URL="<your url>"
-GITLAB__PERSONAL_ACCESS_TOKEN="<your token>"
-OPENAI__KEY="<your key>"
+CONFIG__GIT_PROVIDER=gitee
+GITEE__PERSONAL_ACCESS_TOKEN=<Gitee 令牌>
+OPENAI__KEY=<模型密钥>
+OPENAI__API_BASE=<模型地址>
 ```
 
-然后可以用以下命令通过 Docker 运行 `pr_agent`：
+然后运行：
 
 ```shell
-docker run --rm -it --env-file .env pragent/pr-agent:latest <tool> <tool parameter>
+docker run --rm -it --env-file .env \
+  ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
+  --pr_url https://gitee.com/owner/repo/pulls/7 review
 ```
 
 ---
@@ -102,11 +66,10 @@ docker run --rm -it --env-file .env pragent/pr-agent:latest <tool> <tool paramet
 安装该包：
 
 ```bash
-pip install "pr-agent[github]"
+pip install gitee-pr-agent
 ```
 
-Git 提供商 SDK 是可选的 extra，因此请安装你所用提供商对应的那个：`github`、`gitlab`、`bitbucket`（Bitbucket Cloud、Bitbucket Server 和 Jira）、`azure`、`codecommit` 或 `gitea`。
-`google` 会加入 Vertex AI，`pr-agent[all]` 会安装全部集成。
+Gitee 使用标准库和已有依赖，不需要额外的 Git 平台 SDK。`google` 会加入 Vertex AI。
 
 然后用下面的脚本运行相应工具。
 <br>
@@ -118,16 +81,17 @@ from pr_agent.config_loader import get_settings
 
 def main():
     # Fill in the following values
-    provider = "github" # github/gitlab/bitbucket/azure_devops
-    user_token = "..."  #  user token
-    openai_key = "..."  # OpenAI key
-    pr_url = "..."      # PR URL, for example 'https://github.com/the-pr-agent/pr-agent/pull/809'
-    command = "/review" # Command to run (e.g. '/review', '/describe', '/ask="What is the purpose of this PR?"', ...)
+    user_token = "..."  # Gitee personal access token
+    openai_key = "..."  # model key
+    api_base = "..."    # OpenAI-compatible API base
+    pr_url = "..."      # for example 'https://gitee.com/owner/repo/pulls/7'
+    command = "/review" # '/review', '/describe', '/improve', ...
 
     # Setting the configurations
-    get_settings().set("CONFIG.git_provider", provider)
+    get_settings().set("CONFIG.git_provider", "gitee")
     get_settings().set("openai.key", openai_key)
-    get_settings().set("github.user_token", user_token)
+    get_settings().set("openai.api_base", api_base)
+    get_settings().set("gitee.personal_access_token", user_token)
 
     # Run the command. Feedback will appear in GitHub PR comments
     return cli.run_command(pr_url, command)
@@ -163,7 +127,7 @@ uv sync
 
 *注意：如果在安装依赖时出现与 Rust 相关的错误，请确保已安装 Rust 且它在你的 `PATH` 中，说明见：https://rustup.rs*
 
-3. 复制密钥模板文件，并填入你的 OpenAI 密钥和 GitHub 用户令牌：
+3. 复制密钥模板，填入模型密钥、模型地址和 Gitee 令牌：
 
 ```bash
 cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
@@ -174,13 +138,12 @@ chmod 600 pr_agent/settings/.secrets.toml
 4. 运行 cli.py 脚本：
 
 ```bash
-uv run pr-agent --pr_url <pr_url> review
-uv run pr-agent --pr_url <pr_url> ask "<your question>"
-uv run pr-agent --pr_url <pr_url> describe
-uv run pr-agent --pr_url <pr_url> improve
-uv run pr-agent --pr_url <pr_url> add_docs
-uv run pr-agent --pr_url <pr_url> generate_labels
-uv run pr-agent --issue_url <issue_url> similar_issue
+uv run gitee-pr-agent --pr_url <Gitee PR 地址> review
+uv run gitee-pr-agent --pr_url <Gitee PR 地址> ask "<你的问题>"
+uv run gitee-pr-agent --pr_url <Gitee PR 地址> describe
+uv run gitee-pr-agent --pr_url <Gitee PR 地址> improve
+uv run gitee-pr-agent --pr_url <Gitee PR 地址> add_docs
+uv run gitee-pr-agent --pr_url <Gitee PR 地址> generate_labels
 ...
 ```
 

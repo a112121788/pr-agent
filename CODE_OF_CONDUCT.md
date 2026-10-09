@@ -1,47 +1,24 @@
-# Contributor Code of Conduct
+# 贡献者行为准则
 
-As contributors and maintainers of this project, and in the interest of fostering an open
-and welcoming community, we pledge to respect all people who contribute through reporting
-issues, posting feature requests, updating documentation, submitting pull requests or
-patches, and other activities.
+作为本项目的贡献者和维护者，为了建立一个开放、友好的社区，我们承诺尊重所有通过报告问题、提出功能请求、更新文档、提交拉取请求或补丁，以及参与其他活动的人。
 
-We are committed to making participation in this project a harassment-free experience for
-everyone, regardless of level of experience, gender, gender identity and expression,
-sexual orientation, disability, personal appearance, body size, race, ethnicity, age,
-religion, or nationality.
+我们承诺让每个人都能免受骚扰地参与本项目，不论经验水平、性别、性别认同与表达、性取向、残疾、外貌、体型、种族、民族、年龄、宗教或国籍。
 
-Examples of unacceptable behavior by participants include:
+不可接受的行为包括：
 
-* The use of sexualized language or imagery
-* Personal attacks
-* Trolling or insulting/derogatory comments
-* Public or private harassment
-* Publishing other's private information, such as physical or electronic addresses,
-  without explicit permission
-* Other unethical or unprofessional conduct
+- 使用性暗示的语言或图像
+- 人身攻击
+- 挑衅、侮辱或贬损性评论
+- 公开或私下骚扰
+- 未经明确许可发布他人的物理地址或电子地址等私人信息
+- 其他不道德或不专业的行为
 
-Project maintainers have the right and responsibility to remove, edit, or reject comments,
-commits, code, wiki edits, issues, and other contributions that are not aligned to this
-Code of Conduct, or to ban temporarily or permanently any contributor for other behaviors
-that they deem inappropriate, threatening, offensive, or harmful.
+项目维护者有权删除、编辑或拒绝不符合本行为准则的评论、提交、代码、Wiki 编辑、议题和其他贡献，也可以临时或永久禁止参与者从事他们认为不适当、威胁性、冒犯性或有害的行为。
 
-By adopting this Code of Conduct, project maintainers commit themselves to fairly and
-consistently applying these principles to every aspect of managing this project. Project
-maintainers who do not follow or enforce the Code of Conduct may be permanently removed
-from the project team.
+采用本行为准则后，维护者承诺在管理项目的各个方面公平、一致地应用这些原则。不遵守或不执行本准则的维护者可能被永久移出项目团队。
 
-This Code of Conduct applies both within project spaces and in public spaces when an
-individual is representing the project or its community.
+本准则适用于项目空间，也适用于个人代表项目或其社区出现的公共空间。
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by
-contacting a project maintainer privately — the current maintainers are listed at
-[github.com/orgs/The-PR-Agent/people](https://github.com/orgs/The-PR-Agent/people). All
-complaints will be reviewed and investigated and will result in a response that is deemed
-necessary and appropriate to the circumstances. Maintainers are obligated to maintain
-confidentiality with regard to the reporter of an incident. If the report concerns a
-maintainer, it may instead be raised with
-[GitHub Support](https://support.github.com/contact/report-abuse).
+可以私下联系项目维护者报告辱骂、骚扰或其他不可接受行为。当前维护者列在 [github.com/orgs/The-PR-Agent/people](https://github.com/orgs/The-PR-Agent/people)。所有投诉都会被审查和调查，并给出与情况相符的回应。维护者必须对报告人的身份保密。如果投诉对象是维护者，也可以向 [GitHub Support](https://support.github.com/contact/report-abuse) 报告。
 
-This Code of Conduct is adapted from the
-[Contributor Covenant](https://contributor-covenant.org), version 1.3.0, available at
-[contributor-covenant.org/version/1/3/0/](https://contributor-covenant.org/version/1/3/0/)
+本行为准则改编自 [Contributor Covenant](https://contributor-covenant.org) 1.3.0，原文位于 [contributor-covenant.org/version/1/3/0/](https://contributor-covenant.org/version/1/3/0/)。

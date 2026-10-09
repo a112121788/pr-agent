@@ -1,48 +1,49 @@
-# Contributing to PR-Agent
+# 参与贡献
 
-Thank you for your interest in contributing to the PR-Agent project!
+感谢你为 Gitee PR-Agent 做出贡献。
 
-## Getting Started
+## 开始
 
-1. Fork the repository and clone your fork
-2. Install [uv](https://docs.astral.sh/uv/) and Python 3.12 or higher (the interpreter requirement declared in `pyproject.toml`)
-3. Install dependencies with `uv sync` (creates `.venv` from `uv.lock`)
-4. Create a new branch for your contribution:
-   - For new features: `git checkout -b feature/your-feature-name`
-   - For bug fixes: `git checkout -b fix/issue-description`
-5. Make your changes
-6. Write or update tests as needed
-7. Run tests locally to ensure everything passes:
+1. Fork 仓库并克隆你的副本。
+2. 安装 [uv](https://docs.astral.sh/uv/) 和 Python 3.12 或更高版本。
+3. 执行 `uv sync`，按 `uv.lock` 创建 `.venv`。
+4. 创建分支：
+   - 新功能：`git checkout -b feature/功能名称`
+   - 缺陷修复：`git checkout -b fix/问题描述`
+5. 做出修改。
+6. 添加或更新测试。
+7. 在本地运行单元测试：
+
    ```bash
    PYTHONPATH=. uv run pytest tests/unittest
    ```
-   The end-to-end and health suites require provider tokens or API keys,
-   so the unit suite is the default local check.
-8. Lint your changed files, then run the pre-commit hooks on them:
+
+8. 检查改动文件：
+
    ```bash
-   uv run ruff check --fix <changed Python files>
-   uv run pre-commit run --files <changed files>
+   uv run ruff check --fix <改动的 Python 文件>
+   uv run pre-commit run --files <改动文件>
    ```
-9. Commit your changes using conventional commit messages.
-10. Push to your fork and submit a pull request
 
-## Development Guidelines
+9. 使用 Conventional Commits 编写提交说明。
+10. 推送到你的 Fork，并提交拉取请求。
 
-- Keep pull requests focused on a single feature or fix
-- Follow the existing code style and formatting conventions
-- Add unit tests for any new functionality using pytest
-- Ensure test coverage for your changes
-- Update documentation as needed
+## 开发约定
 
-## Pull Request Process
+- 一个拉取请求只处理一个功能或修复。
+- 遵循现有代码风格。
+- 为新行为添加 Pytest 单元测试。
+- 用户可见行为变化时更新文档。
 
-1. Ensure your PR includes a clear description of the changes
-2. Link any related issues
-3. Update the README.md if needed
-4. Wait for review from maintainers
+## 拉取请求流程
 
-## Questions or Need Help?
+1. 写清改动内容。
+2. 关联相关议题。
+3. 必要时更新 `README.md`。
+4. 等待维护者审查。
 
-- Ask questions or start a discussion in [GitHub Discussions](https://github.com/the-pr-agent/pr-agent/discussions)
-- Check the [documentation](https://docs.pr-agent.ai/) for detailed information
-- Report bugs or request features through [GitHub Issues](https://github.com/the-pr-agent/pr-agent/issues)
+## 需要帮助
+
+- 在 [GitHub Discussions](https://github.com/the-pr-agent/pr-agent/discussions) 提问。
+- 查看[中文文档](https://docs.pr-agent.ai/)。
+- 通过 [GitHub Issues](https://github.com/the-pr-agent/pr-agent/issues) 报告缺陷或提出功能请求。

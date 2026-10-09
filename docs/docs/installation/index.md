@@ -23,7 +23,7 @@ sidebar_position: 1
 
 ## 为自托管 webhook 服务器估算规格 {#sizing-a-self-hosted-webhook-server}
 
-GitHub、GitLab、Gitea、Gitee 和 Bitbucket Server 的 webhook 服务器（Docker 目标 `github_app`、`gitlab_webhook`、`gitea_app`、`gitee_app` 和 `bitbucket_server_webhook`）在 gunicorn 下以多个工作进程运行，这样某个工作进程忙于处理请求时，不会挡住另一个工作进程提供的健康检查。其余部署方式——Bitbucket Cloud、Azure DevOps、GitHub 轮询以及 Lambda 变体——不使用这套 gunicorn 工作进程配置。
+Gitee Webhook 服务（Docker 目标 `gitee_app`）在 gunicorn 下以多个工作进程运行。某个工作进程忙于处理请求时，不会挡住另一个工作进程提供的健康检查。
 
 | 变量                   | 默认值      | 说明                                                                                      |
 |------------------------|-------------|-------------------------------------------------------------------------------------------|
@@ -41,24 +41,15 @@ GitHub、GitLab、Gitea、Gitee 和 Bitbucket Server 的 webhook 服务器（Doc
 GUNICORN_WORKERS=2
 ```
 
-## GitHub 轮询工作进程
-
-GitHub 轮询使用一个轮询进程，并为每条已接受的评论使用单独的子进程。在所有轮询迭代中，最多可以有 10 个这样的子工作进程处于活动状态。如果较早的一批仍然占满上限，已接受的工作会等待空闲槽位，且不会阻塞事件循环。在持续负载下，这可能推迟下一次通知轮询。
-
-现有的每批上限不变：一批中只有前 10 条排队评论会被接受；超出的工作会被记录并丢弃。等待中的工作仅保存在内存中。通知确认行为不变，因此关闭或启动失败并不保证重新投递。分发中断会记录剩余数量。工作进程启动失败会停止轮询，而不是冒着未跟踪子进程继续分发的风险；重启前请先检查失败原因。
-已完成的子进程在每次迭代中会被 join（不等待）并关闭；
-取消时不会终止仍在运行的子进程。这不是持久队列、
-模型调用截止时间，也不是主机范围的内存上限。
-
-:::note[Docker Hub 命名空间迁移]
-**`0.34.2` 及之后**的版本发布在 [`pragent/pr-agent`](https://hub.docker.com/r/pragent/pr-agent) 下。更早的版本（直至并包括 `v0.31`）仍留在旧的 [`codiumai/pr-agent`](https://hub.docker.com/r/codiumai/pr-agent) 命名空间，作为冻结归档——那里不再推送新镜像。本站示例引用新命名空间；如果你固定到 `0.34.2` 之前的版本，请在 `image:` / `docker pull` / `uses: docker://` 引用中把 `pragent/pr-agent` 换成 `codiumai/pr-agent`。
+:::note[镜像位置]
+当前镜像发布在 `ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent`。`latest` 指向最新构建，提交短哈希标签固定到一次构建。旧的 Docker Hub 命名空间不再接收本仓库的新镜像。
 :::
 
 :::note[不可变版本与版本标签]
 **你固定的就是你得到的。** 带版本号的产物在发布后绝不会改变：
 
 - **GitHub 发布**——Git 标签不能移动或删除，附加的资源也不能新增、替换或移除。该保护在仓库删除后仍然有效，因此不可变发布中的标签永远不能被同名重建的仓库复用。（发布标题和说明仍可编辑；不可变性覆盖标签和资源。）
-- **Docker 镜像**——`0.40.0` 和 `0.40.0-github_app` 这类版本标签始终解析到同一镜像。一旦推送，就不能被覆盖或重新指向。
+- **Docker 镜像**——提交短哈希标签对应一次构建。生产环境优先使用它或镜像摘要。
 
 **滚动标签按设计保持可变。** `latest` 和 `gitee_app` 会在每次发布时指向最新构建。它们便于试用，但在不同日期对同一滚动标签执行 `docker pull` 可能得到两个不同的镜像。
 

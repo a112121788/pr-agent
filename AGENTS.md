@@ -1,115 +1,85 @@
-# Repository Guidelines
+# 仓库指南
 
-This file is the shared source of repository guidance for coding agents. Tool-specific instruction files should import it instead of repeating repository-wide rules.
+本文件是编码代理的共享仓库指南。工具专用说明应引用本文件，不要重复仓库级规则。
 
-## Dos and Don’ts
+## 要做与不要做
 
-- **Do** match the interpreter requirement declared in `pyproject.toml` (Python ≥ 3.12) and install dependencies with `uv sync` (runtime + dev, from `uv.lock`) before running tools.
-- **Do** run tests with `PYTHONPATH=.` set to keep imports functional (for example `PYTHONPATH=. uv run pytest tests/unittest/test_fix_json_escape_char.py -q`).
-- **Do** adjust configuration through `.pr_agent.toml` or files under `pr_agent/settings/` instead of hard-coding values.
-- **Don’t** commit secrets or access tokens; rely on environment variables as shown in the health and e2e tests.
-- **Don’t** reformat or reorder files globally; match existing 120-character lines, import ordering, and docstring style.
-- **Don’t** delete or rename configuration, prompt, or workflow files without maintainer approval.
+- **要**使用 `pyproject.toml` 声明的 Python ≥ 3.12，并用 `uv sync` 按 `uv.lock` 安装运行时与开发依赖。
+- **要**在运行测试时设置 `PYTHONPATH=.`，例如 `PYTHONPATH=. uv run pytest tests/unittest/test_gitee_provider.py -q`。
+- **要**通过 `.pr_agent.toml` 或 `pr_agent/settings/` 下的文件调整配置，不要把值硬编码进代码。
+- **不要**提交密钥或访问令牌；按健康检查和端到端测试的方式使用环境变量。
+- **不要**全局重排或重排版文件；保持 120 字符行宽、现有导入顺序和文档字符串风格。
+- **不要**在未获维护者同意时删除或重命名配置、提示词或工作流文件。
 
-## Project Structure and Module Organization
+## 项目结构
 
-PR-Agent automates AI-assisted reviews for pull requests across multiple git providers.
+Gitee PR-Agent 只为 Gitee 拉取请求生成中文审查证据。
 
-- `pr_agent/agent/` orchestrates commands (`review`, `describe`, `improve`, etc.) via `pr_agent/agent/pr_agent.py`.
-- `pr_agent/tools/` implements individual capabilities such as reviewers, code suggestions, docs updates, and label generation.
-- `pr_agent/algo/` contains shared algorithms, model handlers, prompt/token handling, types, and utilities.
-- `pr_agent/git_providers/` handles integrations with GitHub, GitLab, Bitbucket (cloud and server), Azure DevOps, Gitea, Gerrit, CodeCommit, local checkouts, and plain diffs; `pr_agent/identity_providers/` handles identity and `pr_agent/secret_providers/` handles secrets.
-- `pr_agent/settings/` stores Dynaconf defaults (prompts, configuration templates, ignore lists) respected at runtime; `.pr_agent.toml` overrides repository-level behavior.
-- `pr_agent/servers/` contains webhook and service entrypoints.
-- `tests/unittest/`, `tests/e2e_tests/`, and `tests/health_test/` contain pytest-based unit, end-to-end, and smoke checks.
-- `docs/` holds the Docusaurus site (`docs/docusaurus.config.js` and `docs/sidebars.js` plus content under `docs/docs/`); theme overrides live in `docs/src/` and static assets in `docs/static/`.
-- `.github/workflows/` defines CI pipelines for unit tests, coverage, docs deployment, pre-commit, and PR-agent self-review.
-- `docker/` and the root Dockerfiles provide build targets for services (`github_app`, `gitlab_webhook`, etc.) and the `test` stage used in CI.
+- `pr_agent/agent/` 通过 `pr_agent/agent/pr_agent.py` 调度 `review`、`describe`、`improve` 等命令。
+- `pr_agent/tools/` 实现审查、代码建议、文档更新和标签生成。
+- `pr_agent/algo/` 包含模型处理、提示词、token、类型和共享算法。
+- `pr_agent/git_providers/` 只注册 `GiteeProvider`；身份和密钥仍分别位于 `pr_agent/identity_providers/` 与 `pr_agent/secret_providers/`。
+- `pr_agent/settings/` 保存 Dynaconf 默认值；仓库级覆盖来自 `.pr_agent.toml`。
+- `pr_agent/servers/` 只保留 Gitee Webhook 入口 `gitee_app.py`。
+- `tests/unittest/`、`tests/e2e_tests/` 和 `tests/health_test/` 分别放单元、端到端和冒烟测试。
+- `docs/` 是默认中文的 Docusaurus 站点。
+- `.github/workflows/` 运行单元测试、覆盖率、文档、pre-commit 和发布。
+- `docker/Dockerfile` 提供 `cli`、`gitee_app` 和 `test` 三个目标。
 
-## Architecture and Request Flow
+## 请求流程
 
-PR-Agent is a CLI/server that runs AI-powered tools (`/review`, `/describe`, `/improve`, `/ask`, etc.) against pull requests on supported git providers or local input. The main dispatch flow is `pr_agent/agent/pr_agent.py` → `command2class` → a tool class under `pr_agent/tools/`.
+命令行或 Webhook 调用 `PRAgent.handle_request(...)`，再由 `command2class` 找到 `pr_agent/tools/` 中的工具。工具读取 Gitee 拉取请求，准备提示词，调用模型，并把中文结果发布为评论。
 
-A tool generally obtains the appropriate git provider, gathers pull-request context, prepares prompt variables and templates, calls the configured model handler, and publishes or stores the result through the provider.
+### 提示词
 
-### Prompt Building
+工具构造 `self.vars`，连同系统和用户提示词交给 `TokenHandler`。渲染使用 `StrictUndefined`，模板引用的变量必须存在。提示词位于 `pr_agent/settings/`，新文件必须加入 `pr_agent/config_loader.py` 的 `settings_files`。
 
-Prompt-driven tools generally construct a `self.vars` dictionary and pass it with the system/user prompt strings to `TokenHandler`. Prompt rendering uses Jinja2 with `StrictUndefined`, so variables referenced by a template should be present in the corresponding vars dictionary; define optional values explicitly and guard optional sections with Jinja conditionals.
+### 配置
 
-System/user prompt strings live as TOML files under `pr_agent/settings/` and are loaded into `global_settings` by `pr_agent/config_loader.py`. Tool and prompt names normally correspond, for example:
+使用 `pr_agent/config_loader.py` 的 `get_settings()`。默认值在 `configuration.toml`，仓库覆盖由 `apply_repo_settings` 在命令执行前应用。密钥放在环境变量或被忽略的 `.secrets.toml` 中。
 
-- `pr_reviewer.py` ↔ `pr_reviewer_prompts.toml`
-- `pr_description.py` ↔ `pr_description_prompts.toml`
-- `pr_code_suggestions.py` ↔ `code_suggestions/pr_code_suggestions_prompts.toml` (plus its related variants)
+### Gitee Provider
 
-New prompt files must also be registered in the `settings_files=[...]` list in `pr_agent/config_loader.py` or they will not be loaded into `global_settings`.
+平台差异通过 `provider.is_supported("feature")` 判断。Gitee 不支持 `push_code`，因此代码建议和变更日志只发布评论，不推送文件。
 
-### Settings and Runtime Configuration
+## 构建、测试与开发
 
-Use `get_settings()` from `pr_agent/config_loader.py` as the shared settings accessor. It returns the request-scoped Dynaconf object from `starlette_context` when one is present, otherwise the module-level `global_settings` object.
+- 安装依赖：`uv sync`。
+- 单个测试：`PYTHONPATH=. uv run pytest tests/unittest/test_gitee_provider.py -q`。
+- 全部单元测试：`PYTHONPATH=. uv run pytest tests/unittest -v`。
+- 本地命令：`uv run gitee-pr-agent --pr_url <Gitee PR 地址> review`。`pr-agent` 仍指向同一入口。
+- 测试镜像：`docker build -f docker/Dockerfile --target test .`。
+- 文档：在 `docs/` 中执行 `npm ci` 和 `npm run build`。
 
-Defaults live in `pr_agent/settings/configuration.toml`. Per-repository overrides come from the repository's `.pr_agent.toml` and are applied by `pr_agent/git_providers/utils.py::apply_repo_settings` before command dispatch. When introducing a configuration section, add its defaults and comments to `configuration.toml` and keep related prompt/config changes synchronized.
+## 代码风格
 
-Sensitive values should stay in environment variables or the gitignored `.secrets.toml` files under `pr_agent/settings/` and `pr_agent/settings_prod/`. `apply_secrets_manager_config()` optionally loads values from AWS Secrets Manager.
+Ruff 是唯一的 Python 检查器，规则为 `E`、`F`、`B`、`I`。提交前对改动文件运行：
 
-### Git Providers
+```bash
+uv run ruff check --fix <改动的 Python 文件>
+uv run pre-commit run --files <改动文件>
+```
 
-`pr_agent/git_providers/` contains provider implementations that share the `GitProvider` interface in `pr_agent/git_providers/git_provider.py`. Provider-dependent behavior should be selected through capability checks such as `provider.is_supported("feature")` rather than concrete provider-type checks, because individual providers can stub or override capabilities. Some output is gated this way too: semantic file types and several other `/describe` sections are only emitted where `gfm_markdown` is supported.
+不要启用全仓 `ruff format`。Python 字符串与周围代码一致时使用双引号。`pr_agent/settings/` 中的 TOML 保持原有顺序和注释。文档页使用 front matter，新页面注册到 `docs/sidebars.js`。
 
-### Servers and Entrypoints
+## 测试约定
 
-`pr_agent/servers/` hosts webhook and service entrypoints that translate provider events into `PRAgent.handle_request(...)` calls. The CLI entrypoint is `pr_agent/cli.py`, registered as the `pr-agent` console script.
+- 新测试放在最接近的目录。Pytest 默认只收集 `tests/unittest`。
+- 优先测试 `pr_agent/algo/`、`pr_agent/tools/` 和 Gitee provider 的辅助函数。
+- 端到端测试需要 Gitee 与模型凭据，只在凭据和环境准备好时运行。
+- 健康检查覆盖 `/describe`、`/review` 和 `/improve`。提示词发生实质变化时更新预期结果。
 
-## Build, Test, and Development Commands
+## 提交与拉取请求
 
-- Install dependencies (runtime + dev) into a project virtualenv from the lockfile with `uv sync`; `uv run` auto-syncs before each command.
-- Run a single unit test (verified): `PYTHONPATH=. uv run pytest tests/unittest/test_fix_json_escape_char.py -q`.
-- Run the full unit suite: `PYTHONPATH=. uv run pytest tests/unittest -v`.
-- Execute the CLI locally once dependencies and API keys are available: `uv run pr-agent --pr_url <https://host/org/repo/pull/123> review`.
-- Build the test Docker target mirror of CI when containerizing: `docker build -f docker/Dockerfile --target test .` (loads dev dependencies and copies `tests/`).
-- Build the documentation the same way CI does (Node.js 22): `npm ci` then `npm run build` from `docs/`; `npm start` serves a live preview. The `docs-ci` workflow publishes `docs/build` to GitHub Pages.
+- 遵循 `CONTRIBUTING.md`，使用 Conventional Commits。
+- 分支使用 `feature/<name>` 或 `fix/<issue>`。
+- 用户可见行为变化时同步 README 或 `docs/`。
+- 审查前运行相关本地检查，并确认 `build-and-test` 与 `pre-commit` 可通过。
 
-## Coding Style and Existing Tooling
+## 安全与权限
 
-Ruff is the single linting tool: `pyproject.toml` configures it and the pre-commit Ruff hook enforces it (Flake8 and the standalone isort hook have been removed).
-
-- Keep Python lines within the 120-character limit declared in `pyproject.toml`.
-- `pyproject.toml` configures Ruff rules `E`, `F`, `B` and `I`; `I001` (import sorting), `F401` (unused imports), and `F541` (f-strings without placeholders) are fixable. The `lint.ignore` list defers pre-existing violations — treat it as a debt ledger: fix the code and drop entries rather than adding new ones.
-- Before committing, run `uv run ruff check --fix` on the files you touched and fix every issue it reports. Keep fixes mechanical (rename, remove unused imports, sort imports); do not alter program logic while cleaning up — if a lint fix would change behavior, surface it instead of applying it silently.
-- `.pre-commit-config.yaml` is the source of truth for enabled pre-commit hooks. Run them on the files you touched with `uv run pre-commit run --files <paths>` and review the automatic edits so unrelated changes are not included. The pre-commit GitHub Actions workflow runs on pull requests, so the hooks are enforced in CI.
-- No general-purpose Python formatter is currently enforced (`ruff format` is deliberately not adopted yet). Preserve the surrounding file's formatting and avoid unrelated rewrites or repository-wide formatting.
-- Prefer double quotes for Python strings where consistent with the surrounding file.
-- Match existing docstring and comment style—concise English comments using imperative phrasing only where necessary.
-- Configuration files in `pr_agent/settings/` are TOML; preserve formatting, section order, and comments when editing prompts or defaults.
-- Markdown in `docs/` uses Docusaurus conventions: every page starts with YAML front matter (`title`, `sidebar_position`), admonitions use `:::note` fences, collapsible sections use `<details>`, and images live in `docs/static/img/` referenced as `/img/<file>`. Pages stay `.md` (CommonMark) unless they need a JSX component, in which case they are `.mdx`. Register every new page in `docs/sidebars.js`.
-
-## Testing Guidelines
-
-- Pytest is the standard framework; keep new tests under the closest matching directory (`tests/unittest/` for unit logic, `tests/e2e_tests/` for integration flows, `tests/health_test/` for smoke coverage).
-- Pytest configuration lives in `pyproject.toml`, including `asyncio_mode = "auto"` and `testpaths = ["tests/unittest"]`. The Docker test image keeps `pyproject.toml` at `/app` (uv installs from it), so CI inherits these settings as well. Plain `PYTHONPATH=. uv run pytest` therefore defaults to the unit suite; invoke end-to-end tests explicitly.
-- Prefer focused unit tests that isolate helpers in `pr_agent/algo/`, `pr_agent/tools/`, or provider adapters; use parameterized tests where existing files already do so.
-- Set `PYTHONPATH=.` when invoking pytest from the repository root to avoid import errors.
-- End-to-end suites require provider tokens (`TOKEN_GITHUB`, `TOKEN_GITLAB`, `BITBUCKET_USERNAME`, `BITBUCKET_PASSWORD`) and may take several minutes; run them only when credentials and sandboxes are configured.
-- The health test (`tests/health_test/main.py`) exercises `/describe`, `/review`, and `/improve`; update expected artifacts if prompts change meaningfully.
-
-## Commit and Pull Request Guidelines
-
-- Follow `CONTRIBUTING.md`: keep changes focused, add or update tests, and use Conventional Commit-style messages (e.g., `fix: handle missing repo settings gracefully`).
-- Target branch names follow `feature/<name>` or `fix/<issue>` patterns for substantial work.
-- Reference related issues and update README or docs when user-facing behavior shifts.
-- Before requesting review, run the relevant local checks above and make sure the corresponding CI workflows (`build-and-test`, `pre-commit`) pass; coverage is collected and uploaded by `build-and-test`, and `docs-ci` builds the documentation on every pull request that touches `docs/**` (publishing only on pushes to `main` and `add-docs-portal`). That build fails on broken links and anchors, and also runs `scripts/check_docs_urls.py` to confirm the documentation URLs hardcoded in `pr_agent/` and the README still resolve.
-- Include screenshots or terminal captures when modifying user-visible output or documentation previews.
-
-## Safety and Permissions
-
-- Ask for confirmation before adding dependencies, renaming files, or changing workflow definitions; many consumers embed these paths and prompts.
-- Stay within existing formatting and directory conventions—avoid mass refactors, re-sorting of prompts, or reformatting Markdown beyond the touched sections.
-- You may read files, list directories, and run targeted lint/test/doc commands without prior approval; coordinate before launching full Docker builds or e2e suites that rely on external credentials.
-- Never commit cached credentials, API keys, or coverage artifacts; CI already handles secrets through GitHub Actions.
-- Treat prompt and configuration files as single sources of truth—update mirrors (`.pr_agent.toml`, `pr_agent/settings/*.toml`) together when behavior changes.
-
-## Security and Configuration Tips
-
-- Secrets should be supplied through environment variables (see usages in `tests/e2e_tests/test_github_app.py` and `tests/health_test/main.py`); do not persist them in code or configuration files.
-- Adjust runtime behavior by overriding keys in `.pr_agent.toml` or by supplying repository-specific Dynaconf files; keep overrides minimal and documented inside the PR description.
-- Review `SECURITY.md` before disclosing vulnerabilities and follow its contact instructions for responsible reporting.
+- 添加依赖、重命名文件或修改工作流前先确认。
+- 可以读取文件并运行有针对性的检查；完整 Docker 构建和依赖外部凭据的端到端测试需先确认。
+- 不提交密钥、缓存凭据或覆盖率产物。
+- 提示词和配置是单一事实来源，相关 TOML 要一起更新。
+- 披露漏洞前先阅读 `SECURITY.md`。
