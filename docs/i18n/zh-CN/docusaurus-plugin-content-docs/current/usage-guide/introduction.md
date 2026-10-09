@@ -11,5 +11,4 @@ sidebar_position: 2
 
 具体而言，可以通过预构建的 [Docker 镜像](../installation/locally.md#using-docker-image)发出 CLI 命令，也可以通过[本地克隆的仓库](../installation/locally.md#run-from-source)发出。
 
-对于在线用法，你需要设置 [GitHub App](../installation/github.md#run-as-a-github-app) 或 [GitHub Action](../installation/github.md#run-as-a-github-action)（GitHub）、[GitLab webhook](../installation/gitlab.md#run-a-gitlab-webhook-server)（GitLab），或 [BitBucket App](../installation/bitbucket.md)（BitBucket）。
-这些平台也支持在新的拉取请求打开时，或在每次推送到分支时，自动运行 PR-Agent 的特定工具。
+在线使用时，配置 [Gitee Webhook](../installation/gitee.md)。拉取请求打开时会自动运行工具，也可以在评论中使用以 `/` 开头的命令。

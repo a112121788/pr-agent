@@ -195,7 +195,7 @@ This means that when new code is pushed to the PR, PR-Agent will run the `descri
 You can configure settings for `GitHub Action` by adding environment variables under the env section in `.github/workflows/pr_agent.yml` file.
 
 :::tip[Fork/contribution support]
-To support PRs from forked repositories, use the `pull_request_target` event instead of `pull_request`. See the [fork contribution guide](../installation/github.md#using-with-pull_request_target-forkcontribution-support) for a complete example and security considerations.
+To support PRs from forked repositories, use the `pull_request_target` event instead of `pull_request`. See the [fork contribution guide](../installation/gitee.md) for a complete example and security considerations.
 :::
 
 Specifically, start by setting the following environment variables:
@@ -288,7 +288,7 @@ When this is configured, PR-Agent can be invoked by commenting on the PR.
 
 #### Quick Reference: Model Configuration in GitHub Actions
 
-For detailed step-by-step examples of configuring different models (Gemini, Claude, Azure OpenAI, etc.) in GitHub Actions, see the [Configuration Examples](../installation/github.md#configuration-examples) section in the installation guide.
+For detailed step-by-step examples of configuring different models (Gemini, Claude, Azure OpenAI, etc.) in GitHub Actions, see the [Configuration Examples](../installation/gitee.md) section in the installation guide.
 
 **Common Model Configuration Patterns:**
 

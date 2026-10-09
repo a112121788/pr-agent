@@ -21,7 +21,7 @@ sidebar_position: 10
 /help_docs "..."
 ```
 
-也可以配置为在[新议题打开时](../installation/github.md#run-as-a-github-action)自动触发。
+也可以配置为在[新议题打开时](../installation/gitee.md)自动触发。
 
 工具默认假定文档位于仓库根目录的 `/docs` 文件夹。
 不过可以通过 `docs_path` 配置选项自定义：
@@ -57,7 +57,7 @@ repo_default_branch = "main"  # The branch to use in case repo_url overwritten
 
 做法如下：
 
-1) 按[作为 GitHub Action 运行](../installation/github.md#run-as-a-github-action)中的步骤创建新工作流，例如：`.github/workflows/help_docs.yml`：
+1) 按[作为 GitHub Action 运行](../installation/gitee.md)中的步骤创建新工作流，例如：`.github/workflows/help_docs.yml`：
 
 2) 把 yaml 文件编辑为如下内容：
 

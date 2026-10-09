@@ -24,7 +24,7 @@ It can be invoked manually by commenting on any PR or Issue:
 /help_docs "..."
 ```
 
-Or configured to be triggered automatically when a [new issue is opened](../installation/github.md#run-as-a-github-action).
+Or configured to be triggered automatically when a [new issue is opened](../installation/gitee.md).
 
 The tool assumes by default that the documentation is located in the root of the repository, at `/docs` folder.
 However, this can be customized by setting the `docs_path` configuration option:
@@ -60,7 +60,7 @@ This can be useful, for example, for providing immediate feedback to users who o
 
 Here's how:
 
-1) Follow the steps depicted under [Run as a GitHub Action](../installation/github.md#run-as-a-github-action) to create a new workflow, such as:`.github/workflows/help_docs.yml`:
+1) Follow the steps depicted under [Run as a GitHub Action](../installation/gitee.md) to create a new workflow, such as:`.github/workflows/help_docs.yml`:
 
 2) Edit your yaml file to the following:
 

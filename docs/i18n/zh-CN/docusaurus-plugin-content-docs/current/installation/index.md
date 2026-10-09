@@ -3,16 +3,11 @@ title: "安装"
 sidebar_position: 1
 ---
 
-使用 PR-Agent 有多种方式：
+当前版本只支持 Gitee 拉取请求。
 
 <div class="pra-provider-grid">
 
 - <span class="pra-logo pra-logo--terminal" aria-hidden="true"></span> [本地](./locally.md)
-- <span class="pra-logo pra-logo--github" aria-hidden="true"></span> [GitHub](./github.md)
-- <span class="pra-logo pra-logo--gitlab" aria-hidden="true"></span> [GitLab](./gitlab.md)
-- <span class="pra-logo pra-logo--bitbucket" aria-hidden="true"></span> [Bitbucket](./bitbucket.md)
-- <span class="pra-logo pra-logo--azuredevops" aria-hidden="true"></span> [Azure DevOps](./azure.md)
-- <span class="pra-logo pra-logo--gitea" aria-hidden="true"></span> [Gitea](./gitea.md)
 - [Gitee](./gitee.md)
 
 </div>

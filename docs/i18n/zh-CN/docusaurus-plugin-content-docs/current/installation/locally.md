@@ -5,7 +5,7 @@ sidebar_position: 3
 
 要在本地运行 PR-Agent，你首先需要获取两把密钥：
 
-本地执行有两种不同情形：对已有的 PR/MR URL，使用下面的托管提供商示例；对没有托管 PR/MR 的分支比较，使用[本地 Git 提供商指南](../usage-guide/local_git_provider.md)。
+本地执行使用下面的 Gitee 拉取请求示例。
 
 1. 你所配置的[语言模型提供商](../usage-guide/changing_a_model.md)的 API 密钥。对于 OpenAI，可在<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">此处</a>创建。
 2. 来自你的 Git 平台（GitHub、GitLab、BitBucket、Gitea）且具有 repo 范围的个人访问令牌。例如 GitHub 令牌可在<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">此处</a>签发

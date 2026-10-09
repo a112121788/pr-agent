@@ -20,11 +20,6 @@ const sidebars = {
       // `className` draws the provider's logo before the label (provider-logos.css).
       items: [
         {type: 'doc', id: 'installation/locally', label: 'Locally', className: 'pra-side-provider pra-side-terminal'},
-        {type: 'doc', id: 'installation/github', label: 'GitHub', className: 'pra-side-provider pra-side-github'},
-        {type: 'doc', id: 'installation/gitlab', label: 'GitLab', className: 'pra-side-provider pra-side-gitlab'},
-        {type: 'doc', id: 'installation/bitbucket', label: 'Bitbucket', className: 'pra-side-provider pra-side-bitbucket'},
-        {type: 'doc', id: 'installation/azure', label: 'Azure DevOps', className: 'pra-side-provider pra-side-azuredevops'},
-        {type: 'doc', id: 'installation/gitea', label: 'Gitea', className: 'pra-side-provider pra-side-gitea'},
         {type: 'doc', id: 'installation/gitee', label: 'Gitee'},
       ],
     },
@@ -34,8 +29,6 @@ const sidebars = {
       label: 'Other ways to run',
       collapsible: false,
       items: [
-        {type: 'doc', id: 'usage-guide/local_git_provider', label: 'Local git provider'},
-        {type: 'doc', id: 'usage-guide/plain_diff_mode', label: 'Plain-diff mode'},
         {type: 'doc', id: 'installation/mosaico_server', label: 'MOSAICO A2A server'},
       ],
     },

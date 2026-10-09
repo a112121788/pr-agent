@@ -47,7 +47,7 @@ fallback_models=["<fallback-model-name>"]
 1. 创建 `pr_agent/git_providers/<name>_provider.py`，扩展 `pr_agent/git_providers/git_provider.py` 中的接口（参考实现是 `gitlab_provider.py`）。
 2. 把内置提供商以 `(module_path, class_name)` 对加入 `pr_agent/git_providers/__init__.py` 的 `_BUILTIN_GIT_PROVIDERS`。内置提供商在被选中时延迟导入。已使用的键：`github`、`gitlab`、`bitbucket`、`bitbucket_server`、`azure`、`codecommit`、`local`、`gerrit`、`gitea`、`plain-diff`。
 3. 在 `pr_agent/settings/configuration.toml` 中通过 `[config]` → `git_provider="<name>"` 选择它。
-4. 添加 `docs/docs/installation/<name>.md`（参见 [`gitlab.md`](../installation/gitlab.md)），并在 `docs/sidebars.js` 的 `Installation` 下注册。
+4. 添加 `docs/docs/installation/<name>.md`（参见 [`gitlab.md`](../installation/gitee.md)），并在 `docs/sidebars.js` 的 `Installation` 下注册。
 5. 用 `provider.is_supported("feature")` 这类能力检查来选择依赖提供商的行为，而不是检查提供商类型。
 6. 在 `tests/unittest/test_<name>_provider.py` 下添加单元测试（参见 `test_bitbucket_provider.py`），并在 `pr_agent/settings/.secrets_template.toml` 中列出所需的环境变量。
 

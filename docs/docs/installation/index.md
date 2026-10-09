@@ -3,36 +3,18 @@ title: "Installation"
 sidebar_position: 1
 ---
 
-There are several ways to use PR-Agent:
+This build supports Gitee pull requests.
 
 <div class="pra-provider-grid">
 
 - <span class="pra-logo pra-logo--terminal" aria-hidden="true"></span> [Locally](./locally.md)
-- <span class="pra-logo pra-logo--github" aria-hidden="true"></span> [GitHub](./github.md)
-- <span class="pra-logo pra-logo--gitlab" aria-hidden="true"></span> [GitLab](./gitlab.md)
-- <span class="pra-logo pra-logo--bitbucket" aria-hidden="true"></span> [Bitbucket](./bitbucket.md)
-- <span class="pra-logo pra-logo--azuredevops" aria-hidden="true"></span> [Azure DevOps](./azure.md)
-- <span class="pra-logo pra-logo--gitea" aria-hidden="true"></span> [Gitea](./gitea.md)
 - [Gitee](./gitee.md)
 
 </div>
 
-## GitHub polling HTTP requests
-
-When GitHub polling needs to look back through PR comments, it reuses the polling
-HTTP session rather than blocking the event loop with a synchronous request.
-`github.polling_request_timeout` sets the total timeout for the entire fallback
-comment-history scan, including any follow-up page requests
-(default: 10 seconds; positive values are capped at 60). Invalid values use the
-default with a warning. Set it in the host configuration or through
-`GITHUB__POLLING_REQUEST_TIMEOUT`; repository settings do not control this limit.
-This does not change the other polling requests or the sequential notification
-scan. The fallback now follows the existing aiohttp session's proxy and TLS
-behavior, not Requests-specific environment settings.
-
 ## Sizing a self-hosted webhook server
 
-The GitHub, GitLab, Gitea, Gitee and Bitbucket Server webhook servers (the `github_app`, `gitlab_webhook`, `gitea_app`, `gitee_app` and `bitbucket_server_webhook` Docker targets) run under gunicorn with multiple worker processes, so that a worker busy handling a request cannot block the health check served by another. The other deployments — Bitbucket Cloud, Azure DevOps, GitHub polling, and the Lambda variants — do not use this gunicorn worker configuration.
+The Gitee webhook server (the `github_app`, `gitlab_webhook`, `gitea_app`, `gitee_app` and `bitbucket_server_webhook` Docker targets) run under gunicorn with multiple worker processes, so that a worker busy handling a request cannot block the health check served by another. The other deployments — Bitbucket Cloud, Azure DevOps, GitHub polling, and the Lambda variants — do not use this gunicorn worker configuration.
 
 | Variable               | Default   | Description                                                                               |
 |------------------------|-----------|-------------------------------------------------------------------------------------------|
@@ -78,7 +60,7 @@ Releases **`0.34.2` and later** are published under [`pragent/pr-agent`](https:/
 - **GitHub releases** — the Git tag cannot be moved or deleted, and attached assets cannot be added, replaced, or removed. The protection also survives repository deletion, so a tag from an immutable release can never be reused by a repository recreated under the same name. (Release titles and notes stay editable; immutability covers the tag and the assets.)
 - **Docker images** — version tags such as `0.40.0` and `0.40.0-github_app` always resolve to the same image. Once pushed, they cannot be overwritten or repointed.
 
-**Rolling tags stay mutable by design.** `latest`, `github_action`, `github_lambda`, `gitlab_lambda`, `gitlab_webhook`, `gitea_app`, `gitee_app`, `mosaico_agent` and `bitbucket_server_webhook` move to the newest build on every release. They are convenient for trying things out, but a `docker pull` of the same rolling tag on two different days can give you two different images.
+**Rolling tags stay mutable by design.** `latest`, `gitee_app` and `mosaico_agent` move to the newest build on every release. They are convenient for trying things out, but a `docker pull` of the same rolling tag on two different days can give you two different images.
 
 For anything you depend on — CI, production webhooks, pinned Action steps — reference a version tag (or a digest) rather than a rolling one. Upgrading then becomes a deliberate change you make, not something that happens underneath you.
 :::

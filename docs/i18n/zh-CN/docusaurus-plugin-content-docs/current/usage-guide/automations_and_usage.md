@@ -193,7 +193,7 @@ push_commands = [
 你可以在 `.github/workflows/pr_agent.yml` 文件的 env 部分下添加环境变量，来配置 `GitHub Action` 的设置。
 
 :::tip[Fork/贡献支持]
-要支持来自 fork 仓库的 PR，请使用 `pull_request_target` 事件而不是 `pull_request`。完整示例和安全注意事项见[fork 贡献指南](../installation/github.md#using-with-pull_request_target-forkcontribution-support)。
+要支持来自 fork 仓库的 PR，请使用 `pull_request_target` 事件而不是 `pull_request`。完整示例和安全注意事项见[fork 贡献指南](../installation/gitee.md)。
 :::
 
 具体来说，先设置以下环境变量：
@@ -286,7 +286,7 @@ on:
 
 #### 快速参考：在 GitHub Actions 中配置模型
 
-关于在 GitHub Actions 中配置不同模型（Gemini、Claude、Azure OpenAI 等）的详细分步示例，请参见安装指南中的[配置示例](../installation/github.md#configuration-examples)部分。
+关于在 GitHub Actions 中配置不同模型（Gemini、Claude、Azure OpenAI 等）的详细分步示例，请参见安装指南中的[配置示例](../installation/gitee.md)部分。
 
 **常见模型配置模式：**
 
