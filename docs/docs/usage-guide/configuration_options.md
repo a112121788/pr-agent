@@ -1,42 +1,42 @@
 ---
-title: "Configuration File"
+title: "配置文件"
 sidebar_position: 3
 ---
 
-Tools used by Gitee PR-Agent read a TOML configuration. Three persistent layers exist:
+Gitee PR-Agent 使用的工具从 TOML 配置读取选项。持久配置有三层：
 
-1. [Local](./configuration_options.md#local-configuration-file) configuration file
-2. [Global](./configuration_options.md#global-configuration-file) configuration file
-3. [External configuration URL](./configuration_options.md#external-configuration-url) (CLI)
+1. [本地](./configuration_options.md#local-configuration-file)配置文件
+2. [全局](./configuration_options.md#global-configuration-file)配置文件
+3. [外部配置 URL](./configuration_options.md#external-configuration-url)（CLI）
 
-Local configuration overrides global configuration, and global configuration overrides an external URL. Environment variables of the form `SECTION__KEY` override those files.
+本地配置覆盖全局配置，全局配置覆盖外部 URL。形如 `SECTION__KEY` 的环境变量覆盖这些文件。
 
-For every key, see the [configuration reference](./configuration_reference.md), which is rendered from [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml). Each tool also has its own section. `/review` reads `[pr_reviewer]`.
+全部键见[配置参考](./configuration_reference.md)，它由 [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) 渲染而来。每个工具还有自己的配置节。`/review` 读取 `[pr_reviewer]`。
 
-:::tip[Edit only what you need]
-Keep the file small. Copying the whole default file makes later default changes look like local overrides.
+:::tip[只改需要的项]
+配置文件应尽量短。把整份默认文件复制进去后，以后的默认值变化会看起来像本地覆盖。
 :::
 
-:::tip[Show the settings a run used]
-When `config.output_relevant_configurations` is true, each tool adds a collapsible block with the settings that applied. Comment arguments cannot turn this on, because the block can include host-controlled values. Set it in `.pr_agent.toml` or the host configuration.
+:::tip[显示某次运行实际使用的设置]
+当 `config.output_relevant_configurations` 为 true 时，每个工具会附加一个可折叠段落，列出本次生效的设置。评论参数不能打开它，因为该段落可能包含主机控制的值。请在 `.pr_agent.toml` 或主机配置里设置。
 :::
 
-## Local configuration file {#local-configuration-file}
+## 本地配置文件 {#local-configuration-file}
 
-Upload `.pr_agent.toml` to the repository. Gitee reads it from the pull request **target** branch, not from the head branch, so the pull request cannot point the review at a file it just added. The file must already be on the target branch before the command runs.
+把 `.pr_agent.toml` 上传到仓库。Gitee 从拉取请求的**目标**分支读取它，而不是从源分支读取，因此拉取请求不能把审查指向自己刚添加的文件。命令运行前，该文件必须已经在目标分支上。
 
-The path defaults to `.pr_agent.toml` (`gitee.repo_setting`).
+路径默认为 `.pr_agent.toml`（`gitee.repo_setting`）。
 
-These Gitee keys are host-only. A repository file cannot set them:
+下列 Gitee 键只属于主机。仓库文件不能设置它们：
 
 - `gitee.api_base`
 - `gitee.webhook_secret`
 - `gitee.skip_ssl_verification`
 - `gitee.ssl_ca_cert`
 
-Model endpoints and credentials are also host-only. That includes `openai.api_base` and `openai.key`. Set them with `OPENAI__API_BASE` and `OPENAI__KEY` on the host, as described in [Changing a model](./changing_a_model.md).
+模型端点和凭据也只属于主机，包括 `openai.api_base` 和 `openai.key`。请在主机上用 `OPENAI__API_BASE` 和 `OPENAI__KEY` 设置，见[更换模型](./changing_a_model.md)。
 
-Example `.pr_agent.toml`:
+`.pr_agent.toml` 示例：
 
 ```toml
 [pr_reviewer]
@@ -46,74 +46,74 @@ extra_instructions = """\
 """
 ```
 
-The Gitee provider does not use `--config-branch` or `PR_AGENT_CONFIG_BRANCH`. Those options do not move the file off the target branch.
+Gitee 提供商不使用 `--config-branch` 或 `PR_AGENT_CONFIG_BRANCH`。这两个选项不会把配置文件从目标分支移走。
 
-## Global configuration file {#global-configuration-file}
+## 全局配置文件 {#global-configuration-file}
 
-Set `config.global_settings_repo` on the **host** to the name of a repository in the same Gitee owner (namespace). PR-Agent reads `.pr_agent.toml` from that repository's default branch and applies it to every repository under the owner. The setting is empty by default, which disables the feature. A repository file or a comment cannot set `global_settings_repo`.
+在**主机**上把 `config.global_settings_repo` 设为同一 Gitee 所有者（命名空间）下的一个仓库名。PR-Agent 从该仓库的默认分支读取 `.pr_agent.toml`，并应用到该所有者下的每个仓库。此设置默认为空，即关闭该功能。仓库文件或评论不能设置 `global_settings_repo`。
 
-With `global_settings_repo = "pr-agent-settings"` and a pull request in `my-org/my-repo`, the file that is read is `my-org/pr-agent-settings` on its default branch. Keys in `my-org/my-repo`'s own `.pr_agent.toml` override it.
+当 `global_settings_repo = "pr-agent-settings"`，且拉取请求位于 `my-org/my-repo` 时，读取的是 `my-org/pr-agent-settings` 默认分支上的文件。`my-org/my-repo` 自己的 `.pr_agent.toml` 会覆盖它。
 
-The token in `GITEE__PERSONAL_ACCESS_TOKEN` must be able to read both repositories. If the settings repository or file is missing, PR-Agent skips the global file and continues with the repository-local file.
+`GITEE__PERSONAL_ACCESS_TOKEN` 中的令牌必须能读取这两个仓库。如果设置仓库或文件不存在，PR-Agent 会跳过全局文件，并继续使用仓库本地文件。
 
-:::note[Caching]
-The Gitee webhook process caches the global file in memory for up to 15 minutes. A change in the settings repository can take that long to appear. CLI runs are short-lived and read the file once per invocation.
+:::note[缓存]
+Gitee Webhook 进程会把全局文件缓存在内存中，最长 15 分钟。设置仓库里的修改可能要等这么久才生效。CLI 进程是短生命周期的，每次调用读取一次。
 :::
 
-`use_global_settings_file` defaults to true but reads nothing until `global_settings_repo` is set. To ignore the global file:
+`use_global_settings_file` 默认为 true，但在设置 `global_settings_repo` 之前不会读取任何文件。若要忽略全局文件：
 
 ```toml
 [config]
 use_global_settings_file = false
 ```
 
-## External configuration URL {#external-configuration-url}
+## 外部配置 URL {#external-configuration-url}
 
-On the CLI, merge an extra `.pr_agent.toml` before the global and repository-local files. Use this when the shared file is not in the Gitee owner namespace, or when CI should choose the defaults without committing them to the target repository.
+在 CLI 上，可以在全局文件和仓库本地文件之前再合并一份 `.pr_agent.toml`。当共享文件不在 Gitee 所有者的命名空间里，或者 CI 希望选择默认值而又不把文件提交到目标仓库时，可以使用它。
 
-### Usage {#usage}
+### 用法 {#usage}
 
-Pass `--extra_config_url`, or set `PR_AGENT_EXTRA_CONFIG_URL`:
+传入 `--extra_config_url`，或设置 `PR_AGENT_EXTRA_CONFIG_URL`：
 
 ```bash
 uv run python -m pr_agent.cli \
-  --pr_url=<Gitee pull request URL> \
+  --pr_url=<Gitee 拉取请求 URL> \
   --extra_config_url=https://config.example.com/pr-agent/shared.toml \
   review
 ```
 
-Accepted values:
+可接受的值：
 
-- `https://…` or `http://…`, fetched at runtime
+- `https://…` 或 `http://…`，运行时获取
 - `file:///path/to/shared.toml`
-- a bare filesystem path, treated like `file://`
+- 裸文件系统路径，与 `file://` 相同
 
-### Authentication for private endpoints {#authentication-for-private-endpoints}
+### 私有端点的身份验证 {#authentication-for-private-endpoints}
 
-For a private URL, set one header in `PR_AGENT_EXTRA_CONFIG_AUTH_HEADER` as `<HeaderName>: <value>`:
+对于私有 URL，用 `PR_AGENT_EXTRA_CONFIG_AUTH_HEADER` 设置一个请求头，格式为 `<HeaderName>: <value>`：
 
 ```bash
 export PR_AGENT_EXTRA_CONFIG_AUTH_HEADER="Authorization: Bearer <your-token>"
 ```
 
-### Precedence {#precedence}
+### 优先级 {#precedence}
 
-The external file is applied first. Later layers override it:
+外部文件最先应用。后面的层会覆盖它：
 
 ```text
-built-in defaults
+内置默认值
   < --extra_config_url
-    < global pr-agent-settings
-      < local .pr_agent.toml (pull request target branch)
-        < environment variables (SECTION__KEY)
+    < 全局 pr-agent-settings
+      < 本地 .pr_agent.toml（拉取请求目标分支）
+        < 环境变量（SECTION__KEY）
 ```
 
-### Security and limits {#security-and-limits}
+### 安全与限制 {#security-and-limits}
 
-The file goes through the same loader as a repository `.pr_agent.toml`. Includes, preloads, custom loaders, and other directives that could run code or read arbitrary files are rejected. The fetch also:
+该文件与仓库 `.pr_agent.toml` 使用同一个加载器。include、preload、自定义加载器，以及其他可能执行代码或读取任意文件的指令都会被拒绝。获取时还会：
 
-- stops at **1 MB**
-- times out after **10 seconds**
-- accepts only `http`, `https`, `file`, or a bare local path
+- 在 **1 MB** 处停止
+- **10 秒**后超时
+- 只接受 `http`、`https`、`file` 或裸本地路径
 
-A failed fetch is logged. PR-Agent continues with the remaining layers. Host-only keys in the external file are still dropped.
+获取失败会被记录。PR-Agent 继续使用其余配置层。外部文件里的主机专用键仍然会被丢弃。

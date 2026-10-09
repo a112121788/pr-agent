@@ -1,21 +1,21 @@
 ---
-title: "Core Abilities"
+title: "核心能力"
 sidebar_position: 1
 ---
 
-Gitee PR-Agent reviews pull requests on Gitee. The abilities below decide what goes into the prompt, how a large diff is split, and what gets published back on the pull request:
+Gitee PR-Agent 审查 Gitee 上的拉取请求。下面这些能力决定提示词里放什么、过大的 diff 如何拆开，以及结果如何发回拉取请求：
 
-- [Agent skills](./agent_skills.md)
-- [Compression strategy](./compression_strategy.md)
-- [Dynamic context](./dynamic_context.md)
-- [Fetching ticket context](./fetching_ticket_context.md)
-- [Local and global metadata](./metadata.md)
-- [Self-reflection](./self_reflection.md)
+- [代理技能](./agent_skills.md)
+- [压缩策略](./compression_strategy.md)
+- [动态上下文](./dynamic_context.md)
+- [获取工单上下文](./fetching_ticket_context.md)
+- [本地与全局元数据](./metadata.md)
+- [自我反思](./self_reflection.md)
 
-## Defaults in this build
+## 本构建的默认值
 
-- Platform: Gitee only. Setup is in the [Gitee installation guide](../installation/gitee.md). Other git hosts are listed on [Supported platforms](../overview/supported_platforms.md).
-- Model: `gpt-6.1-sol`. The fallback is `glm-5.3`. Override either in [Changing a model](../usage-guide/changing_a_model.md).
-- Response language: `zh-CN` (`config.response_language`).
-- Large pull requests: `/review` and `/describe` segment the diff by default. See [Compression strategy](./compression_strategy.md).
-- Inline comments are anchored with Gitee's diff `position`, counted from the line below the first `@@` hunk header. A line that cannot be mapped is skipped. See [Gitee installation](../installation/gitee.md#verified-behavior).
+- 平台：仅 Gitee。安装见 [Gitee 安装指南](../installation/gitee.md)。其他 Git 托管不在支持范围内，见 [支持的平台](../overview/supported_platforms.md)。
+- 模型：`gpt-6.1-sol`。备用模型是 `glm-5.3`。更换方式见 [更换模型](../usage-guide/changing_a_model.md)。
+- 响应语言：`zh-CN`（`config.response_language`）。
+- 大拉取请求：`/review` 和 `/describe` 默认分段处理。见 [压缩策略](./compression_strategy.md)。
+- 行内评论锚定在 Gitee 的 diff `position` 上，从该文件补丁里第一个 `@@` 差异块头的下一行起算。无法映射的行会跳过。见 [Gitee 安装](../installation/gitee.md#已验证的行为)。

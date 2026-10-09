@@ -1,15 +1,15 @@
 ---
-title: "Dynamic Context"
+title: "动态上下文"
 sidebar_position: 4
 ---
 
-`Supported Git platform: Gitee`
+`支持的 Git 平台：Gitee`
 
-Gitee PR-Agent uses an **asymmetric and dynamic context** around each hunk. It keeps more lines before a change than after it, and it widens that window when the change sits inside a function or class. The goal is enough context for an accurate comment without a needle-in-a-haystack prompt that blows the token budget. The default model is `gpt-6.1-sol` (`glm-5.3` is the fallback), and that budget is what the packer in [Compression strategy](./compression_strategy.md) enforces.
+Gitee PR-Agent 在每个差异块周围使用**非对称且动态的上下文**。变更之前的行比变更之后的行更多，若变更落在函数或类内部，窗口还会再加宽。目标是让评论足够准确，又避免提示词变成大海捞针，撑破令牌预算。默认模型是 `gpt-6.1-sol`（备用 `glm-5.3`）。[压缩策略](./compression_strategy.md) 里的装箱按的就是这份预算。
 
-## What Gitee returns
+## Gitee 返回什么
 
-Changed lines arrive as a unified diff. A typical hunk shows three context lines before and after the edit. Additions are marked `+` and deletions `-`.
+变更行以统一 diff 到来。典型差异块在编辑前后各有三行上下文。新增标为 `+`，删除标为 `-`。
 
 ```diff
 @@ -12,5 +12,5 @@ def func1():
@@ -26,31 +26,31 @@ Changed lines arrive as a unified diff. A typical hunk shows three context lines
 ...
 ```
 
-That format is a poor prompt by itself. Three lines often hide the enclosing function, and the `+` / `-` / ` ` markers are not how models usually see source code.
+只拿这份 diff 做提示词并不合适。三行上下文经常看不到外层函数，而 `+` / `-` / 空格这些标记也不是模型平时见到的源码写法。
 
-## Why not send the whole file every time
+## 为什么不每次都送整文件
 
-A wider window helps the model place the edit. It also has a cost:
+窗口更宽，模型更容易定位修改，但也有代价：
 
-- Too little context and the model misreads the change.
-- Too much context hides the lines that actually changed. Quality drops as the prompt grows, and a Gitee pull request often touches many files.
-- Extra lines spend tokens. They add latency and can force the segmented review described in [Compression strategy](./compression_strategy.md).
+- 上下文太少，模型会误读变更。
+- 上下文太多，真正改过的行会被淹没。提示词变长后质量下降，而一个 Gitee 拉取请求常常改很多文件。
+- 多出来的行消耗令牌，增加延迟，也可能触发 [压缩策略](./compression_strategy.md) 里的分段审查。
 
-## Asymmetric and dynamic windows
+## 非对称窗口和动态窗口
 
-**Asymmetric.** The lines above a change usually explain it better than the lines below it. The before-window and the after-window are separate settings.
+**非对称。** 变更上方的行通常比下方的行更能解释这次修改。前后窗口是分开的设置。
 
-**Dynamic.** The useful window is often the enclosing function or class, not a fixed line count. Gitee PR-Agent walks upward from the hunk until it hits that boundary, and it stops after a configured number of extra lines so one large function cannot consume the budget.
+**动态。** 有用的窗口往往是外层函数或类，而不是固定行数。Gitee PR-Agent 从差异块向上找，直到碰到这个边界，并在配置的额外行数处停下，避免一个超大函数吃掉预算。
 
-## Configuration
+## 配置
 
-These defaults live in `configuration.toml`:
+下列默认值在 `configuration.toml` 中：
 
 ```toml
 [config]
-patch_extension_skip_types = [".md", ".txt"]  # do not extend context for these extensions
-allow_dynamic_context = true                   # walk up to an enclosing function or class
-max_extra_lines_before_dynamic_context = 10    # extra lines to search before the hunk
-patch_extra_lines_before = 5                   # extra lines before each hunk, on top of the 3 in the diff
-patch_extra_lines_after = 1                    # extra lines after each hunk, on top of the 3 in the diff
+patch_extension_skip_types = [".md", ".txt"]  # 这些扩展名不扩展上下文
+allow_dynamic_context = true                   # 向上找到外层函数或类
+max_extra_lines_before_dynamic_context = 10    # 在差异块之前最多再搜索的行数
+patch_extra_lines_before = 5                   # 每个差异块之前的额外行，加在 diff 自带的 3 行之上
+patch_extra_lines_after = 1                    # 每个差异块之后的额外行，加在 diff 自带的 3 行之上
 ```

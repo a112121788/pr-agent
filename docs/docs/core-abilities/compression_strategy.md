@@ -1,71 +1,71 @@
 ---
-title: "Compression Strategy"
+title: "压缩策略"
 sidebar_position: 3
 ---
 
-`Supported Git platform: Gitee`
+`支持的 Git 平台：Gitee`
 
-## Overview
+## 概述
 
-Gitee PR-Agent prepares a Gitee pull-request diff in two passes. First it packs the diff into the model's token budget. When the diff still does not fit, `/review` and `/describe` segment it by default instead of dropping the rest silently.
+Gitee PR-Agent 分两步准备 Gitee 拉取请求的 diff。先把 diff 装进模型的令牌预算。仍然放不下时，`/review` 和 `/describe` 默认分段，而不是把剩下的文件悄悄丢掉。
 
-1. The pull request is small enough for one prompt (system prompt plus user prompt).
-2. The pull request is too large for one prompt.
+1. 拉取请求足够小，一条提示词放得下（系统提示词加用户提示词）。
+2. 拉取请求太大，一条提示词放不下。
 
-Both cases start with the same file ordering.
+两种情形都从同一套文件排序开始。
 
-#### Repository language priority
+#### 按仓库语言优先
 
-1. Drop binary files and non-code files (images, PDFs, and similar).
-2. Take the main languages used in the repository.
-3. Sort the pull-request files by those languages, most common first:
+1. 去掉二进制文件和非代码文件（图片、PDF 等）。
+2. 取仓库里的主要语言。
+3. 按这些语言把拉取请求文件分组，最常用的语言在前：
 
    * `[[file.py, file2.py], [file3.js, file4.jsx], [readme.md]]`
 
-### Small pull request
+### 小拉取请求
 
-The whole diff fits in one prompt:
+整份 diff 能放进一条提示词：
 
-1. Drop binary files and non-code files.
-2. Expand the context around each hunk. The dynamic-context settings in [Dynamic context](./dynamic_context.md) control how many extra lines are added.
+1. 去掉二进制文件和非代码文件。
+2. 扩展每个差异块周围的上下文。多加多少行由 [动态上下文](./dynamic_context.md) 的设置决定。
 
-### Large pull request
+### 大拉取请求
 
-#### Why pack the diff
+#### 为什么要装箱
 
-A Gitee pull request can be long, and not every hunk matters equally. The packer keeps as much relevant code as the token budget allows before any extra model call.
+Gitee 拉取请求可以很长，也不是每个差异块都同样重要。装箱是在发起额外模型调用之前，在令牌预算内尽量留下相关代码。
 
-#### What is compressed
+#### 压缩什么
 
-Additions are kept ahead of deletions:
+新增优先于删除：
 
-* Deleted files are folded into one `deleted files` list.
-* Hunks that only delete lines are removed from the file patch.
+* 被删除的文件收成一份 `deleted files` 列表。
+* 文件补丁里只含删除的差异块会被去掉。
 
-#### Token-aware fitting
+#### 按令牌装入
 
-Patches are tokenized with [tiktoken](https://github.com/openai/tiktoken) after the steps above, then fitted as follows:
+上述处理之后，用 [tiktoken](https://github.com/openai/tiktoken) 给补丁计数，再按下面的顺序装入：
 
-1. Inside each language group, sort files by token count, largest first:
+1. 在每个语言组内按令牌数排序，大的在前：
     * `[[file2.py, file.py], [file4.jsx, file3.js], [readme.md]]`
-2. Walk the patches in that order.
-3. Add patches until the prompt is within a buffer of the model's token limit.
-4. If patches remain, add them as `other modified files` until the hard token limit, then stop.
-5. If there is still room, add `deleted files` until the hard token limit, then stop.
+2. 按这个顺序遍历补丁。
+3. 持续加入补丁，直到提示词距模型令牌上限还留有一段缓冲。
+4. 若仍有补丁，把它们放进 `other modified files`，直到硬上限，然后停止。
+5. 若还有空位，再加入 `deleted files`，直到硬上限，然后停止。
 
-#### Segmented review and description
+#### 分段审查与描述
 
-Packing is not the last step. In this build both tools continue when files are left out:
+装箱不是最后一步。本构建里，文件装不下时两个工具都会继续：
 
-| Tool | Default | What happens |
+| 工具 | 默认 | 行为 |
 | --- | --- | --- |
-| `/review` | `pr_reviewer.enable_large_pr_chunking = true` | The diff is split into at most `pr_reviewer.max_number_of_calls` chunks (default `3`). Each chunk is reviewed, then the answers are merged into one comment. |
-| `/describe` | `pr_description.enable_large_pr_handling = true` | The tool makes further model calls and combines them so more files are covered. |
+| `/review` | `pr_reviewer.enable_large_pr_chunking = true` | diff 最多拆成 `pr_reviewer.max_number_of_calls` 段（默认 `3`）。逐段审查后合并成一条评论。 |
+| `/describe` | `pr_description.enable_large_pr_handling = true` | 再发起模型调用并合并结果，从而覆盖更多文件。 |
 
-Files that still do not fit are listed in the review coverage footer. A failed chunk is retried on the fallback model (`glm-5.3` when the primary model is `gpt-6.1-sol`) before the successful chunks are published as a partial review. The chunk switch is under [Other options](../tools/review.md#other-options). The describe switch is `enable_large_pr_handling` on the [Describe configuration](../tools/describe.md#configuration).
+仍然放不下的文件会列在审查覆盖范围页脚里。失败的分段会先改走备用模型（主模型为 `gpt-6.1-sol` 时，备用是 `glm-5.3`），然后才把成功的分段作为部分审查发出。分段开关在 [其他选项](../tools/review.md#其他选项)。描述工具的开关是 [Describe 配置](../tools/describe.md#配置) 里的 `enable_large_pr_handling`。
 
-Inline comments published from a chunk still use Gitee's diff `position`. See [Gitee installation](../installation/gitee.md#verified-behavior).
+分段里发出的行内评论同样使用 Gitee 的 diff `position`。见 [Gitee 安装](../installation/gitee.md#已验证的行为)。
 
-#### Example
+#### 示例
 
-<img src="/img/git_patch_logic.png" alt="How a Gitee pull-request patch is packed" width="768" />
+<img src="/img/git_patch_logic.png" alt="Gitee 拉取请求补丁如何装箱" width="768" />

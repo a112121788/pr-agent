@@ -1,39 +1,39 @@
 ---
-title: "Additional Configurations"
+title: "附加配置"
 sidebar_position: 10
 ---
 
-These settings apply to Gitee PR-Agent. The webhook and CLI are described in [Usage and Automation](./automations_and_usage.md). Install steps are in the [Gitee integration guide](../installation/gitee.md).
+这些设置适用于 Gitee PR-Agent。Webhook 和 CLI 见[用法与自动化](./automations_and_usage.md)。安装步骤见 [Gitee 集成指南](../installation/gitee.md)。
 
-## Show possible configurations
+## 显示可用配置
 
-The defaults live in [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml). The [tools](../tools/index.md) pages explain how each tool uses them. The rendered list is the [configuration reference](./configuration_reference.md).
+默认值在 [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml)。[工具](../tools/index.md)页面说明每个工具如何使用它们。渲染后的列表是[配置参考](./configuration_reference.md)。
 
-Comment on a pull request:
+在拉取请求上评论：
 
 ```text
 /config
 ```
 
-To include the settings a tool actually used, an operator sets `config.output_relevant_configurations=true` in `.pr_agent.toml` or the host configuration. A comment cannot enable it, because the block may show host-controlled values.
+要附上工具实际使用的设置，操作者需在 `.pr_agent.toml` 或主机配置里设置 `config.output_relevant_configurations=true`。评论不能打开它，因为该段落可能显示主机控制的值。
 
-### Showing the agent run details {#showing-the-agent-run-details}
+### 显示代理运行详情 {#showing-the-agent-run-details}
 
-To record which model answered, the token counts, and how long the model phase took, enable `config.output_run_details`:
+要记录实际回答的模型、token 数量以及模型阶段耗时，请启用 `config.output_run_details`：
 
 ```text
 /review --config.output_run_details=true
 ```
 
-API-cost collection is a separate option, off by default. Enable both flags to add the estimate inside the run-details section:
+API 费用收集是另一个默认关闭的选项。两个开关都打开时，估算值会出现在运行详情里：
 
 ```text
 /review --config.output_run_details=true --config.output_run_cost=true
 ```
 
-`config.output_run_details` is the public-output gate. `config.output_run_cost=true` alone collects cost data and does not add it to the comment.
+`config.output_run_details` 是公开发布的闸门。只设置 `config.output_run_cost=true` 会收集费用，但不会把它写进评论。
 
-On Gitee the section is appended as a collapsible block when the comment uses GitHub-flavored Markdown, and as plain text otherwise:
+在 Gitee 上，如果评论使用 GitHub 风味 Markdown，该段落会以可折叠块追加；否则为纯文本：
 
 ```text
 ⚙️ Agent run details
@@ -44,91 +44,91 @@ On Gitee the section is appended as a collapsible block when the comment uses Gi
 - Estimated API cost: $0.08 USD
 ```
 
-`Model` is the model that produced the answer, marked `(fallback)` when `gpt-6.1-sol` failed and `glm-5.3` (or another fallback) took over. `Tokens` appears only when the provider reports usage. The amount is an estimate from LiteLLM's pricing data, not an invoice. The public section contains aggregate costs and model names, not prompts, responses, or API keys.
+`Model` 是产生回答的模型。当 `gpt-6.1-sol` 失败并由 `glm-5.3`（或其他备用模型）接手时，会标成 `(fallback)`。只有提供商报告了用量时才出现 `Tokens`。金额是根据 LiteLLM 价格数据做的估算，不是账单。公开段落只包含汇总费用和模型名称，不包含提示词、响应或 API 密钥。
 
-`/improve` appends the section only when it publishes a summary comment. Inline-only suggestions do not carry it. With `pr_description.use_description_markers=true`, repeated `/describe` runs accumulate one block per run.
+`/improve` 只在发表汇总评论时追加该段落。只发行内建议时不会带上它。当 `pr_description.use_description_markers=true` 时，重复的 `/describe` 每次运行都会再累加一块。
 
-## Ignoring files from analysis {#ignoring-files-from-analysis}
+## 从分析中忽略文件 {#ignoring-files-from-analysis}
 
-Skip generated or vendor files with:
+用下面两项跳过生成文件或第三方文件：
 
 - `IGNORE.GLOB`
 - `IGNORE.REGEX`
 
-To ignore Python files for one command:
+只对一次命令忽略 Python 文件：
 
 ```text
 /review --ignore.glob="['*.py']"
 ```
 
-To ignore them for every pull request:
+对所有拉取请求忽略它们：
 
 ```toml
 [ignore]
 glob = ['*.py']
 ```
 
-Or with a regex:
+或使用正则：
 
 ```toml
 [ignore]
 regex = ['.*\.py$']
 ```
 
-A `**/` segment matches zero or more directories, so `src/**/generated_*.py` also ignores `src/generated_pb.py`. `*` still matches across `/`, which is why `['*.py']` ignores every Python file.
+`**/` 段匹配零个或多个目录，因此 `src/**/generated_*.py` 也会忽略 `src/generated_pb.py`。`*` 仍然可以跨越 `/`，所以 `['*.py']` 会忽略每一个 Python 文件。
 
-Each glob list keeps at most 256 extra zero-directory regexes. Patterns with more than six standalone `**/` segments, or more than 256 characters, are not expanded. Configured patterns and the root-level form of a leading `**/` are always kept. Files that only a skipped variant would match are still analyzed.
+每个 glob 列表最多额外保留 256 条零目录正则。独立 `**/` 段超过六个，或长度超过 256 个字符的模式不会被展开。已配置的模式，以及前导 `**/` 的根级形式，始终保留。只会被被跳过的变体匹配到的文件仍会进入分析。
 
-## Extra instructions {#extra-instructions}
+## 额外指令 {#extra-instructions}
 
-Every tool accepts `extra_instructions`. Example:
+每个工具都接受 `extra_instructions`。例如：
 
 ```text
 /update_changelog --pr_update_changelog.extra_instructions="Make sure to update also the version ..."
 ```
 
-On Gitee, `/update_changelog` still only posts a comment. The provider does not support `push_code`, so the extra instructions cannot cause a commit.
+在 Gitee 上，`/update_changelog` 仍然只发表评论。提供商不支持 `push_code`，额外指令也不能促成一次提交。
 
-## Language settings
+## 语言设置
 
-The shipped default for `response_language` is `zh-CN`. Set a locale from [ISO 3166](https://en.wikipedia.org/wiki/ISO_3166) and [ISO 639](https://en.wikipedia.org/wiki/ISO_639) to change the language of model-written text. A [list of locale codes](https://simplelocalize.io/data/locales/) is a useful reference.
+`response_language` 的随构建默认值是 `zh-CN`。用 [ISO 3166](https://en.wikipedia.org/wiki/ISO_3166) 和 [ISO 639](https://en.wikipedia.org/wiki/ISO_639) 的区域代码可以改变模型撰写文字的语言。[区域代码列表](https://simplelocalize.io/data/locales/)可供查阅。
 
 ```toml
 [config]
 response_language = "zh-CN"
 ```
 
-Only text the model generates is translated. Static labels and table headers stay as shipped. The model must support the locale.
+只有模型生成的文字会被翻译。静态标签和表头保持发行时的语言。所用模型必须支持该区域设置。
 
-## Log level
+## 日志级别
 
 ```toml
 [config]
-log_level = "DEBUG" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+log_level = "DEBUG" # "DEBUG"、"INFO"、"WARNING"、"ERROR"、"CRITICAL"
 ```
 
-The default is `DEBUG`. Use `INFO` or `WARNING` for a quieter webhook process.
+默认是 `DEBUG`。Webhook 进程若要更安静，请使用 `INFO` 或 `WARNING`。
 
-## Attributing requests to a pull request
+## 在提供商侧把请求归因到某个拉取请求
 
-When `add_user_to_requests` is enabled, PR-Agent sends the command and pull-request URL in the OpenAI-compatible `user` field:
+启用 `add_user_to_requests` 后，PR-Agent 会在 OpenAI 兼容的 `user` 字段里发送命令和拉取请求 URL：
 
 ```text
 {"command":"improve","pr_url":"https://gitee.com/owner/repo/pulls/171"}
 ```
 
-Providers that store this field can attribute cost to a pull request without matching timestamps. The setting is off by default because it shares the URL with the model provider.
+会保存该字段的提供商就可以把费用归因到某次拉取请求，而不必对照时间戳。该设置默认关闭，因为它会把 URL 分享给模型提供商。
 
 ```toml
 [config]
 add_user_to_requests = true
 ```
 
-## Integrating with logging observability platforms
+## 与日志可观测性平台集成
 
-LiteLLM callbacks work when the default LiteLLM handler is in use. Configure them in `configuration.toml` and set the environment variables from the LiteLLM [documentation](https://docs.litellm.ai/docs/).
+使用默认 LiteLLM 处理程序时，LiteLLM 回调可以直接工作。在 `configuration.toml` 里配置它们，并按 LiteLLM [文档](https://docs.litellm.ai/docs/)设置环境变量。
 
-LangSmith example:
+LangSmith 示例：
 
 ```toml
 [litellm]
@@ -144,7 +144,7 @@ LANGSMITH_PROJECT=<project>
 LANGSMITH_BASE_URL=<url>
 ```
 
-Langfuse example (use `langfuse_otel`, not the legacy `langfuse` callback):
+Langfuse 示例（使用 `langfuse_otel`，不要使用旧的 `langfuse` 回调）：
 
 ```toml
 [litellm]
@@ -159,11 +159,11 @@ LANGFUSE_PUBLIC_KEY=<public_key>
 LANGFUSE_SECRET_KEY=<secret_key>
 ```
 
-Traces are tagged with the command, git provider (`gitee`), pull-request URL, model, token counts, and version.
+追踪会带上命令、Git 提供商（`gitee`）、拉取请求 URL、模型、token 数量和版本作为标签。
 
-### LLM telemetry via LiteLLM's OpenTelemetry integration {#llm-telemetry-via-litellms-opentelemetry-integration}
+### 通过 LiteLLM 的 OpenTelemetry 集成发送 LLM 遥测 {#llm-telemetry-via-litellms-opentelemetry-integration}
 
-To emit OpenTelemetry traces and metrics for the model calls themselves, enable LiteLLM's `otel` callback:
+要为模型调用本身发出 OpenTelemetry 追踪和指标，请启用 LiteLLM 的 `otel` 回调：
 
 ```toml
 [litellm]
@@ -172,7 +172,7 @@ failure_callback = ["otel"]
 turn_off_message_logging = true
 ```
 
-Set `turn_off_message_logging = true`. Otherwise LiteLLM can attach the prompt and the response, which here include the pull-request diff.
+请设置 `turn_off_message_logging = true`。否则 LiteLLM 可能附上提示词和响应，而这里面包含拉取请求 diff。
 
 ```bash
 OTEL_EXPORTER=otlp_http
@@ -182,11 +182,11 @@ OTEL_SERVICE_NAME=pr-agent
 LITELLM_OTEL_INTEGRATION_ENABLE_METRICS=true
 ```
 
-Pending callbacks are flushed before the CLI exits, bounded by `callback_timeout_seconds` (see [Custom callbacks](#custom-callbacks)).
+未完成的回调会在 CLI 退出前刷新，时长受 `callback_timeout_seconds` 限制（见[自定义回调](#custom-callbacks)）。
 
-### Custom callbacks {#custom-callbacks}
+### 自定义回调 {#custom-callbacks}
 
-If you embed PR-Agent, you can register a `litellm.CustomLogger`:
+如果把 PR-Agent 嵌进自己的代码，可以注册 `litellm.CustomLogger`：
 
 ```python
 import litellm
@@ -200,31 +200,31 @@ litellm.callbacks = [UsageLogger()]
 cli.run_command("<pr_url>", "/review")
 ```
 
-LiteLLM runs callbacks after the completion returns. PR-Agent flushes them before the CLI exits. Bound that wait with:
+LiteLLM 在补全返回之后才运行回调。PR-Agent 会在 CLI 退出前刷新它们。用下面的值限制等待时间：
 
 ```toml
 [litellm]
-callback_timeout_seconds = 30 # default
+callback_timeout_seconds = 30 # 默认
 ```
 
-## Built-in OpenTelemetry command telemetry
+## 内置 OpenTelemetry 命令遥测
 
-PR-Agent can emit its own command-level signals. These cover runs that fail before any model call:
+PR-Agent 可以发出自己的命令层信号。它们覆盖在任何模型调用之前就失败的运行：
 
-- **Traces**: one span per request, named `pr_agent <command>`, with `pr_agent.command`, `pr_agent.args_count`, `vcs.provider.name`, a span status, and a bounded `error.type` on failure. Prompt and response bodies are not attached.
-- **Metrics**: `pr_agent.commands`, `pr_agent.tokens`, and `pr_agent.ai_calls`, labeled by command and git provider. Token series also use `gen_ai.token.type`. Zero values are skipped.
+- **追踪**：每个请求一个 span，名为 `pr_agent <command>`，带有 `pr_agent.command`、`pr_agent.args_count`、`vcs.provider.name`、span 状态，以及失败时有界的 `error.type`。不会附上提示词和响应正文。
+- **指标**：`pr_agent.commands`、`pr_agent.tokens` 和 `pr_agent.ai_calls`，按命令和 Git 提供商标签。token 序列还使用 `gen_ai.token.type`。零值会被跳过。
 
-Command telemetry and [LLM telemetry](#llm-telemetry-via-litellms-opentelemetry-integration) are separate switches. When both are on, model spans are children of the command span.
+命令遥测和 [LLM 遥测](#llm-telemetry-via-litellms-opentelemetry-integration) 是分开的开关。两者都打开时，模型 span 是命令 span 的子节点。
 
 ```toml
 [otel]
 is_enabled = true
-exporter_type = "console" # "console", "otlp", "prometheus", or "none"
+exporter_type = "console" # "console"、"otlp"、"prometheus" 或 "none"
 service_name = "pr-agent"
 environment = "production"
 ```
 
-For a collector, set `exporter_type = "otlp"` and put the endpoint in `.secrets.toml`:
+若要发给收集器，把 `exporter_type` 设为 `"otlp"`，并把端点写进 `.secrets.toml`：
 
 ```toml
 [otel]
@@ -232,13 +232,13 @@ otlp_endpoint = "http://my-collector:4318"
 otlp_headers = "x-honeycomb-team=YOUR_API_KEY"
 ```
 
-HTTP is the default. `/v1/traces` and `/v1/metrics` are appended to `otlp_endpoint`. For gRPC, install `pr-agent[otel-grpc]` and set `otlp_protocol = "grpc"`.
+默认使用 HTTP。`/v1/traces` 和 `/v1/metrics` 会追加到 `otlp_endpoint`。若用 gRPC，请安装 `pr-agent[otel-grpc]` 并设置 `otlp_protocol = "grpc"`。
 
-If `exporter_type = "otlp"` and no endpoint is set, telemetry is disabled. It does not fall back to another exporter.
+如果 `exporter_type = "otlp"` 但没有配置端点，遥测会被关闭，不会回退到其他导出器。
 
-### Exposing Prometheus metrics
+### 暴露 Prometheus 指标
 
-Set `exporter_type = "prometheus"` to serve `GET /metrics` on the `gitee_app` gunicorn process. Worker values are merged at scrape time:
+把 `exporter_type` 设为 `"prometheus"`，即可在 `gitee_app` 的 gunicorn 进程上提供 `GET /metrics`。抓取时会合并各 worker 的值：
 
 ```toml
 [otel]
@@ -246,7 +246,7 @@ exporter_type = "prometheus"
 prometheus_multiproc_dir = "/tmp/pr-agent-prometheus"
 ```
 
-`/metrics` is mounted only when this exporter is selected. `prometheus_multiproc_dir` must be writable by every worker. In a single-process run the exporter serves that process's own registry without the directory.
+只有选中该导出器时才会挂载 `/metrics`。`prometheus_multiproc_dir` 必须能被每个 worker 写入。单进程运行时，导出器直接提供该进程自己的注册表，不需要这个目录。
 
 ```yaml
 scrape_configs:
@@ -255,31 +255,31 @@ scrape_configs:
       - targets: ["pr-agent:3000"]
 ```
 
-Privacy controls, both off by default:
+隐私控制默认都关闭：
 
-- `include_pr_url = true` puts pull-request URLs on spans.
-- `include_error_details = true` puts exception messages on error spans. The exception class name is always attached.
+- `include_pr_url = true` 会把拉取请求 URL 放到 span 上。
+- `include_error_details = true` 会把异常消息放到错误 span 上。异常类名始终会附上。
 
-Telemetry is process-level. It is read once at startup and cannot be enabled from a repository `.pr_agent.toml`. Each OTLP export is bounded by `otlp_timeout` (default 3 seconds).
+遥测是进程级的。它在启动时读取一次，不能由仓库的 `.pr_agent.toml` 打开。每次 OTLP 导出都受 `otlp_timeout` 限制（默认 3 秒）。
 
-## Repository context files {#bringing-per-repo-context-files-to-pr-agent}
+## 仓库上下文文件 {#bringing-per-repo-context-files-to-pr-agent}
 
-PR-Agent can add repository instruction files, such as [AGENTS.md](https://agents.md/), to the prompts for `/review`, `/describe`, and `/improve`.
+PR-Agent 可以把仓库说明文件（例如 [AGENTS.md](https://agents.md/)）加进 `/review`、`/describe` 和 `/improve` 的提示词。
 
 ```toml
 [config]
 repo_context_files = ["AGENTS.md"]
 ```
 
-Paths are repository-relative. By default they are read from the repository **default branch** (`repo_context_from_default_branch = true`), so a pull request cannot supply the instructions used to review it. A missing file is skipped. Set the list to `[]` to disable the feature.
+路径相对于仓库。默认从仓库的**默认分支**读取（`repo_context_from_default_branch = true`），因此拉取请求不能提供用来审查自己的说明。缺少的文件会被跳过。把列表设为 `[]` 可以完全关闭该功能。
 
-Set `repo_context_from_default_branch = false` to read from the pull request's target branch instead. Files are still never read from the head branch.
+把 `repo_context_from_default_branch` 设为 `false` 后，改为从拉取请求的目标分支读取。文件仍然绝不会从源分支读取。
 
-`repo_context_max_lines` (default `500`) caps the rendered lines, including wrapper tags.
+`repo_context_max_lines`（默认 `500`）限制渲染行数，包含包裹标签。
 
-### Context from sibling repositories {#context-from-sibling-repositories}
+### 来自同级仓库的上下文 {#context-from-sibling-repositories}
 
-The host must approve repositories before a consuming repository can select their files:
+宿主必须先批准仓库，使用方仓库才能选择其中的文件：
 
 ```toml
 [config]
@@ -287,7 +287,7 @@ repo_context_sibling_repos = ["my-org/library"]
 repo_context_max_sibling_files = 5
 ```
 
-The allowlist and the fetch limit are host-only. An empty allowlist disables sibling reads. A consuming `.pr_agent.toml` may then use a structured entry:
+允许列表和获取上限只属于主机。允许列表为空时，不会读取同级仓库。使用方的 `.pr_agent.toml` 随后可以使用结构化条目：
 
 ```toml
 [config]
@@ -297,31 +297,31 @@ repo_context_files = [
 ]
 ```
 
-Use `owner/repository`. The sibling must share the current repository's owner. Sibling files come from their default branch and share `repo_context_max_lines`. Comment arguments cannot override `repo_context_files`.
+请使用 `所有者/仓库`。同级仓库必须与当前仓库属于同一个所有者。同级文件来自它们的默认分支，并与本地文件共享 `repo_context_max_lines`。评论参数不能覆盖 `repo_context_files`。
 
-## Ignoring automatic commands in pull requests {#ignoring-automatic-commands-in-prs}
+## 忽略拉取请求中的自动命令 {#ignoring-automatic-commands-in-prs}
 
-PR-Agent can skip pull requests by:
+PR-Agent 可以按以下条件跳过拉取请求：
 
-- title (regex)
-- source or target branch (regex)
-- repository (regex)
-- folders that did not change
-- labels
-- author
+- 标题（正则）
+- 源分支或目标分支（正则）
+- 仓库（正则）
+- 没有改到的目录
+- 标签
+- 作者
 
-The title, author, label, repository, source-branch, and target-branch rules also apply to comment commands such as `/review` and `/ask`, and to CLI `--pr_url` runs. `ignore_pr_authors` matches the **pull request author**, not the person who posted the comment. An ignored CLI request exits successfully without running the tool.
+标题、作者、标签、仓库、源分支和目标分支规则也适用于 `/review`、`/ask` 这类评论命令，以及 CLI 的 `--pr_url` 运行。`ignore_pr_authors` 匹配的是**拉取请求作者**，不是发表评论的人。被忽略的 CLI 请求会成功退出，且不运行工具。
 
-### Titles
+### 标题
 
 ```toml
 [config]
 ignore_pr_title = ["\\[Bump\\]"]
 ```
 
-The default is `["^\\[Auto\\]", "^Auto"]`. `^Auto` also matches ordinary titles such as "Autoscaling fix", and those pull requests are skipped for manual commands too. Narrow the pattern, or set `ignore_pr_title = []`, when that is not what you want.
+默认值是 `["^\\[Auto\\]", "^Auto"]`。`^Auto` 也会匹配 “Autoscaling fix” 这类普通标题，这些拉取请求的手动命令同样会被跳过。如果这不是预期行为，请收窄模式，或设置 `ignore_pr_title = []`。
 
-### Branches
+### 分支
 
 ```toml
 [config]
@@ -329,49 +329,49 @@ ignore_pr_source_branches = ['develop', 'main', 'master', 'stage']
 ignore_pr_target_branches = ["qa"]
 ```
 
-The two lists are independent. Each entry is a regex.
+两个列表互不依赖。每一项都是正则。
 
-### Repositories
+### 仓库
 
 ```toml
 [config]
 ignore_repositories = ["my-org/my-repo1", "my-org/my-repo2"]
 ```
 
-### Folders
+### 目录
 
 ```toml
 [config]
 allow_only_specific_folders = ['folder1', 'folder2']
 ```
 
-Automatic feedback then runs only when a changed path contains one of those folders.
+只有变更路径包含其中一个目录时，才会运行自动反馈。
 
-### Labels
+### 标签
 
 ```toml
 [config]
 ignore_pr_labels = ["do-not-merge"]
 ```
 
-### Authors
+### 作者
 
 ```toml
 [config]
 ignore_pr_authors = ["my-special-bot-user"]
 ```
 
-Each entry is a regex matched against the author's username.
+每一项都是与作者用户名匹配的正则。
 
-### Generated files by language or framework
+### 按语言或框架忽略生成文件
 
 ```toml
 [config]
 ignore_language_framework = ['protobuf']
 ```
 
-Patterns are listed in [`generated_code_ignore.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/generated_code_ignore.toml).
+模式列在 [`generated_code_ignore.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/generated_code_ignore.toml)。
 
-## Changelog output
+## 变更日志输出
 
-Gitee cannot `push_code`. `/update_changelog` generates the changelog and publishes it as a pull-request comment even when `pr_update_changelog.push_changelog_changes` is true. No commit is created, and no Git host workflow file is required.
+Gitee 不能 `push_code`。即使 `pr_update_changelog.push_changelog_changes` 为 true，`/update_changelog` 也只生成变更日志并作为拉取请求评论发表。不会创建提交，也不需要任何 Git 托管平台的工作流文件。

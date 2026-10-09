@@ -1,8 +1,0 @@
-{
-  "theme.admonition.note": {"message": "说明"},
-  "theme.admonition.tip": {"message": "提示"},
-  "theme.admonition.info": {"message": "信息"},
-  "theme.admonition.warning": {"message": "警告"},
-  "theme.admonition.danger": {"message": "危险"},
-  "theme.admonition.caution": {"message": "注意"}
-}

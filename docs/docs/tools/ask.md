@@ -1,19 +1,19 @@
 ---
-title: "Ask"
+title: "提问"
 sidebar_position: 5
 ---
 
-## Overview
+## 概述
 
-`/ask` answers one question about the pull request, using the diff as context. Ask a specific question.
+`/ask` 根据 diff 回答一个关于该拉取请求的问题。问题要具体。
 
-Comment on the pull request:
+在拉取请求上评论：
 
 ```
 /ask "Which callers still pass the old argument?"
 ```
 
-Or pass the same question to the [Gitee CLI image](./index.md#run):
+也可以把同一个问题传给 [Gitee CLI 镜像](./index.md#run)：
 
 ```bash
 ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
@@ -21,23 +21,23 @@ ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
   ask "Which callers still pass the old argument?"
 ```
 
-The URL must be `https://gitee.com/owner/repo/pulls/N` or `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`. Set `CONFIG__GIT_PROVIDER=gitee`, `GITEE__PERSONAL_ACCESS_TOKEN`, `OPENAI__KEY`, and `OPENAI__API_BASE` as shown on the [tools page](./index.md#run).
+URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。按[工具页](./index.md#run)设置 `CONFIG__GIT_PROVIDER=gitee`、`GITEE__PERSONAL_ACCESS_TOKEN`、`OPENAI__KEY` 和 `OPENAI__API_BASE`。
 
-The answer is a pull-request comment. Its heading comes from `pr_questions.ask_heading` (default `Ask`). The answer language follows `config.response_language` = `zh-CN`.
+回答是一条拉取请求评论。标题来自 `pr_questions.ask_heading`（默认 `Ask`）。回答语言遵循 `config.response_language` = `zh-CN`。
 
-Each question is independent. Gitee does not keep a thread of earlier `/ask` answers for the next question.
+每个问题互相独立。Gitee 不会把之前的 `/ask` 回答保留成下一次提问的会话。
 
-## Ask about lines
+## 针对代码行提问
 
-If the comment is attached to lines in the diff, the question is answered from those lines plus the surrounding change. Inline comments use Gitee's diff `position`. A question that is not attached to a line uses the whole pull request.
+如果评论挂在 diff 的某些行上，问题会根据这些行以及周围的变更来回答。行内评论使用 Gitee diff 的 `position`。没有挂到行上的问题使用整个拉取请求。
 
-## Configuration
+## 配置
 
-| Key | Default | Effect |
-|-----|---------|--------|
-| `ask_heading` | `Ask` | Plain-text heading of a top-level answer. |
-| `extra_instructions` | empty | Limits or format rules for every answer. |
-| `enable_help_text` | `false` | Add help text under the answer. |
+| 键 | 默认值 | 作用 |
+|----|--------|------|
+| `ask_heading` | `Ask` | 顶层回答的纯文本标题。 |
+| `extra_instructions` | 空 | 对所有回答的限制或格式要求。 |
+| `enable_help_text` | `false` | 在回答下加帮助文字。 |
 
 ```toml
 [pr_questions]
@@ -45,7 +45,7 @@ ask_heading = "Architecture"
 extra_instructions = "Answer in one short paragraph."
 ```
 
-The same override can sit on the comment:
+同样的覆盖可以写在评论上：
 
 ```
 /ask "What does this change do?" --pr_questions.extra_instructions="Answer in one short paragraph."

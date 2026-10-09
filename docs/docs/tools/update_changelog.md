@@ -1,29 +1,29 @@
 ---
-title: "Update Changelog"
+title: "更新变更日志"
 sidebar_position: 11
 ---
 
-## Overview
+## 概述
 
-`/update_changelog` drafts a changelog entry from the pull request. On Gitee the draft is published as a comment. The command cannot push `CHANGELOG.md` or any other file.
+`/update_changelog` 根据拉取请求起草一条变更日志。在 Gitee 上，草稿以评论发布。这条命令不能推送 `CHANGELOG.md` 或任何其他文件。
 
-Comment on the pull request:
+在拉取请求上评论：
 
 ```
 /update_changelog
 ```
 
-Or pass `update_changelog` to the [Gitee CLI image](./index.md#run). The URL must be `https://gitee.com/owner/repo/pulls/N` or `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`.
+也可以把 `update_changelog` 传给 [Gitee CLI 镜像](./index.md#run)。URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-## Why it does not push
+## 为什么不能推送
 
-Gitee's API used by this build cannot write repository files, so the `push_code` capability is off. `pr_update_changelog.push_changelog_changes` defaults to `false`. Setting it to `true` still does not create a commit. The entry stays in the comment.
+这个构建使用的 Gitee API 不能写仓库文件，因此 `push_code` 能力是关闭的。`pr_update_changelog.push_changelog_changes` 默认为 `false`。把它设为 `true` 仍然不会产生提交。条目留在评论里。
 
-The comment can include a stock note that tells you to enable `pr_update_changelog.push_changelog_changes`. That note does not apply on Gitee. Copy the entry into `CHANGELOG.md` yourself if you want it in the branch.
+评论里可能带一段固定说明，让你打开 `pr_update_changelog.push_changelog_changes`。这段说明在 Gitee 上不起作用。如果要把条目放进分支，请自己复制到 `CHANGELOG.md`。
 
-When Gitee returns the current `CHANGELOG.md`, that text is used as context for the draft. `pr_update_changelog.add_pr_link` defaults to `true`, so the draft tries to link the pull request. `pr_update_changelog.skip_ci_on_push` has no effect, because nothing is pushed.
+当 Gitee 返回当前的 `CHANGELOG.md` 时，这段文字会作为草稿的上下文。`pr_update_changelog.add_pr_link` 默认为 `true`，草稿会尝试链接该拉取请求。`pr_update_changelog.skip_ci_on_push` 没有效果，因为不会产生提交。
 
-## Configuration
+## 配置
 
 ```toml
 [pr_update_changelog]
@@ -32,12 +32,12 @@ add_pr_link = true
 push_changelog_changes = false
 ```
 
-| Key | Default | Effect on Gitee |
-|-----|---------|-----------------|
-| `push_changelog_changes` | `false` | Cannot push. The result is still a comment. |
-| `add_pr_link` | `true` | Ask the model to link the pull request. |
-| `extra_instructions` | empty | Structure or wording for the entry. |
-| `skip_ci_on_push` | `true` | Unused, because no commit is created. |
+| 键 | 默认值 | 在 Gitee 上的效果 |
+|----|--------|-------------------|
+| `push_changelog_changes` | `false` | 不能推送。结果仍然是评论。 |
+| `add_pr_link` | `true` | 让模型链接该拉取请求。 |
+| `extra_instructions` | 空 | 条目的结构或措辞。 |
+| `skip_ci_on_push` | `true` | 未使用，因为不会创建提交。 |
 
 ```
 /update_changelog --pr_update_changelog.extra_instructions="Write one bullet."

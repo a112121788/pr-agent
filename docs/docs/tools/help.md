@@ -1,15 +1,15 @@
 ---
-title: "Help"
+title: "帮助"
 sidebar_position: 9
 ---
 
-## Overview
+## 概述
 
-`/help` has two forms.
+`/help` 有两种用法。
 
-With no question, it posts a comment that lists the commands you can run on the pull request: `/describe`, `/review`, `/improve`, `/ask`, `/add_docs`, `/generate_labels`, and `/update_changelog`.
+不带问题时，它会发一条评论，列出可以在该拉取请求上运行的命令：`/describe`、`/review`、`/improve`、`/ask`、`/add_docs`、`/generate_labels` 和 `/update_changelog`。
 
-With a question, it answers from the packaged documentation and posts the answer as a comment, including the doc sections it used.
+带上问题时，它根据随包文档作答，并把答案发成评论，同时附上用到的文档段落。
 
 ```
 /help
@@ -19,7 +19,7 @@ With a question, it answers from the packaged documentation and posts the answer
 /help "How do I run /review on a Gitee pull request?"
 ```
 
-CLI, using the [Gitee image](./index.md#run) and a Gitee pull-request URL:
+CLI 使用 [Gitee 镜像](./index.md#run) 和一条 Gitee 拉取请求 URL：
 
 ```bash
 ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
@@ -27,6 +27,6 @@ ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
   help "How do I run /review on a Gitee pull request?"
 ```
 
-Accepted URLs are `https://gitee.com/owner/repo/pulls/N` and `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`.
+接受的 URL 是 `https://gitee.com/owner/repo/pulls/N` 和 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-`/help_docs` is a different command and is [disabled](./help_docs.md). `/similar_issue` does not search Gitee issues; see [Similar issues](./similar_issues.md).
+`/help_docs` 是另一条命令，而且已经[禁用](./help_docs.md)。`/similar_issue` 不会搜索 Gitee 议题，见[相似议题](./similar_issues.md)。

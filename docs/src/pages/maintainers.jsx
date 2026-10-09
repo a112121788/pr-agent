@@ -1,7 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+
 import {avatarUrl, maintainers, roleLabel} from '@site/src/data/maintainers';
 import styles from './maintainers.module.css';
 
@@ -29,8 +29,7 @@ const PAGE_COPY = {
 };
 
 function MaintainerCard({login, name, role}) {
-  const {i18n: {currentLocale: locale}} = useDocusaurusContext();
-  const label = roleLabel(role, locale);
+  const label = roleLabel(role, 'zh-CN');
   return (
     <li className={styles.card}>
       <img
@@ -53,8 +52,7 @@ function MaintainerCard({login, name, role}) {
 }
 
 export default function Maintainers() {
-  const {i18n: {currentLocale: locale}} = useDocusaurusContext();
-  const copy = PAGE_COPY[locale] || PAGE_COPY.en;
+  const copy = PAGE_COPY['zh-CN'];
   return (
     <Layout title={copy.title} description={copy.description}>
       <main className={styles.page}>

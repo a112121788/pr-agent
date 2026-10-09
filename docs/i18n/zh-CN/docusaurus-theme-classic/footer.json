@@ -1,5 +1,0 @@
-{
-  "link.title.Links": {"message": "链接"},
-  "link.item.label.GitHub": {"message": "GitHub"},
-  "copyright": {"message": "Copyright © {year} Gitee PR-Agent。使用 Docusaurus 构建。"}
-}

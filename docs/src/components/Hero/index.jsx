@@ -1,6 +1,6 @@
 import React, {useRef, useState} from 'react';
 import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+
 import styles from './styles.module.css';
 
 const HERO_COPY = {
@@ -242,8 +242,7 @@ function Thread({copy}) {
 }
 
 export default function Hero() {
-  const {i18n: {currentLocale: locale}} = useDocusaurusContext();
-  const copy = HERO_COPY[locale] || HERO_COPY.en;
+  const copy = HERO_COPY['zh-CN'];
   return (
     <header className={styles.hero}>
       <div className={styles.intro}>

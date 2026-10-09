@@ -1,49 +1,49 @@
 ---
-title: "Improve"
+title: "改进"
 sidebar_position: 4
 ---
 
-## Overview
+## 概述
 
-`/improve` suggests code changes for the pull request. On Gitee the result is a comment and, when a line can be anchored, inline comments. Gitee cannot commit the suggested code.
+`/improve` 为拉取请求提出代码修改建议。在 Gitee 上，结果是一条评论；能定位到行时，再加上行内评论。Gitee 不能提交建议代码。
 
-Comment on the pull request:
+在拉取请求上评论：
 
 ```
 /improve
 ```
 
-Or pass `improve` to the [Gitee CLI image](./index.md#run). The URL must be `https://gitee.com/owner/repo/pulls/N` or `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`.
+也可以把 `improve` 传给 [Gitee CLI 镜像](./index.md#run)。URL 必须是 `https://gitee.com/owner/repo/pulls/N` 或 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-An opened pull request runs `/improve` with `/describe` and `/review`, unless `gitee.pr_commands` replaces that list.
+拉取请求打开时会和 `/describe`、`/review` 一起运行 `/improve`，除非 `gitee.pr_commands` 换掉这份列表。
 
-## What is published
+## 发布内容
 
-The summary heading is `pr_code_suggestions.suggestions_heading`, which defaults to `PR 代码建议`. The suggestion text follows `config.response_language` = `zh-CN`.
+摘要标题来自 `pr_code_suggestions.suggestions_heading`，默认是 `PR 代码建议`。建议正文遵循 `config.response_language` = `zh-CN`。
 
-`pr_code_suggestions.committable_code_suggestions` defaults to `false`, so suggestions are collected in that one comment. Setting it to `true`, or setting `pr_code_suggestions.dual_publishing_score_threshold` above `-1`, still does not create a commit on Gitee. Those modes only change which comments and inline comments are posted. Inline comments use Gitee's diff `position`, counted from the line below the first `@@` hunk header. A suggestion that cannot be placed stays in the summary comment.
+`pr_code_suggestions.committable_code_suggestions` 默认为 `false`，建议会集中在这一条评论里。把它设为 `true`，或把 `pr_code_suggestions.dual_publishing_score_threshold` 设成大于 `-1`，在 Gitee 上仍然不会产生提交。这些模式只改变发布哪些评论和行内评论。行内评论使用 Gitee diff 的 `position`，从第一个 `@@` hunk 头的下一行开始计数。无法定位的建议留在摘要评论里。
 
-`pr_code_suggestions.persistent_comment` is `true`, so a later summary replaces the previous `PR 代码建议` comment.
+`pr_code_suggestions.persistent_comment` 为 `true`，因此下一次摘要会替换上一条 `PR 代码建议` 评论。
 
-`/review` and `/improve` were run on [eclouddev/hlzs_web#2896](https://gitee.com/eclouddev/hlzs_web/pulls/2896).
+`/review` 和 `/improve` 已在 [eclouddev/hlzs_web#2896](https://gitee.com/eclouddev/hlzs_web/pulls/2896) 上运行过。
 
-Each suggestion has a one-line summary, a longer explanation, and a before/after snippet. Treat the snippet as an illustration. Apply it yourself after you agree with the finding. Gitee PR-Agent will not push the change.
+每条建议包含一行摘要、一段说明，以及修改前后的片段。把片段当成示意。你同意这条发现之后，自己把改动应用到分支上。Gitee PR-Agent 不会推送这段改动。
 
-## How many suggestions
+## 会生成多少条
 
-A diff is split into chunks of about `config.max_model_tokens` tokens (default `32000`). Each chunk asks for up to `pr_code_suggestions.num_code_suggestions_per_chunk` suggestions (default `3`). `pr_code_suggestions.max_number_of_calls` (default `3`) caps the number of chunks.
+diff 会按大约 `config.max_model_tokens` 个令牌分块（默认 `32000`）。每一块最多请求 `pr_code_suggestions.num_code_suggestions_per_chunk` 条建议（默认 `3`）。`pr_code_suggestions.max_number_of_calls`（默认 `3`）限制块数。
 
-`pr_code_suggestions.max_suggestions_per_file` defaults to `0`, which means no per-file cap. Set a positive integer to keep only the highest-scored suggestions for each file after the chunks are merged.
+`pr_code_suggestions.max_suggestions_per_file` 默认为 `0`，表示不按文件封顶。设成正整数后，合并各块时每个文件只保留分数最高的建议。
 
-`pr_code_suggestions.suggestions_score_threshold` defaults to `0`. A suggestion scored below the threshold is dropped. Values above 7 or 8 often drop useful notes.
+`pr_code_suggestions.suggestions_score_threshold` 默认为 `0`。低于该阈值的建议会被丢掉。设到 7 或 8 以上常常会丢掉有用的说明。
 
-While chunks run, and when `config.publish_output_progress` is enabled, the progress comment is updated in place and removed before the final comment.
+分块进行时，若启用了 `config.publish_output_progress`，进度评论会就地更新，并在最终评论发出前删除。
 
-If some chunks fail, later entries in `config.fallback_models` are tried for the failed chunks only. The configured fallback is `glm-5.3`. Successful chunks are kept. If every chunk fails, the command fails.
+如果有些块失败，会只用 `config.fallback_models` 里后面的模型重试失败的块。配置的备用模型是 `glm-5.3`。已经成功的块会保留。如果每一块都失败，命令失败。
 
-## Extra instructions and repo files
+## 额外说明和仓库文件
 
-`pr_code_suggestions.extra_instructions` changes this command's prompt. `config.repo_context_files` adds files such as `AGENTS.md` from the default branch (`config.repo_context_from_default_branch` is `true`). Set that flag to `false` to read the pull request's target branch instead. The rendered context stops at `config.repo_context_max_lines` (default `500`).
+`pr_code_suggestions.extra_instructions` 改的是这条命令的提示词。`config.repo_context_files` 会加入默认分支上的文件，例如 `AGENTS.md`（`config.repo_context_from_default_branch` 为 `true`）。把该标志设为 `false` 则改为读取拉取请求的目标分支。渲染后的上下文停在 `config.repo_context_max_lines`（默认 `500`）。
 
 ```toml
 [pr_code_suggestions]
@@ -57,26 +57,26 @@ focus_only_on_problems = true
 repo_context_files = ["AGENTS.md", "best_practices.md"]
 ```
 
-`focus_only_on_problems` defaults to `true`, so suggestions prefer defects over style.
+`focus_only_on_problems` 默认为 `true`，因此建议优先指出缺陷，而不是风格。
 
-A self-review checkbox (`pr_code_suggestions.demand_code_suggestions_self_review`) is only a visual marker. Ticking it does not approve the pull request or hide suggestions.
+自审复选框（`pr_code_suggestions.demand_code_suggestions_self_review`）只是视觉标记。勾上它不会批准拉取请求，也不会藏起建议。
 
-## Configuration
+## 配置
 
-| Key | Default | Effect |
-|-----|---------|--------|
-| `suggestions_heading` | `PR 代码建议` | Summary comment heading. |
-| `committable_code_suggestions` | `false` | Also post inline comments. Still no commit on Gitee. |
-| `dual_publishing_score_threshold` | `-1` | Also post inline comments at or above this score. `-1` disables it. |
-| `persistent_comment` | `true` | Edit the previous summary comment. |
-| `focus_only_on_problems` | `true` | Prefer defects over style. |
-| `suggestions_score_threshold` | `0` | Drop suggestions below this score. |
-| `num_code_suggestions_per_chunk` | `3` | Suggestions requested per chunk. |
-| `max_suggestions_per_file` | `0` | Per-file cap after merging. `0` means no cap. |
-| `max_number_of_calls` | `3` | Maximum chunks. |
-| `publish_output_no_suggestions` | `true` | Still comment when there is nothing to suggest. |
-| `enable_suggestions_coverage_footer` | `true` | List failed chunks and files left out of the budget. |
-| `extra_instructions` | empty | Extra directions for this command. |
-| `enable_help_text` | `false` | Add help text to the comment. |
+| 键 | 默认值 | 作用 |
+|----|--------|------|
+| `suggestions_heading` | `PR 代码建议` | 摘要评论的标题。 |
+| `committable_code_suggestions` | `false` | 同时发布行内评论。在 Gitee 上仍然不会提交。 |
+| `dual_publishing_score_threshold` | `-1` | 分数达到该值时同时发布行内评论。`-1` 表示关闭。 |
+| `persistent_comment` | `true` | 编辑上一条摘要评论。 |
+| `focus_only_on_problems` | `true` | 优先缺陷，而不是风格。 |
+| `suggestions_score_threshold` | `0` | 丢掉低于该分数的建议。 |
+| `num_code_suggestions_per_chunk` | `3` | 每一块请求的建议数。 |
+| `max_suggestions_per_file` | `0` | 合并后的单文件上限。`0` 表示不封顶。 |
+| `max_number_of_calls` | `3` | 最大块数。 |
+| `publish_output_no_suggestions` | `true` | 没有建议时仍然发评论。 |
+| `enable_suggestions_coverage_footer` | `true` | 列出失败的块和预算没覆盖的文件。 |
+| `extra_instructions` | 空 | 这条命令的额外说明。 |
+| `enable_help_text` | `false` | 在评论里加帮助文字。 |
 
-The deprecated spelling `commitable_code_suggestions` still enables inline comments and logs a warning. Rename it to `committable_code_suggestions`.
+旧拼写 `commitable_code_suggestions` 仍会打开发行内评论，并记一条警告。请改成 `committable_code_suggestions`。

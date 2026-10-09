@@ -1,47 +1,47 @@
 ---
-title: "Self-Reflection"
+title: "自我反思"
 sidebar_position: 7
 ---
 
-`Supported Git platform: Gitee`
+`支持的 Git 平台：Gitee`
 
-Gitee PR-Agent runs a **self-reflection** pass on `/improve`. The model scores and re-ranks its own suggestions and drops the ones it marks as irrelevant or wrong. What remains is published in `zh-CN`. You can raise a score threshold to drop more of them.
+Gitee PR-Agent 对 `/improve` 做一次**自我反思**。模型给自己的建议打分、重排，并丢掉它标成无关或错误的条目。留下的内容以 `zh-CN` 发布。可以把分数阈值调高，再多丢掉一些。
 
-## Hierarchical presentation
+## 分层展示
 
-Not every suggestion should be applied. The comment is arranged so a reviewer can reject one in a few seconds:
+不是每条建议都该采纳。评论的结构让审查者几秒内就能否掉一条：
 
-- A category heading groups suggestions. Skip a category that does not apply.
-- Each suggestion starts as one line. Open it for the full explanation and a code example.
-- The example is illustrative. Applying it on Gitee is a separate edit. Inline publication, when it is enabled, uses Gitee's diff `position` and is skipped when that position cannot be resolved. See [Gitee installation](../installation/gitee.md#verified-behavior).
+- 分类标题把建议分组。不适用的分类直接跳过。
+- 每条建议先是一行。展开后才是完整说明和代码示例。
+- 示例只供对照。要落到 Gitee 上，需要另一次编辑。启用行内发布时，锚定用的是 Gitee 的 diff `position`；这个位置算不出来就不会发。见 [Gitee 安装](../installation/gitee.md#已验证的行为)。
 
-:::note[Fast review]
-The layout is meant for a quick pass, on the order of a few seconds per suggestion.
+:::note[快速看完]
+这种布局是为了快速过一遍，每条建议大约几秒。
 :::
 
-## Score, then re-rank
+## 先打分，再重排
 
-The first call generates suggestions and tries to order them. Models are weak at writing suggestions and ranking them in the same pass, and the first list often contains items that are obviously wrong.
+第一次调用生成建议，并试图排序。模型不擅长在同一次调用里又写建议又排好序，第一份列表里也常有明显错误的条目。
 
-The follow-up call:
+后续调用会：
 
-1. Shows the model the whole list at once.
-2. Asks for a score from 0 to 10 and a short reason for each item.
-3. Re-ranks by that score and drops anything scored 0.
-4. Optionally drops anything below `suggestions_score_threshold`.
+1. 把整份列表一次交给模型。
+2. 要求每条打 0 到 10 分，并给一句理由。
+3. 按分数重排，丢掉 0 分的条目。
+4. 可选：丢掉低于 `suggestions_score_threshold` 的条目。
 
-Scoring the list together gives the model more context than scoring each item alone.
+整表一起打分，比逐条打分的上下文更完整。
 
-## Example
+## 示例
 
-<img src="/img/self_reflection1.png" alt="Self-reflection scores" width="768" />
-<img src="/img/self_reflection2.png" alt="Suggestions after re-ranking" width="768" />
+<img src="/img/self_reflection1.png" alt="自我反思分数" width="768" />
+<img src="/img/self_reflection2.png" alt="重排后的建议" width="768" />
 
-## Configuration
+## 配置
 
 ```toml
 [pr_code_suggestions]
-suggestions_score_threshold = 0 # drop suggestions scored below this (0-10)
+suggestions_score_threshold = 0 # 丢掉低于该分数的建议（0-10）
 ```
 
-The pass uses the same model chain as the rest of the command: `gpt-6.1-sol`, then `glm-5.3` if the primary call falls over. See [Changing a model](../usage-guide/changing_a_model.md).
+这一步与命令的其余部分使用同一条模型链：`gpt-6.1-sol`，主调用失败后再用 `glm-5.3`。见 [更换模型](../usage-guide/changing_a_model.md)。

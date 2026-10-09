@@ -1,11 +1,11 @@
 import React from 'react';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+
 import {avatarUrl, maintainers, roleLabel} from '@site/src/data/maintainers';
 import styles from './styles.module.css';
 
 /** Render the maintainers' avatars in a row, for the landing page. */
 export default function MaintainerAvatars() {
-  const {i18n: {currentLocale: locale}} = useDocusaurusContext();
+  const locale = 'zh-CN';
   return (
     <ul className={styles.row}>
       {maintainers.map(({login, name, role}) => {

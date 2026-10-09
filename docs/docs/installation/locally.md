@@ -1,75 +1,75 @@
 ---
-title: "Locally"
+title: "本地运行"
 sidebar_position: 3
 ---
 
-To run PR-Agent locally, you first need to acquire two keys:
+要在本地运行 PR-Agent，你首先需要获取两把密钥：
 
-Local execution has two distinct cases: use the hosted-provider examples below for an existing PR/MR URL, or use the [Local Git Provider guide](../installation/gitee.md) for branch comparisons without a hosted PR/MR.
+本地执行使用下面的 Gitee 拉取请求示例。
 
-1. An API key for your configured [language model provider](../usage-guide/changing_a_model.md). For OpenAI, create one <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">here</a>.
-2. A personal access token from your Git platform (GitHub, GitLab, BitBucket, Gitea) with repo scope. GitHub token, for example, can be issued from <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">here</a>
+1. 你所配置的[语言模型提供商](../usage-guide/changing_a_model.md)的 API 密钥。对于 OpenAI，可在<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">此处</a>创建。
+2. 来自你的 Git 平台（GitHub、GitLab、BitBucket、Gitea）且具有 repo 范围的个人访问令牌。例如 GitHub 令牌可在<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">此处</a>签发
 
-## Using Docker image
+## 使用 Docker 镜像 {#using-docker-image}
 
-A list of the relevant tools can be found in the [tools guide](../tools/index.md).
+相关工具列表见[工具指南](../tools/index.md)。
 
-To invoke a tool (for example `review`), you can run PR-Agent directly from the Docker image. Here's how:
+要调用某个工具（例如 `review`），可以直接从 Docker 镜像运行 PR-Agent。方法如下：
 
-- For GitHub:
+- 对于 GitHub：
 
     ```bash
     docker run --rm -it -e OPENAI__KEY=<your_openai_key> -e GITHUB__USER_TOKEN=<your_github_token> pragent/pr-agent:latest --pr_url <pr_url> review
     ```
 
-    If you are using GitHub enterprise server, you need to specify the custom url as variable.
-    For example, if your GitHub server is at `https://github.mycompany.com`, add the following to the command:
+    如果你使用 GitHub Enterprise Server，需要把自定义 URL 指定为变量。
+    例如，如果你的 GitHub 服务器位于 `https://github.mycompany.com`，请在命令中加入：
 
     ```bash
     -e GITHUB__BASE_URL=https://github.mycompany.com/api/v3
     ```
 
-- For GitLab:
+- 对于 GitLab：
 
     ```bash
     docker run --rm -it -e OPENAI__KEY=<your key> -e CONFIG__GIT_PROVIDER=gitlab -e GITLAB__PERSONAL_ACCESS_TOKEN=<your token> pragent/pr-agent:latest --pr_url <pr_url> review
     ```
 
-    If you have a dedicated GitLab instance, you need to specify the custom url as variable:
+    如果你有专用的 GitLab 实例，需要把自定义 URL 指定为变量：
 
     ```bash
     -e GITLAB__URL=<your gitlab instance url>
     ```
 
-- For BitBucket:
+- 对于 BitBucket：
 
     ```bash
     docker run --rm -it -e CONFIG__GIT_PROVIDER=bitbucket -e OPENAI__KEY=$OPENAI_API_KEY -e BITBUCKET__BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN pragent/pr-agent:latest --pr_url=<pr_url> review
     ```
 
-- For Gitea:
+- 对于 Gitea：
 
     ```bash
     docker run --rm -it -e OPENAI__KEY=<your key> -e CONFIG__GIT_PROVIDER=gitea -e GITEA__PERSONAL_ACCESS_TOKEN=<your token> pragent/pr-agent:latest --pr_url <pr_url> review
     ```
 
-    If you have a dedicated Gitea instance, you need to specify the custom url as variable:
+    如果你有专用的 Gitea 实例，需要把自定义 URL 指定为变量：
 
     ```bash
     -e GITEA__URL=<your gitea instance url>
     ```
 
 
-For other git providers, update `CONFIG__GIT_PROVIDER` accordingly and check the [`pr_agent/settings/.secrets_template.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/.secrets_template.toml) file for environment variables expected names and values.
+对于其他 Git 提供商，请相应更新 `CONFIG__GIT_PROVIDER`，并查看 [`pr_agent/settings/.secrets_template.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/.secrets_template.toml) 文件，了解环境变量的预期名称和取值。
 
-### Utilizing environment variables
+### 使用环境变量
 
-It is also possible to provide or override the configuration by setting the corresponding environment variables.
-You can define the corresponding environment variables by following this convention: `<TABLE>__<KEY>=<VALUE>` or `<TABLE>.<KEY>=<VALUE>`.
-The `<TABLE>` refers to a table/section in a configuration file and `<KEY>=<VALUE>` refers to the key/value pair of a setting in the configuration file.
+也可以通过设置对应的环境变量来提供或覆盖配置。
+你可以按以下约定定义对应的环境变量：`<TABLE>__<KEY>=<VALUE>` 或 `<TABLE>.<KEY>=<VALUE>`。
+`<TABLE>` 指配置文件中的表/小节，`<KEY>=<VALUE>` 指配置文件中某项设置的键/值对。
 
-For example, suppose you want to run `pr_agent` that connects to a self-hosted GitLab instance similar to an example above.
-You can define the environment variables in a plain text file named `.env` with the following content:
+例如，假设你要运行连接到自托管 GitLab 实例的 `pr_agent`，类似上面的示例。
+你可以在名为 `.env` 的纯文本文件中定义环境变量，内容如下：
 
 ```bash
 CONFIG__GIT_PROVIDER="gitlab"
@@ -78,7 +78,7 @@ GITLAB__PERSONAL_ACCESS_TOKEN="<your token>"
 OPENAI__KEY="<your key>"
 ```
 
-Then, you can run `pr_agent` using Docker with the following command:
+然后可以用以下命令通过 Docker 运行 `pr_agent`：
 
 ```shell
 docker run --rm -it --env-file .env pragent/pr-agent:latest <tool> <tool parameter>
@@ -86,31 +86,31 @@ docker run --rm -it --env-file .env pragent/pr-agent:latest <tool> <tool paramet
 
 ---
 
-### I get an error when running the Docker image. What should I do?
+### 运行 Docker 镜像时出错。我该怎么办？
 
-If you encounter an error when running the Docker image, it is almost always due to a misconfiguration of api keys or tokens.
+如果运行 Docker 镜像时遇到错误，几乎总是因为 API 密钥或令牌配置有误。
 
-Note that litellm, which is used by pr-agent, sometimes returns non-informative error messages such as `APIError: OpenAIException - Connection error.`
-Carefully check the api keys and tokens you provided and make sure they are correct.
-Adjustments may be needed depending on your llm provider.
+请注意，pr-agent 所使用的 litellm 有时会返回信息量不足的错误消息，例如 `APIError: OpenAIException - Connection error.`
+请仔细检查你提供的 API 密钥和令牌，确保它们正确。
+根据你的 LLM 提供商，可能需要做一些调整。
 
-For example, for Azure OpenAI, additional keys are [needed](../usage-guide/changing_a_model.md#azure).
-Same goes for other providers, make sure to check the [documentation](../usage-guide/changing_a_model.md#changing-a-model-in-pr-agent)
+例如，对于 Azure OpenAI，还[需要](../usage-guide/changing_a_model.md#azure)额外的密钥。
+其他提供商也是如此，请查看[文档](../usage-guide/changing_a_model.md#changing-a-model-in-pr-agent)
 
-## Using pip package
+## 使用 pip 包
 
-Install the package:
+安装该包：
 
 ```bash
 pip install "pr-agent[github]"
 ```
 
-Git provider SDKs are optional extras, so install the one for your provider: `github`, `gitlab`, `bitbucket` (Bitbucket Cloud, Bitbucket Server and Jira), `azure`, `codecommit` or `gitea`.
-`google` adds Vertex AI, and `pr-agent[all]` installs every integration.
+Git 提供商 SDK 是可选的 extra，因此请安装你所用提供商对应的那个：`github`、`gitlab`、`bitbucket`（Bitbucket Cloud、Bitbucket Server 和 Jira）、`azure`、`codecommit` 或 `gitea`。
+`google` 会加入 Vertex AI，`pr-agent[all]` 会安装全部集成。
 
-Then run the relevant tool with the script below.
+然后用下面的脚本运行相应工具。
 <br>
-Make sure to fill in the required parameters (`user_token`, `openai_key`, `pr_url`, `command`):
+请务必填入所需参数（`user_token`、`openai_key`、`pr_url`、`command`）：
 
 ```python
 from pr_agent import cli
@@ -137,33 +137,33 @@ if __name__ == '__main__':
     raise SystemExit(main())
 ```
 
-With `config.propagate_tool_errors` enabled, forwarding the return value through `SystemExit` makes this script exit with status 1 after a propagated tool error. The default remains status 0.
+启用 `config.propagate_tool_errors` 后，通过 `SystemExit` 转发返回值会使此脚本在工具错误被传播后以状态码 1 退出。默认仍为状态码 0。
 
-The Python helper accepts quoted arguments, for example
-`cli.run_command(pr_url, "/review --pr_reviewer.extra_instructions='be concise please'")`.
-It uses the same quoting rules as configured automation commands: explicitly
-quoted setting values stay strings, and unquoted values retain their normal
-types. For questions containing apostrophes, use double quotes around the
-question, such as `command = '/ask "What\'s changed?"'`.
-This does not change how interactive PR comments are parsed.
+这个 Python 辅助函数接受带引号的参数，例如
+`cli.run_command(pr_url, "/review --pr_reviewer.extra_instructions='be concise please'")`。
+它使用与已配置的自动化命令相同的引号规则：显式
+加引号的设置值保持为字符串，未加引号的值保留其正常
+类型。对于包含撇号的问题，请用双引号包住
+问题，例如 `command = '/ask "What\'s changed?"'`。
+这不会改变交互式拉取请求评论的解析方式。
 
-## Run from source
+## 从源码运行 {#run-from-source}
 
-1. Clone this repository:
+1. 克隆此仓库：
 
 ```bash
 git clone https://github.com/the-pr-agent/pr-agent.git
 ```
 
-2. Navigate to the `/pr-agent` folder and install dependencies with [uv](https://docs.astral.sh/uv/) (creates a `.venv` from `uv.lock`):
+2. 进入 `/pr-agent` 文件夹，并用 [uv](https://docs.astral.sh/uv/) 安装依赖（根据 `uv.lock` 创建 `.venv`）：
 
 ```bash
 uv sync
 ```
 
-*Note: If you get an error related to Rust in the dependency installation then make sure Rust is installed and in your `PATH`, instructions: https://rustup.rs*
+*注意：如果在安装依赖时出现与 Rust 相关的错误，请确保已安装 Rust 且它在你的 `PATH` 中，说明见：https://rustup.rs*
 
-3. Copy the secrets template file and fill in your OpenAI key and your GitHub user token:
+3. 复制密钥模板文件，并填入你的 OpenAI 密钥和 GitHub 用户令牌：
 
 ```bash
 cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
@@ -171,7 +171,7 @@ chmod 600 pr_agent/settings/.secrets.toml
 # Edit .secrets.toml file
 ```
 
-4. Run the cli.py script:
+4. 运行 cli.py 脚本：
 
 ```bash
 uv run pr-agent --pr_url <pr_url> review
@@ -184,9 +184,9 @@ uv run pr-agent --issue_url <issue_url> similar_issue
 ...
 ```
 
-*Note: the `similar_issue` tool needs extra dependencies that a bare `uv sync` does not install. Install them with `uv sync --group similar-issue` before running it.*
+*注意：`similar_issue` 工具需要额外依赖，单纯的 `uv sync` 不会安装它们。运行前请用 `uv sync --group similar-issue` 安装。*
 
-[Optional] Add the pr_agent folder to your PYTHONPATH
+[可选] 把 pr_agent 文件夹加入你的 PYTHONPATH
 
 ```bash
 export PYTHONPATH=$PYTHONPATH:<PATH to pr_agent folder>

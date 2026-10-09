@@ -1,30 +1,30 @@
 ---
-title: "Similar Issues"
+title: "相似议题"
 sidebar_position: 8
 ---
 
-## Overview
+## 概述
 
-`/similar_issue` is not available on Gitee.
+`/similar_issue` 在 Gitee 上不可用。
 
-Gitee PR-Agent only accepts Gitee pull-request URLs:
+Gitee PR-Agent 只接受 Gitee 拉取请求 URL：
 
 - `https://gitee.com/owner/repo/pulls/N`
 - `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`
 
-Issue indexing is not supported, so the command does not search issues and does not call the model. When it can publish, it posts:
+不支持议题索引，因此这条命令不会搜索议题，也不会调用模型。能够发布时，它会发出：
 
 ```
 The /similar_issue tool is not supported by the configured git provider.
 ```
 
-Comment form, which still does not search:
+评论形式仍然不会搜索：
 
 ```
 /similar_issue
 ```
 
-CLI form, which still does not search:
+CLI 形式仍然不会搜索：
 
 ```bash
 ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
@@ -32,6 +32,6 @@ ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
   similar_issue
 ```
 
-`CONFIG__GIT_PROVIDER` stays `gitee`. Do not point this command at another forge.
+`CONFIG__GIT_PROVIDER` 保持为 `gitee`。不要把这条命令指到别的代码托管平台。
 
-Keys under `[pr_similar_issue]`, `[pinecone]`, `[lancedb]`, and `[qdrant]` are unused on this build.
+`[pr_similar_issue]`、`[pinecone]`、`[lancedb]` 和 `[qdrant]` 下的键在这个构建里不会被使用。

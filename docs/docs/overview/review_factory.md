@@ -1,34 +1,38 @@
 ---
-title: "Review factory"
+title: "审核工厂"
 sidebar_position: 4
 ---
 
-# Gitee PR-Agent is the factory's core machine
+# Gitee PR-Agent 是审核工厂的核心机
 
-A pull request is a change package with an intent. The review factory records four stages: intake, evidence, verdict, and merge. Gitee PR-Agent is the machine that collects evidence and drafts it in Chinese. It does not write the human verdict, and it does not press merge.
+一张拉取请求先要写明它想做什么。审核工厂把后续工作分成四段：受理、取证、判定、汇入。Gitee PR-Agent 只负责绿色的取证段，并把证据写成中文评论。它不替负责人写下判定，也不在 Gitee 上按下合并。
 
-## Where the machine stops
+<img src="/img/factory-flow-zh.svg" alt="四段从左到右排列。只有取证段由 Gitee PR-Agent 完成。" />
 
-| Stage | Record | Gitee PR-Agent |
+第一次使用时，按首页的六步操作。本页解释每段留下什么记录，避免把机器评论误当成合并许可。
+
+## 机器停在哪一段
+
+| 阶段 | 记录 | Gitee PR-Agent |
 |---|---|---|
-| Intake | Intent and target line | Reads the title, description, and linked issue when Gitee returns it |
-| Evidence | Results bound to the current commit | `/describe`, `/review`, `/improve`, and `/ask` |
-| Verdict | Pass, return, or wait | The review comment is a draft. A person writes the verdict |
-| Merge | The judged commit enters the recorded line | Stays on Gitee. The machine cannot push code |
+| 受理 | 意图和目标版本线 | 读取标题、描述；Gitee 返回议题时一并读取 |
+| 取证 | 绑定当前提交号的结果 | `/describe`、`/review`、`/improve`、`/ask` |
+| 判定 | 放行、退回或等待 | 审查评论只是草稿。判定由人写下 |
+| 汇入 | 已判定的提交进入记录中的版本线 | 留在 Gitee。机器不能推送代码 |
 
-`/review` may print **批准**, **请求修改**, or **仅评论**. Those words are evidence for the gatekeeper. They are not the factory's pass, return, or wait, and they do not authorize merge.
+`/review` 可能打印 **批准**、**请求修改** 或 **仅评论**。这三个词是交给守门人的证据，不是工厂里的放行、退回、等待，也不能授权汇入。
 
-## What each command contributes
+## 每条命令交出的证据
 
-- `/describe` writes the change package: title, description, and file walkthrough.
-- `/review` writes **PR 审查指南**, team rules, coverage, and labels such as `审查工作量N/5`.
-- `/improve` writes **PR 代码建议** as a comment or inline comment. Gitee cannot commit the suggestion.
-- `/ask` answers one question from the current diff. It adds evidence; it does not close the verdict.
+- `/describe` 写下变更包：标题、描述和文件导览。
+- `/review` 写下 **PR 审查指南**、团队强规则、覆盖范围，以及 `审查工作量N/5` 这类标签。
+- `/improve` 把 **PR 代码建议** 发成评论或行内评论。Gitee 不能把建议提交进仓库。
+- `/ask` 根据当前 diff 回答一个问题。它补充取证，不结束判定。
 
-An opened pull request runs `/describe`, `/review`, and `/improve`. A later comment runs only when it starts with `/`.
+拉取请求打开时运行 `/describe`、`/review` 和 `/improve`。之后的评论只有以 `/` 开头才会执行。
 
-## What stays outside the machine
+## 留在机器外面的事
 
-The machine must not rewrite the author's intent. A missing spec or a raw `<a>` / `<button>` tag becomes a blocking line in the evidence. The gatekeeper still decides whether the change returns to intake or receives a verdict.
+机器不能改写作者声明的意图。缺少 spec，或新增了 `<a>`、`<button>` 标签，会在证据里变成阻塞项。守门人仍要决定这张单回到受理，还是写下判定。
 
-`/review` and `/improve` have been run on `eclouddev/hlzs_web#2896`. That run shows the comments can be published. It does not show that the factory's verdict or merge happened.
+`/review` 和 `/improve` 已在 `eclouddev/hlzs_web#2896` 上发布过评论。这次运行证明评论可以发出，不能证明判定或汇入已经完成。

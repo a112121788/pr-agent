@@ -35,16 +35,7 @@ const config = {
   organizationName: 'the-pr-agent',
   projectName: 'pr-agent',
 
-  // English stays at the existing URLs. A translated file under i18n/zh-CN replaces
-  // its English source; every file that has no translation keeps the English page.
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'zh-CN'],
-    localeConfigs: {
-      en: {label: 'English', htmlLang: 'en-US'},
-      'zh-CN': {label: '中文', htmlLang: 'zh-CN'},
-    },
-  },
+
 
   markdown: {
     format: 'detect',
@@ -138,41 +129,37 @@ const config = {
         },
       },
       navbar: {
-        title: 'PR-Agent',
+        title: 'Gitee PR-Agent',
         logo: {
-          alt: 'PR-Agent Logo',
+          alt: 'Gitee PR-Agent 标志',
           src: 'img/favicon.svg',
         },
         items: [
           {
             type: 'docSidebar',
             sidebarId: 'getStarted',
-            label: 'Get Started',
+            label: '开始使用',
             position: 'left',
           },
           {
             type: 'docSidebar',
             sidebarId: 'guides',
-            label: 'Guides',
+            label: '指南',
             position: 'left',
           },
           {
             type: 'docSidebar',
             sidebarId: 'tools',
-            label: 'Tools',
+            label: '工具',
             position: 'left',
           },
           {
             type: 'docSidebar',
             sidebarId: 'coreAbilities',
-            label: 'Core Abilities',
+            label: '核心能力',
             position: 'left',
           },
-          {to: '/maintainers', label: 'Maintainers', position: 'left'},
-          {
-            type: 'localeDropdown',
-            position: 'right',
-          },
+          {to: '/maintainers', label: '维护者', position: 'left'},
           {
             href: 'https://github.com/the-pr-agent/pr-agent',
             label: 'GitHub',
@@ -188,7 +175,7 @@ const config = {
         style: 'light',
         links: [
           {
-            title: 'Links',
+            title: '链接',
             items: [
               {
                 label: 'GitHub',
@@ -197,7 +184,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright \u00a9 ${new Date().getFullYear()} PR-Agent. Built with Docusaurus.`,
+        copyright: `Copyright \u00a9 ${new Date().getFullYear()} Gitee PR-Agent。使用 Docusaurus 构建。`,
       },
       prism: {
         theme: codeTheme,

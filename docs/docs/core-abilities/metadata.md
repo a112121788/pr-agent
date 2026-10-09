@@ -1,34 +1,34 @@
 ---
-title: "Local and global metadata injection with multi-stage analysis"
+title: "通过多阶段分析注入本地与全局元数据"
 sidebar_position: 6
 ---
 
-`Supported Git platform: Gitee`
+`支持的 Git 平台：Gitee`
 
-Gitee PR-Agent builds the prompt in layers: the pull request itself, the `/describe` summary, the surrounding file context, and any host or repository instructions. Later commands reuse those layers instead of calling the model again just to recover them. Comments are written in `zh-CN`.
+Gitee PR-Agent 分层组装提示词：拉取请求本身、`/describe` 的摘要、文件周围的上下文，以及主机或仓库指令。后面的命令复用这些层，而不是再叫一次模型才把它们找回来。评论使用 `zh-CN`。
 
-1. For each Gitee pull request it loads:
+1. 对每个 Gitee 拉取请求，它会读取：
 
-- Title and branch name
-- The existing description
-- Commit messages
-- The diff, in [hunk](https://loicpefferkorn.net/2014/02/diff-files-what-are-hunks-and-how-to-extract-them/) form
-- The full contents of the files the pull request changes
-- The title and body of referenced Gitee issues, when the issues API returns them. See [Fetching ticket context](./fetching_ticket_context.md).
+- 标题和分支名
+- 已有描述
+- 提交说明
+- diff，以 [hunk](https://loicpefferkorn.net/2014/02/diff-files-what-are-hunks-and-how-to-extract-them/) 形式
+- 本次拉取请求改过的文件的全文
+- 所引用 Gitee 议题的标题和正文（议题 API 有返回时）。见 [获取工单上下文](./fetching_ticket_context.md)。
 
-:::tip[Repository instructions]
-Repository preferences such as [`extra_instructions`](../tools/improve.mdx#extra-instructions-and-repo-files) are added on top of those inputs. They steer suggestions. They do not change the Gitee token, the model endpoint, or `skills.paths`.
+:::tip[仓库指令]
+[`extra_instructions`](../tools/improve.mdx#额外说明和仓库文件) 这类仓库偏好会加在上述输入之上。它们用来引导建议，不会改 Gitee 令牌、模型端点或 `skills.paths`。
 :::
 
-2. The first automatic command on an opened pull request is [`/describe`](../tools/describe.md). It produces:
+2. 拉取请求打开后，第一条自动命令是 [`/describe`](../tools/describe.md)。它产出：
 
-- A pull-request type (bug fix, feature, refactor, and so on)
-- A short bullet summary
-- A changes walkthrough: one line per modified file, then a short bullet list of what changed
+- 拉取请求类型（缺陷修复、功能、重构等）
+- 简短的要点摘要
+- 变更导览：每个修改过的文件一行，再加几条这次改了什么
 
-That output becomes pull-request metadata for later `/review` and `/improve` calls. The model can use the walkthrough without another round trip.
+这些输出成为后续 `/review` 和 `/improve` 的拉取请求元数据。模型可以直接用导览，不必再来回一次。
 
-When `/improve` suggests a change in a file, the prompt can include that file's walkthrough next to the hunk:
+`/improve` 对某个文件给建议时，提示词可以把该文件的导览和差异块放在一起：
 
 ```diff
 ## File: 'src/file1.py'
@@ -56,6 +56,6 @@ __old hunk__
 ...
 ```
 
-3. The full file contents expand the hunk context. See [Dynamic context](./dynamic_context.md).
+3. 文件全文用来扩展差异块上下文。见 [动态上下文](./dynamic_context.md)。
 
-4. Together these layers run from the hunk, to the file, to the pull request, to repository instructions. `/review` on a diff that does not fit one call segments that metadata across chunks and merges one comment. See [Compression strategy](./compression_strategy.md).
+4. 这几层从差异块到文件，再到拉取请求，再到仓库指令。一次调用放不下的 `/review` 会把这些元数据分到各段里，再合并成一条评论。见 [压缩策略](./compression_strategy.md)。

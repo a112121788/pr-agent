@@ -1,20 +1,20 @@
 ---
-title: "Managing Mail Notifications"
+title: "管理邮件通知"
 sidebar_position: 6
 ---
 
-Gitee notifies watchers when PR-Agent publishes a comment. Gitee does not provide a switch that silences one bot user while leaving every other pull-request comment in your inbox.
+PR-Agent 在 Gitee 上发表评论时，Gitee 会通知关注该仓库的人。Gitee 不能在保留其他拉取请求评论邮件的同时，单独关掉某一个机器人用户的邮件。
 
-Reduce the mail in either of these ways:
+可以用下面两种方式减少邮件：
 
-- In Gitee, turn off email for pull-request comments on repositories where PR-Agent is installed, and keep the in-site notification if you still want to see the comment.
-- In your mail provider, filter messages whose body is a PR-Agent comment (for example a filter on `PR Reviewer Guide` or the bot account that posts the comment).
+- 在 Gitee 里，对安装了 PR-Agent 的仓库关闭拉取请求评论的邮件，如果仍想看到评论，可以保留站内通知。
+- 在邮件服务里过滤正文来自 PR-Agent 的邮件（例如按 `PR Reviewer Guide` 或发表评论的机器人账号过滤）。
 
-You can also shorten the comment itself. Each tool has `enable_help_text`. Set it to `false` to drop the collapsible help block:
+也可以缩短评论本身。每个工具都有 `enable_help_text`。设为 `false` 会去掉可折叠的帮助段落：
 
 ```toml
 [pr_reviewer]
 enable_help_text = false
 ```
 
-Apply the same key under the section of any other tool whose help text you do not want mailed. Repository settings go in [`.pr_agent.toml`](./configuration_options.md#local-configuration-file).
+其他工具如果也不需要帮助文字，在对应的配置节里设置同一个键。仓库级设置写在 [`.pr_agent.toml`](./configuration_options.md#local-configuration-file)。

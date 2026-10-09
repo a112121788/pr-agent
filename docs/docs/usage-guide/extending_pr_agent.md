@@ -1,13 +1,13 @@
 ---
-title: "Extending PR-Agent"
+title: "扩展 PR-Agent"
 sidebar_position: 9
 ---
 
-This page is for contributors who extend a model, the Gitee provider, or a tool. To only change the model, use [Changing a model](./changing_a_model.md). The running product is Gitee-only: `config.git_provider` is `gitee`, and the webhook target is `gitee_app`.
+本页面向要扩展模型、Gitee 提供商或工具的贡献者。如果只更换模型，请使用[更换模型](./changing_a_model.md)。正在运行的产品只支持 Gitee：`config.git_provider` 为 `gitee`，Webhook 目标为 `gitee_app`。
 
-## Adding a model {#adding-a-model}
+## 添加模型 {#adding-a-model}
 
-Tool calls go through LiteLLM (`pr_agent/algo/ai_handlers/litellm_ai_handler.py`). Most models need only configuration:
+工具调用经过 LiteLLM（`pr_agent/algo/ai_handlers/litellm_ai_handler.py`）。大多数模型只需要配置：
 
 ```toml
 [config]
@@ -15,30 +15,30 @@ model = "<model-name>"
 fallback_models = ["<fallback-model-name>"]
 ```
 
-Set these under `[config]` in `pr_agent/settings/configuration.toml`. Keep model names in configuration, not in tool code. The shipped defaults are `gpt-6.1-sol` and fallback `glm-5.3`. The host must set `OPENAI__KEY` and `OPENAI__API_BASE` for the OpenAI-compatible route.
+在 `pr_agent/settings/configuration.toml` 的 `[config]` 中设置。模型名称放在配置里，不要写进工具代码。随构建提供的默认值是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。OpenAI 兼容路由的主机必须设置 `OPENAI__KEY` 和 `OPENAI__API_BASE`。
 
-Models that behave differently are registered in `pr_agent/algo/__init__.py`. Context windows live in `MAX_TOKENS` there. Without an entry, set `config.custom_model_max_tokens`, or `get_max_tokens()` raises.
+行为不同的模型登记在 `pr_agent/algo/__init__.py`。上下文窗口位于其中的 `MAX_TOKENS`。没有条目时请设置 `config.custom_model_max_tokens`，否则 `get_max_tokens()` 会抛出异常。
 
-Temperature support is decided at runtime by probing `litellm.get_supported_openai_params()` (`_litellm_supports_temperature` in `pr_agent/algo/ai_handlers/litellm_ai_handler.py`). Models that must never receive temperature are listed in `config.no_temperature_models`.
+是否支持 temperature 在运行时通过探测 `litellm.get_supported_openai_params()` 决定（`pr_agent/algo/ai_handlers/litellm_ai_handler.py` 中的 `_litellm_supports_temperature`）。绝不能接收 temperature 的模型列在 `config.no_temperature_models` 中。
 
-Verify with `PYTHONPATH=. uv run pytest tests/unittest`.
+用 `PYTHONPATH=. uv run pytest tests/unittest` 验证。
 
-## Adding a git provider {#adding-a-git-provider}
+## 添加 Git 提供商 {#adding-a-git-provider}
 
-This distribution ships and documents Gitee. `GiteeProvider` in `pr_agent/git_providers/gitee_provider.py` is the reference implementation. It reports every capability except `push_code`, so `/update_changelog` publishes a comment instead of committing.
+本发行版交付并文档化的是 Gitee。`pr_agent/git_providers/gitee_provider.py` 中的 `GiteeProvider` 是参考实现。它报告除 `push_code` 以外的全部能力，因此 `/update_changelog` 发表评论，而不是提交。
 
-To add another provider in a fork:
+若要在分叉中增加另一个提供商：
 
-1. Create `pr_agent/git_providers/<name>_provider.py`, extending `GitProvider` in `pr_agent/git_providers/git_provider.py`.
-2. Add the built-in to `_BUILTIN_GIT_PROVIDERS` in `pr_agent/git_providers/__init__.py` as a `(module_path, class_name)` pair. Built-ins import lazily when selected. `gitee` is the id this build runs.
-3. Select it with `git_provider="<name>"` under `[config]`. The webhook and docs in this tree assume `gitee`.
-4. Add an installation page and register it under Installation in `docs/sidebars.js`. The current page is [`gitee.md`](../installation/gitee.md).
-5. Choose behavior with `provider.is_supported("feature")`, not with a concrete type check.
-6. Add unit tests under `tests/unittest/test_<name>_provider.py`. `tests/unittest/test_gitee_provider.py` and `tests/unittest/test_gitee_webhook.py` are the patterns. List required environment variables in `pr_agent/settings/.secrets_template.toml`.
+1. 创建 `pr_agent/git_providers/<name>_provider.py`，扩展 `pr_agent/git_providers/git_provider.py` 中的 `GitProvider`。
+2. 在 `pr_agent/git_providers/__init__.py` 的 `_BUILTIN_GIT_PROVIDERS` 里，以内置项 `(module_path, class_name)` 登记。内置项在被选中时才懒加载。本构建运行的 ID 是 `gitee`。
+3. 在 `[config]` 中用 `git_provider="<name>"` 选中它。本仓库的 Webhook 和文档假定值为 `gitee`。
+4. 增加安装页，并在 `docs/sidebars.js` 的 Installation 下登记。当前页面是 [`gitee.md`](../installation/gitee.md)。
+5. 用 `provider.is_supported("feature")` 选择行为，不要做具体类型判断。
+6. 在 `tests/unittest/test_<name>_provider.py` 增加单元测试。模式见 `tests/unittest/test_gitee_provider.py` 和 `tests/unittest/test_gitee_webhook.py`。在 `pr_agent/settings/.secrets_template.toml` 中列出所需环境变量。
 
-### Registering a provider from another package {#registering-a-provider-from-another-package}
+### 从其他包注册提供商 {#registering-a-provider-from-another-package}
 
-A provider does not have to live in this repository. Call `register_git_provider` before PR-Agent resolves the provider:
+提供商不必放在本仓库里。在 PR-Agent 解析提供商之前调用 `register_git_provider`：
 
 ```python
 from pr_agent.git_providers import register_git_provider
@@ -48,18 +48,18 @@ from my_package.forge_provider import ForgeProvider
 register_git_provider("forge", ForgeProvider)
 ```
 
-Then set `git_provider="forge"` under `[config]`. The class must extend `GitProvider`. Registering the same class twice is a no-op. Registering a different class under an id that is already taken raises, so a package cannot replace the built-in `gitee` provider silently.
+然后在 `[config]` 中设置 `git_provider="forge"`。该类必须扩展 `GitProvider`。用同一个类注册两次是空操作。在已被占用的 ID 下注册另一个类会抛出异常，因此其他包不能静默替换内置的 `gitee` 提供商。
 
-The webhook that ships here is still `POST /api/v1/gitee_webhooks` on the `gitee_app` target. A third-party provider needs its own server entrypoint.
+这里交付的 Webhook 仍然是 `gitee_app` 目标上的 `POST /api/v1/gitee_webhooks`。第三方提供商需要自己的服务入口。
 
-## Adding a tool {#adding-a-tool}
+## 添加工具 {#adding-a-tool}
 
-1. Implement the tool in `pr_agent/tools/pr_<name>.py` with an `async def run(self)` entry point (`pr_reviewer.py` is the pattern).
-2. Add a `[pr_<tool>]` section in `pr_agent/settings/configuration.toml` for the keys the tool reads (`[pr_reviewer]` is the pattern).
-3. Add a prompt TOML under `pr_agent/settings/` and register it in `settings_files=[...]` in `pr_agent/config_loader.py`. Unregistered files are not loaded.
-4. Match the TOML section name to the settings key the tool reads: `[pr_review_prompt]` in `pr_reviewer_prompts.toml` matches `get_settings().pr_review_prompt` in `pr_reviewer.py`.
-5. Register the tool in `command2class` in `pr_agent/agent/pr_agent.py`. Then add it to the help surfaces or it will not show up in `/help`: `pr_agent/tools/pr_help_message.py`, `pr_agent/servers/help.py`, and the command list in `pr_agent/cli.py`.
-6. Add a row in `docs/docs/tools/index.md`, a page `docs/docs/tools/<name>.md` (see [`review.md`](../tools/review.md)), and register the page under Tools in `docs/sidebars.js`.
-7. Add tests under `tests/unittest/` and verify with `PYTHONPATH=. uv run pytest tests/unittest`.
+1. 在 `pr_agent/tools/pr_<name>.py` 中实现工具，入口为 `async def run(self)`（模式见 `pr_reviewer.py`）。
+2. 在 `pr_agent/settings/configuration.toml` 中增加 `[pr_<tool>]` 节，放入工具要读取的键（模式见 `[pr_reviewer]`）。
+3. 在 `pr_agent/settings/` 下增加提示词 TOML，并把它登记到 `pr_agent/config_loader.py` 的 `settings_files=[...]`。未登记的文件不会被加载。
+4. TOML 节名必须与工具读取的设置键一致：`pr_reviewer_prompts.toml` 中的 `[pr_review_prompt]` 对应 `pr_reviewer.py` 里的 `get_settings().pr_review_prompt`。
+5. 在 `pr_agent/agent/pr_agent.py` 的 `command2class` 中登记工具。然后把它加到帮助界面，否则 `/help` 不会显示：`pr_agent/tools/pr_help_message.py`、`pr_agent/servers/help.py`，以及 `pr_agent/cli.py` 中的命令列表。
+6. 在 `docs/docs/tools/index.md` 增加一行，增加页面 `docs/docs/tools/<name>.md`（见 [`review.md`](../tools/review.md)），并在 `docs/sidebars.js` 的 Tools 下登记。
+7. 在 `tests/unittest/` 下增加测试，并用 `PYTHONPATH=. uv run pytest tests/unittest` 验证。
 
-A tool that pushes commits must check `provider.is_supported("push_code")`. On Gitee that check is false, and the tool should publish a comment instead.
+会推送提交的工具必须检查 `provider.is_supported("push_code")`。在 Gitee 上该检查为假，工具应改为发表评论。

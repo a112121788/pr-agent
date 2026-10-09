@@ -617,3 +617,19 @@ mark {
   width: 100%;
   height: auto;
 }
+
+.chinese-doc-paginator .pagination-nav__sublabel {
+  font-size: 0;
+}
+
+.chinese-doc-paginator .pagination-nav__sublabel::after {
+  font-size: var(--ifm-h5-font-size, 1rem);
+}
+
+.chinese-doc-paginator .pagination-nav__link--prev .pagination-nav__sublabel::after {
+  content: "上一页";
+}
+
+.chinese-doc-paginator .pagination-nav__link--next .pagination-nav__sublabel::after {
+  content: "下一页";
+}
