@@ -11,6 +11,19 @@ export const maintainers = [
   {login: 'DanaFineTLV', name: 'Dana Fine', role: 'Community Manager'},
 ];
 
+const ROLE_LABELS = {
+  'zh-CN': {
+    'Lead Maintainer': '主要维护者',
+    Maintainer: '维护者',
+    'Community Manager': '社区经理',
+  },
+};
+
+/** Return the role in the current locale. Names and logins stay unchanged. */
+export function roleLabel(role, locale) {
+  return ROLE_LABELS[locale]?.[role] || role;
+}
+
 /** Return the GitHub avatar URL for `login` at `size` pixels. */
 export function avatarUrl(login, size) {
   return `https://avatars.githubusercontent.com/${login}?s=${size}`;
