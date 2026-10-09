@@ -49,6 +49,7 @@ from pr_agent.algo.review_finding_state import (
     render_previous_findings,
 )
 from pr_agent.algo.review_merge import merge_review_chunks
+from pr_agent.algo.review_policy import render_review_rule_section, review_rule_findings, review_sections
 from pr_agent.algo.run_details import get_run_details, init_run_details, record_command_failure, record_model_used
 from pr_agent.algo.run_output import (
     github_action_output,
@@ -1322,10 +1323,19 @@ class PRReviewer:
                               f"{self.git_provider.incremental.first_new_commit_sha}"
             incremental_review_markdown_text = f"Starting from commit {last_commit_url}"
 
+        diff_files = self.git_provider.get_diff_files()
         markdown_text = convert_to_markdown_v2(data, self.git_provider.is_supported("gfm_markdown"),
                                             incremental_review_markdown_text,
                                                git_provider=self.git_provider,
-                                               files=self.git_provider.get_diff_files())
+                                               files=diff_files)
+        pr_title = getattr(self.git_provider.pr, "title", "") if self.git_provider.pr else ""
+        rule_findings = review_rule_findings(diff_files, str(pr_title or ""))
+        rule_section = render_review_rule_section(rule_findings)
+        if rule_section:
+            markdown_text = f"{rule_section}\n\n{markdown_text}"
+        sections = review_sections(data.get("review", {}))
+        if sections:
+            markdown_text += f"\n\n{sections}"
 
         if self.review_chunk_count > 1:
             markdown_text += (

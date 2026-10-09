@@ -24,6 +24,7 @@ import difflib
 import json
 import os
 from collections.abc import Iterator, Mapping
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, urlencode, urlparse
 
@@ -846,6 +847,21 @@ class GiteeProvider(GitProvider):
         if self.enabled_pr:
             return self.pr_number
         return None
+
+    def supports_issue_url_tickets(self) -> bool:
+        return True
+
+    def get_issue_content(self, repo_obj, issue_number: int):
+        """Read one issue from the current repository or an approved sibling repository."""
+        owner, repo = repo_obj if isinstance(repo_obj, tuple) else (self.owner, self.repo)
+        payload = self.api.request("GET", f"/repos/{owner}/{repo}/issues/{issue_number}", allow_404=True)
+        if not isinstance(payload, Mapping):
+            raise ValueError(f"Gitee issue {owner}/{repo}#{issue_number} was not found")
+        return SimpleNamespace(
+            title=payload.get("title") or "",
+            body=payload.get("body") or "",
+            repository_url=f"{self.api_base}/repos/{owner}/{repo}",
+        )
 
     def get_issue_comments(self) -> List[GiteeComment]:
         """Return every comment on the PR, oldest first.

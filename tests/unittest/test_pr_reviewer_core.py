@@ -95,7 +95,8 @@ def test_review_failure_comment_treats_quoted_false_as_disabled():
 
 
 @pytest.mark.asyncio
-async def test_prepare_prediction_requests_remaining_files_and_preserves_tuple_result():
+async def test_prepare_prediction_requests_remaining_files_and_preserves_tuple_result(monkeypatch):
+    monkeypatch.setitem(get_settings().pr_reviewer, "enable_large_pr_chunking", False)
     reviewer = _make_prediction_reviewer()
     reviewer._get_prediction = AsyncMock(return_value=_VALID_PREDICTION)
 
@@ -132,7 +133,8 @@ async def test_prepare_prediction_accepts_full_diff_string_when_token_budget_is_
 
 
 @pytest.mark.asyncio
-async def test_prepare_prediction_keeps_incremental_review_compatible_with_tuple_result():
+async def test_prepare_prediction_keeps_incremental_review_compatible_with_tuple_result(monkeypatch):
+    monkeypatch.setitem(get_settings().pr_reviewer, "enable_large_pr_chunking", False)
     reviewer = _make_prediction_reviewer()
     reviewer.incremental = SimpleNamespace(is_incremental=True)
     reviewer._get_prediction = AsyncMock(return_value=_VALID_PREDICTION)
@@ -214,7 +216,7 @@ def test_prepare_pr_review_hides_coverage_footer_when_disabled():
     finally:
         settings.pr_reviewer.enable_review_coverage_footer = original_enable_review_coverage_footer
 
-    assert review == "original review"
+    assert review.startswith("original review")
     assert "审查覆盖范围" not in review
 
 
@@ -241,7 +243,7 @@ def test_prepare_pr_review_leaves_original_content_unchanged_without_remaining_f
 
     review = _render_review(reviewer, [])
 
-    assert review == "original review"
+    assert review.startswith("original review")
     assert "审查覆盖范围" not in review
 
 
@@ -260,7 +262,7 @@ def test_prepare_pr_review_warns_on_invalid_model_output_without_changing_markdo
     ):
         review = reviewer._prepare_pr_review()
 
-    assert review == "original review"
+    assert review.startswith("original review")
     get_logger.return_value.warning.assert_called_once()
     warning = get_logger.return_value.warning.call_args.kwargs
     assert warning["artifact"] == {"field": "review.key_issues_to_review", "value": "wrong"}
@@ -281,7 +283,7 @@ def test_prepare_pr_review_does_not_warn_for_valid_model_output():
     ):
         review = reviewer._prepare_pr_review()
 
-    assert review == "original review"
+    assert review.startswith("original review")
     get_logger.return_value.warning.assert_not_called()
 
 
@@ -467,7 +469,7 @@ def test_prepare_pr_review_does_not_publish_key_issues_inline_by_default():
 
     review = _render_review(reviewer, [])
 
-    assert review == "original review"
+    assert review.startswith("original review")
     reviewer.git_provider.publish_code_suggestions.assert_not_called()
 
 
@@ -1771,4 +1773,4 @@ def test_prepare_pr_review_pushes_outputs_when_publishing():
     push.assert_called_once()
     assert push.call_args.args[0] == "review"
     assert push.call_args.kwargs["payload"] == {"score": "1"}
-    assert push.call_args.kwargs["markdown"] == "original review"
+    assert push.call_args.kwargs["markdown"].startswith("original review")

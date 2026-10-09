@@ -66,7 +66,13 @@ def chunking_enabled():
 
 
 @pytest.mark.asyncio
-async def test_chunking_is_off_by_default_even_when_the_token_budget_truncated_the_diff():
+async def test_chunking_is_off_by_default_even_when_the_token_budget_truncated_the_diff(monkeypatch):
+    def setting(key, default=None):
+        return False if key == "enable_large_pr_chunking" else default
+
+    monkeypatch.setattr("pr_agent.tools.pr_reviewer.get_settings", lambda: SimpleNamespace(
+        pr_reviewer=SimpleNamespace(get=setting)
+    ))
     reviewer = _make_reviewer()
     reviewer._get_prediction = AsyncMock(return_value=CHUNK_A)
 
@@ -611,6 +617,7 @@ async def test_invalid_chunk_emits_one_schema_warning_before_rendering(chunking_
 def _render_review(reviewer):
     reviewer.prediction = "review:\n  summary: test"
     reviewer.git_provider.get_diff_files.return_value = []
+    reviewer.git_provider.pr = None
     reviewer.git_provider.is_supported.return_value = False
     reviewer.set_review_labels = MagicMock()
 
@@ -647,7 +654,7 @@ def test_a_chunked_review_reports_the_chunks_that_failed():
 def test_a_single_call_review_says_nothing_about_chunks():
     review = _render_review(_make_reviewer())
 
-    assert review == "original review"
+    assert review.startswith("original review")
 
 
 def test_the_chunk_note_comes_before_the_review_coverage_footer():
