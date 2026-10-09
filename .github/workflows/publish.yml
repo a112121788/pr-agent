@@ -123,50 +123,7 @@ jobs:
             target: cli
             suffix: ''
             rolling: latest
-          - dockerfile: docker/Dockerfile
-            target: github_app
-            suffix: github_app
-            rolling: ''
-          - dockerfile: docker/Dockerfile
-            target: bitbucket_app
-            suffix: bitbucket_app
-            rolling: ''
-          - dockerfile: docker/Dockerfile
-            target: bitbucket_server_webhook
-            suffix: bitbucket_server_webhook
-            rolling: bitbucket_server_webhook
-          - dockerfile: docker/Dockerfile
-            target: github_polling
-            suffix: github_polling
-            rolling: ''
-          - dockerfile: docker/Dockerfile
-            target: gitlab_webhook
-            suffix: gitlab_webhook
-            rolling: gitlab_webhook
-          - dockerfile: docker/Dockerfile
-            target: azure_devops_webhook
-            suffix: azure_devops_webhook
-            rolling: ''
-          - dockerfile: docker/Dockerfile
-            target: gitea_app
-            suffix: gitea_app
-            rolling: gitea_app
-          - dockerfile: docker/Dockerfile
-            target: mosaico_agent
-            suffix: mosaico_agent
-            rolling: mosaico_agent
-          - dockerfile: docker/Dockerfile
-            target: github_action
-            suffix: github_action
-            rolling: github_action
-          - dockerfile: docker/Dockerfile.lambda
-            target: github_lambda
-            suffix: github_lambda
-            rolling: github_lambda
-          - dockerfile: docker/Dockerfile.lambda
-            target: gitlab_lambda
-            suffix: gitlab_lambda
-            rolling: gitlab_lambda
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

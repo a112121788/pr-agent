@@ -30,49 +30,9 @@ RUN groupadd --gid 10001 pragent && \
 ENV HOME=/home/pragent
 USER 10001:10001
 
-FROM service AS github_app
-COPY pr_agent pr_agent
-CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "--forwarded-allow-ips", "*", "pr_agent.servers.github_app:app"]
-
-FROM service AS bitbucket_app
-COPY pr_agent pr_agent
-CMD ["python", "pr_agent/servers/bitbucket_app.py"]
-
-FROM service AS bitbucket_server_webhook
-COPY pr_agent pr_agent
-CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "--forwarded-allow-ips", "*", "pr_agent.servers.bitbucket_server_webhook:app"]
-
-FROM service AS github_polling
-COPY pr_agent pr_agent
-CMD ["python", "pr_agent/servers/github_polling.py"]
-
-FROM base AS github_action
-COPY pr_agent pr_agent
-COPY github_action/entrypoint.sh /
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
-
-FROM service AS gitlab_webhook
-COPY pr_agent pr_agent
-CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "--forwarded-allow-ips", "*", "pr_agent.servers.gitlab_webhook:app"]
-
-FROM service AS azure_devops_webhook
-COPY pr_agent pr_agent
-CMD ["python", "pr_agent/servers/azuredevops_server_webhook.py"]
-
-FROM service AS gitea_app
-COPY pr_agent pr_agent
-CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py","pr_agent.servers.gitea_app:app"]
-
 FROM service AS gitee_app
 COPY pr_agent pr_agent
 CMD ["python", "-m", "gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "pr_agent/servers/gunicorn_config.py", "pr_agent.servers.gitee_app:app"]
-
-FROM service AS mosaico_agent
-COPY pr_agent pr_agent
-EXPOSE 9000
-CMD ["python", "pr_agent/mosaico/server.py"]
-
 
 FROM base AS test
 # The base stage pins LITELLM_LOCAL_MODEL_COST_MAP for every stage; kept here
@@ -85,8 +45,6 @@ COPY tests tests
 COPY .github/workflows/publish.yml .github/workflows/publish.yml
 COPY .github/workflows/build-and-test.yaml .github/workflows/build-and-test.yaml
 COPY docker/Dockerfile docker/Dockerfile
-COPY docker/Dockerfile.lambda docker/Dockerfile.lambda
-COPY docker/mosaico docker/mosaico
 # Read by the docs guards: the URL checker, the pages that link into the docs site,
 # and the packaging inputs that must ship every /help page suffix. Kept last so a
 # README edit only rebuilds these final layers.
