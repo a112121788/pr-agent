@@ -3,7 +3,7 @@
 
    Sources (SVG data CC0; the marks remain their owners' trademarks and are used
    to identify supported platforms):
-   - GitHub, GitLab, Bitbucket, Gitea, Gerrit: Simple Icons 16.32
+   - GitHub, GitLab, Bitbucket, Gitea, Gitee, Gerrit: Simple Icons 16.32
    - Azure DevOps: CoreUI Brands (Simple Icons dropped Microsoft marks)
    - AWS CodeCommit: SVG Logos, reduced to a single-colour knocked-out tile
    - terminal.svg: drawn for this site, not a brand mark */
@@ -28,6 +28,7 @@
 .pra-logo--bitbucket { -webkit-mask-image: url('/img/logos/bitbucket.svg'); mask-image: url('/img/logos/bitbucket.svg'); }
 .pra-logo--azuredevops { -webkit-mask-image: url('/img/logos/azuredevops.svg'); mask-image: url('/img/logos/azuredevops.svg'); }
 .pra-logo--gitea { -webkit-mask-image: url('/img/logos/gitea.svg'); mask-image: url('/img/logos/gitea.svg'); }
+.pra-logo--gitee { -webkit-mask-image: url('/img/logos/gitee.svg'); mask-image: url('/img/logos/gitee.svg'); }
 .pra-logo--gerrit { -webkit-mask-image: url('/img/logos/gerrit.svg'); mask-image: url('/img/logos/gerrit.svg'); }
 .pra-logo--codecommit { -webkit-mask-image: url('/img/logos/codecommit.svg'); mask-image: url('/img/logos/codecommit.svg'); }
 .pra-logo--terminal { -webkit-mask-image: url('/img/logos/terminal.svg'); mask-image: url('/img/logos/terminal.svg'); }

@@ -164,6 +164,7 @@ const COMMANDS = [
 ];
 
 const PROVIDERS = [
+  {slug: 'gitee', name: 'Gitee'},
   {slug: 'github', name: 'GitHub'},
   {slug: 'gitlab', name: 'GitLab'},
   {slug: 'bitbucket', name: 'Bitbucket'},
