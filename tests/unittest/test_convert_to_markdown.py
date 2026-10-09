@@ -4,7 +4,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from pr_agent.algo.comment_identity import PRReviewHeader
 from pr_agent.algo.utils import _expand_minute_suffix, convert_to_markdown_v2
 from pr_agent.tools.pr_description import insert_br_after_x_chars
 
@@ -58,16 +57,16 @@ class TestConvertToMarkdown:
             ),
             "relevant_tests": "No\n", "possible_issues": "No\n", "security_concerns": "No\n"}}
 
-        expected_output = textwrap.dedent(f"""\
-            {PRReviewHeader.REGULAR.value} 🔍
+        expected_output = textwrap.dedent("""\
+            ## PR 审查指南 🔍
 
-            Here are some key observations to aid the review process:
+            以下是协助审查的关键观察：
 
             <table>
-            <tr><td>⏱️&nbsp;<strong>Estimated effort to review</strong>: 1 🔵⚪⚪⚪⚪</td></tr>
-            <tr><td>🧪&nbsp;<strong>No relevant tests</strong></td></tr>
+            <tr><td>⏱️&nbsp;<strong>预计审查工作量</strong>: 1 🔵⚪⚪⚪⚪</td></tr>
+            <tr><td>🧪&nbsp;<strong>没有相关测试</strong></td></tr>
             <tr><td>&nbsp;<strong>Possible issues</strong>: No</td></tr>
-            <tr><td>🔒&nbsp;<strong>No security concerns identified</strong></td></tr>
+            <tr><td>🔒&nbsp;<strong>未发现安全问题</strong></td></tr>
             </table>
         """)
 
@@ -82,17 +81,17 @@ class TestConvertToMarkdown:
             "relevant_tests": "No\n", "possible_issues": "No\n", "security_concerns": "No\n"}}
 
         expected_output = textwrap.dedent("""\
-            ## PR Reviewer Guide 🔍
+            ## PR 审查指南 🔍
 
-            Here are some key observations to aid the review process:
+            以下是协助审查的关键观察：
 
-            ### ⏱️ Estimated effort to review: 1 🔵⚪⚪⚪⚪
+            ### ⏱️ 预计审查工作量: 1 🔵⚪⚪⚪⚪
 
-            ### 🧪 No relevant tests
+            ### 🧪 没有相关测试
 
             ###  Possible issues: No
 
-            ### 🔒 No security concerns identified
+            ### 🔒 未发现安全问题
         """)
 
         assert convert_to_markdown_v2(input_data, gfm_supported=False).strip() == expected_output.strip()
@@ -114,12 +113,12 @@ class TestConvertToMarkdown:
         mock_git_provider.get_line_link.return_value = reference_link
 
         expected_output = textwrap.dedent(f"""\
-            ## PR Reviewer Guide 🔍
+            ## PR 审查指南 🔍
 
-            Here are some key observations to aid the review process:
+            以下是协助审查的关键观察：
 
             <table>
-            <tr><td>⚡&nbsp;<strong>Recommended focus areas for review</strong><br><br>
+            <tr><td>⚡&nbsp;<strong>建议重点审查</strong><br><br>
 
             <a href='{reference_link}'><strong>Code Smell</strong></a><br>The function is too long and complex.
 
@@ -142,7 +141,7 @@ class TestConvertToMarkdown:
         with patch('pr_agent.algo.utils.get_logger') as get_logger:
             output = convert_to_markdown_v2(input_data)
 
-        assert 'Recommended focus areas for review' in output
+        assert '建议重点审查' in output
         assert 'Code Smell' not in output
         get_logger.return_value.exception.assert_not_called()
 
@@ -208,9 +207,9 @@ class TestConvertToMarkdown:
         }}
 
         expected_output = textwrap.dedent("""\
-            ## PR Reviewer Guide 🔍
+            ## PR 审查指南 🔍
 
-            Here are some key observations to aid the review process:
+            以下是协助审查的关键观察：
 
             <table>
             <tr><td>
@@ -272,9 +271,9 @@ class TestConvertToMarkdown:
         }
 
         expected_output = textwrap.dedent("""\
-            ## PR Reviewer Guide 🔍
+            ## PR 审查指南 🔍
 
-            Here are some key observations to aid the review process:
+            以下是协助审查的关键观察：
 
             <table>
             <tr><td>🔀 <strong>Multiple PR themes</strong><br><br>
@@ -326,9 +325,9 @@ class TestConvertToMarkdown:
             "(best, average, worst case): 1h | 2h | 30 minutes</td></tr>"
         )
         expected_output = textwrap.dedent(f"""
-            {PRReviewHeader.REGULAR.value} 🔍
+            ## PR 审查指南 🔍
 
-            Here are some key observations to aid the review process:
+            以下是协助审查的关键观察：
 
             <table>
             {contribution_row}
@@ -337,10 +336,10 @@ class TestConvertToMarkdown:
         assert convert_to_markdown_v2(input_data).strip() == expected_output.strip()
 
         # Non-GFM branch
-        expected_output_no_gfm = textwrap.dedent(f"""
-        {PRReviewHeader.REGULAR.value} 🔍
+        expected_output_no_gfm = textwrap.dedent("""
+        ## PR 审查指南 🔍
 
-        Here are some key observations to aid the review process:
+        以下是协助审查的关键观察：
 
         ### ⏳ Contribution time estimate (best, average, worst case): 1h | 2h | 30 minutes
 

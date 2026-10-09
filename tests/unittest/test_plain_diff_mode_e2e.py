@@ -180,7 +180,7 @@ async def test_review_command_through_diff_provider_mocked_llm(cfg, monkeypatch)
             # Return a minimal response; PRReviewer will store this as self.prediction
             # and then attempt _prepare_pr_review().  If parsing fails the run()
             # method catches the exception gracefully, so the test won't error out.
-            return ("## Review\nNo major issues detected.", "stop")
+            return ("## Review\n未发现重大问题.", "stop")
 
     reviewer = PRReviewer("local_diff", ai_handler=FakeAiHandler, args=[])
     await reviewer.run()

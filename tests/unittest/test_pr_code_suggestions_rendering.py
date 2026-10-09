@@ -443,7 +443,7 @@ async def test_publish_no_suggestions_resolves_freshly_published_thread():
 def test_generate_summarized_suggestions_empty_returns_placeholder():
     tool = _make_tool()
     out = tool.generate_summarized_suggestions({"code_suggestions": []})
-    assert "PR Code Suggestions" in out
+    assert "PR 代码建议" in out
     assert "No suggestions found to improve this PR." in out
     # No table is rendered when empty
     assert "<table>" not in out

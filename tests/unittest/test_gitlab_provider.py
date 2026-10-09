@@ -1054,11 +1054,11 @@ class TestGitLabProvider:
         gitlab_provider.mr = MagicMock()
         with patch("pr_agent.git_providers.gitlab_provider.get_settings",
                    return_value=_mock_settings(publish_review_as_thread=True)):
-            result = gitlab_provider.publish_comment("Preparing review...", is_temporary=True, as_thread=True)
+            result = gitlab_provider.publish_comment("正在准备审查...", is_temporary=True, as_thread=True)
 
         # Temporary progress comments are removed shortly after, so they are never threaded.
         gitlab_provider.mr.discussions.create.assert_not_called()
-        gitlab_provider.mr.notes.create.assert_called_once_with({'body': 'Preparing review...'})
+        gitlab_provider.mr.notes.create.assert_called_once_with({'body': '正在准备审查...'})
         assert result in gitlab_provider.temp_comments
 
     def test_publish_review_as_thread_opens_a_new_thread_each_call(self, gitlab_provider):

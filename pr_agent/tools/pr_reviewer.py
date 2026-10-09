@@ -84,7 +84,7 @@ from pr_agent.tools.ticket_pr_compliance_check import (
 
 MAX_REVIEW_COVERAGE_FILES = 50
 _SUGGESTION_FENCE_RE = re.compile(r"```[ \t]*suggestion\b", re.IGNORECASE)
-REVIEW_PROGRESS_COMMENT = "Preparing review..."
+REVIEW_PROGRESS_COMMENT = "正在准备审查..."
 
 _REVIEW_FAILURE_REASONS = (
     (
@@ -865,7 +865,7 @@ class PRReviewer:
     def _should_publish_review_no_suggestions(self, pr_review: str) -> bool:
         return (
             get_settings().pr_reviewer.get('publish_output_no_suggestions', True)
-            or "No major issues detected" not in pr_review
+            or ("No major issues detected" not in pr_review and "未发现重大问题" not in pr_review)
         )
 
     async def _prepare_prediction(self, model: str) -> None:
@@ -1330,24 +1330,22 @@ class PRReviewer:
         if self.review_chunk_count > 1:
             markdown_text += (
                 "\n\n<hr>\n\n"
-                "ℹ️ **Chunked review:** the diff exceeded the model token budget, so it was reviewed in "
-                f"{self.review_chunk_count} chunks and the per-chunk results were merged."
+                "ℹ️ **分段审查：** diff 超出了模型的 token 预算，因此拆成 "
+                f"{self.review_chunk_count} 段分别审查，再合并各段结果。"
             )
             if self.review_failed_chunk_count:
-                markdown_text += (f" {self.review_failed_chunk_count} chunk(s) failed and are not covered "
-                                  "by this review.")
+                markdown_text += f" 其中 {self.review_failed_chunk_count} 段失败，未包含在本次审查中。"
 
         if self.remaining_files_list and get_settings().pr_reviewer.enable_review_coverage_footer:
             displayed_files = self.remaining_files_list[:MAX_REVIEW_COVERAGE_FILES]
             markdown_text += (
                 "\n\n<hr>\n\n"
-                "⚠️ **Review coverage:** The following files were not included in this review "
-                "because of the token budget:\n"
+                "⚠️ **审查覆盖范围：** 以下文件因 token 预算未包含在本次审查中：\n"
                 + "\n".join(f"- `{file}`" for file in displayed_files)
             )
             remaining_count = len(self.remaining_files_list) - len(displayed_files)
             if remaining_count:
-                markdown_text += f"\n... and {remaining_count} more"
+                markdown_text += f"\n... 另有 {remaining_count} 个文件"
 
         # Add help text if gfm_markdown is supported
         if self.git_provider.is_supported("gfm_markdown") and get_settings().pr_reviewer.enable_help_text:
@@ -1670,7 +1668,7 @@ class PRReviewer:
                         get_logger().warning(f"Unexpected type for estimated_effort: {type(estimated_effort)}")
                     if estimated_effort_number is not None:
                         estimated_effort_number = max(1, min(5, int(estimated_effort_number)))
-                        review_labels.append(f'Review effort {estimated_effort_number}/5')
+                        review_labels.append(f'审查工作量{estimated_effort_number}/5')
                 if (
                         get_settings().pr_reviewer.enable_review_labels_security
                         and get_settings().pr_reviewer.require_security_review
@@ -1681,7 +1679,7 @@ class PRReviewer:
                     else:
                         has_valid_security_verdict = True
                         if not is_value_no(security_concerns):
-                            review_labels.append('Possible security concern')
+                            review_labels.append('可能存在安全问题')
 
                 current_labels = self.git_provider.get_pr_labels(update=True)
                 if current_labels is None:
@@ -1696,9 +1694,10 @@ class PRReviewer:
                 get_logger().debug(f"Current labels:\n{current_labels}")
                 if current_labels:
                     current_labels_filtered = [label for label in current_labels if
-                                               (not label.lower().startswith('review effort') and
-                                                not (label.lower().startswith(
-                                                    'possible security concern') and has_valid_security_verdict))]
+                                               (not label.lower().startswith(('review effort', '审查工作量')) and
+                                                not (label.lower().startswith((
+                                                    'possible security concern', '可能存在安全问题'))
+                                                     and has_valid_security_verdict))]
                 else:
                     current_labels_filtered = []
                 new_labels = review_labels + current_labels_filtered

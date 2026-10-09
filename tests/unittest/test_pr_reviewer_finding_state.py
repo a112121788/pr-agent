@@ -148,7 +148,7 @@ def test_prepare_review_reconciles_previous_state_and_renders_resolved_section(m
     with (
         patch("pr_agent.tools.pr_reviewer.load_yaml", return_value={"review": {"key_issues_to_review": []}}),
         patch("pr_agent.tools.pr_reviewer.github_action_output"),
-        patch("pr_agent.tools.pr_reviewer.convert_to_markdown_v2", return_value="No major issues detected"),
+        patch("pr_agent.tools.pr_reviewer.convert_to_markdown_v2", return_value="未发现重大问题"),
     ):
         review = reviewer._prepare_pr_review()
 
@@ -213,7 +213,7 @@ def test_prepare_review_pushes_final_markdown_with_lifecycle_state(monkeypatch):
     with (
         patch("pr_agent.tools.pr_reviewer.load_yaml", return_value={"review": {"key_issues_to_review": []}}),
         patch("pr_agent.tools.pr_reviewer.github_action_output"),
-        patch("pr_agent.tools.pr_reviewer.convert_to_markdown_v2", return_value="No major issues detected"),
+        patch("pr_agent.tools.pr_reviewer.convert_to_markdown_v2", return_value="未发现重大问题"),
         patch("pr_agent.tools.pr_reviewer.push_outputs") as push_outputs,
     ):
         review = reviewer._prepare_pr_review()
@@ -783,7 +783,7 @@ async def test_run_publishes_state_transition_even_when_review_has_no_suggestion
     reviewer = _reviewer(provider)
     reviewer.vars = {}
     reviewer._prepare_prediction = AsyncMock()
-    reviewer._prepare_pr_review = MagicMock(return_value="No major issues detected")
+    reviewer._prepare_pr_review = MagicMock(return_value="未发现重大问题")
     reviewer._review_state_result = SimpleNamespace(changed=True)
     reviewer._review_state_blocked = False
 
@@ -800,7 +800,7 @@ async def test_run_publishes_state_transition_even_when_review_has_no_suggestion
 
     provider.publish_persistent_comment_full.assert_called_once()
     assert provider.publish_persistent_comment_full.call_args.kwargs["fallback_on_error"] is False
-    assert provider.publish_persistent_comment_full.call_args.args[0] == "No major issues detected"
+    assert provider.publish_persistent_comment_full.call_args.args[0] == "未发现重大问题"
     provider.publish_persistent_comment.assert_not_called()
     assert settings.pr_reviewer.publish_output_no_suggestions is False
 
@@ -815,7 +815,7 @@ async def test_invalid_history_updates_persistent_comment_without_fallback(monke
     reviewer = _reviewer(provider)
     reviewer.vars = {}
     reviewer._prepare_prediction = AsyncMock()
-    reviewer._prepare_pr_review = MagicMock(return_value="No major issues detected")
+    reviewer._prepare_pr_review = MagicMock(return_value="未发现重大问题")
     reviewer._review_state_result = None
     reviewer._review_state_blocked = True
     provider.get_issue_comments.return_value = [

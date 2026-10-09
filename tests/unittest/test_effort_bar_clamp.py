@@ -61,4 +61,4 @@ def test_the_review_label_matches_the_rendered_bar(score, expected, monkeypatch)
     monkeypatch.setattr(settings.config, "publish_output", True)
     reviewer.set_review_labels({"review": {"estimated_effort_to_review_[1-5]": score}})
 
-    assert published and published[0] == [f"Review effort {expected}/5"]
+    assert published and published[0] == [f"审查工作量{expected}/5"]

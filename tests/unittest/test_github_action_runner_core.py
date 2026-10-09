@@ -497,7 +497,7 @@ async def test_action_review_config_falls_back_to_app_and_overrides_it(
 @pytest.mark.asyncio
 async def test_issue_comment_from_bot_sender_is_skipped(monkeypatch, tmp_path, restore_github_settings):
     """Regression for #2398: a comment authored by a bot (e.g. pr-agent's own
-    'Preparing review...' message) must not be parsed as a command, which would
+    '正在准备审查...' message) must not be parsed as a command, which would
     re-trigger the action in a feedback loop."""
     handled = []
     _patch_issue_comment_deps(monkeypatch, handled)

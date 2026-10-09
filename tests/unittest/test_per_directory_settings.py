@@ -848,7 +848,7 @@ model_reasoning = "reasoning-model"
 
         git_utils.apply_repo_settings("https://github.com/org/repo/pull/1")
 
-        assert get_settings().get("config.response_language", "en-us") == "en-US"
+        assert get_settings().get("config.response_language", "en-us") == "zh-CN"
 
     @pytest.mark.parametrize("toml_value", [
         '"hot"', "true", "[0.1]", '{value = "0.1"}', "nan", "-0.1", "2.1",
@@ -909,7 +909,7 @@ fallback_models = ["m-one", "m-two", "m-three", "m-four", "m-five"]
         # Fallback routing stays root-/host-controlled: the retry helper turns each
         # entry into one more routed attempt per failing model, so a nested file must
         # not be able to multiply AI calls with an arbitrarily long list.
-        assert list(get_settings().config.fallback_models) == ["gpt-6.1-sol"]
+        assert list(get_settings().config.fallback_models) == ["glm-5.3"]
         # Other model-routing and output knobs still apply.
         assert get_settings().config.model == "nested-model"
         assert get_settings().config.temperature == 0.5

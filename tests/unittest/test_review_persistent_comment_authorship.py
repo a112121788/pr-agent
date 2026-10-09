@@ -221,7 +221,7 @@ async def test_github_app_auto_review_creates_the_persistent_review(monkeypatch,
     assert len(created) == 1
     body = created[0].body
     assert not body.startswith(STANDALONE_HEADING)
-    assert body.startswith(PRReviewHeader.REGULAR.value)
+    assert body.startswith("## PR 审查指南")
     assert PRReviewIdentity.REGULAR.value in body
 
 

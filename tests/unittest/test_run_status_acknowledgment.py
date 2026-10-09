@@ -1,6 +1,6 @@
 """An automatic command should say it started before it has anything to publish.
 
-Automatic commands suppress the "Preparing review..." progress comment, so between opening a
+Automatic commands suppress the "正在准备审查..." progress comment, so between opening a
 pull request and the model answering there is no sign PR-Agent picked it up. When
 `github.publish_as_check_run` is on, the tool's check run is opened as in_progress before the
 command runs and completed in place by the tool, so there is one signal on the commit.

@@ -44,7 +44,7 @@ def test_suggestions_heading_is_trimmed():
 
 
 def test_default_suggestions_heading_is_unchanged():
-    assert format_pr_code_suggestions_header() == "## PR Code Suggestions ✨"
+    assert format_pr_code_suggestions_header() == "## PR 代码建议 ✨"
 
 
 @pytest.mark.parametrize(
@@ -59,7 +59,7 @@ def test_invalid_suggestions_heading_falls_back_to_default(invalid_heading):
     finally:
         restore_settings(snapshot)
 
-    assert header == "## PR Code Suggestions ✨"
+    assert header == "## PR 代码建议 ✨"
 
 
 def test_suggestions_identity_is_inserted_after_heading_and_is_idempotent():

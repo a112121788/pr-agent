@@ -61,14 +61,14 @@ async def test_user_labels_are_still_preserved_when_the_provider_supports_labels
         mock_get_settings, _mock_retry):
     mock_get_settings.return_value.config.publish_output = True
     provider = _provider(supports_labels=True)
-    provider.get_pr_labels.return_value = ["Review effort 3/5"]
+    provider.get_pr_labels.return_value = ["审查工作量3/5"]
     tool = _tool(provider)
 
-    with patch("pr_agent.tools.pr_generate_labels.get_user_labels", return_value=["Review effort 3/5"]):
+    with patch("pr_agent.tools.pr_generate_labels.get_user_labels", return_value=["审查工作量3/5"]):
         await tool.run()
 
     provider.get_pr_labels.assert_called_once()
-    provider.publish_labels.assert_called_once_with(["Bug fix", "Review effort 3/5"])
+    provider.publish_labels.assert_called_once_with(["Bug fix", "审查工作量3/5"])
 
 
 @pytest.mark.asyncio

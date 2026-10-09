@@ -36,7 +36,7 @@ retry_same_model_on_length = false # when true, an empty response truncated by t
 # num_retries = 0 # per-call retries inside the completion client itself; unset keeps the client's default. These multiply the handler's own retry attempts
 skip_keys = []
 custom_reasoning_model = false # when true, disables system messages and temperature controls for models that don't support chat-style inputs
-response_language="en-US" # Language locales code for PR responses in ISO 3166 and ISO 639 format (e.g., "en-US", "it-IT", "zh-CN", ...)
+response_language="zh-CN" # Language locales code for PR responses in ISO 3166 and ISO 639 format (e.g., "en-US", "it-IT", "zh-CN", ...)
 repo_context_files = ["AGENTS.md"] # Repository-relative files (e.g. AGENTS.md, CLAUDE.md) to include as AI prompt context; set to [] to disable local context. A structured entry {"repo_id" = ..., "file_path" = ...} selects a sibling default-branch file from the same namespace/owner; repo_id must be in the host-issued repo_context_sibling_repos allowlist below. Reads use the sibling default branch and share repo_context_max_lines; repository settings may select entries, comment arguments cannot override this key
 # The repo-context cache is keyed on the revision read: the PR target commit for target-branch
 # reads, and the resolved default branch head on GitHub, so a default-branch push invalidates
@@ -185,7 +185,7 @@ publish_review_failure_comment=true # Set to false to suppress review failure co
 publish_error_details=false # Publish a deterministic, sanitized failure reason in manual review comments. No AI call is used.
 persistent_comment=true
 # Visible base heading for full and incremental review comments. Identity is tracked separately.
-review_heading = "PR Reviewer Guide"
+review_heading = "PR 审查指南"
 persistent_finding_state=true # Persist review finding state across complete review runs.
 # Character budget for the findings stored by earlier reviews, given to /review as context so it keeps their wording
 # instead of re-raising them reworded (needs persistent_finding_state); 0 disables it.
@@ -257,7 +257,7 @@ focus_only_on_problems=true
 #
 extra_instructions = ""
 # Visible base heading for summary-table /improve comments. Identity is tracked separately.
-suggestions_heading = "PR Code Suggestions"
+suggestions_heading = "PR 代码建议"
 enable_help_text=false
 enable_chat_text=false
 persistent_comment=true

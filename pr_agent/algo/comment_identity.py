@@ -67,22 +67,16 @@ def _get_configured_heading(setting_name: str, default_heading: str) -> str:
 
 def format_pr_review_header(incremental: bool = False) -> str:
     """Return the visible review heading while keeping identity out of presentation."""
-    default_heading = PRReviewHeader.REGULAR.value.removeprefix("## ")
-    heading = _get_configured_heading("pr_reviewer.review_heading", default_heading)
+    heading = _get_configured_heading("pr_reviewer.review_heading", "PR 审查指南")
     incremental_prefix = "Incremental " if incremental else ""
     return f"## {incremental_prefix}{heading} 🔍"
 
 
 def format_pr_code_suggestions_header(markdown_level: int = 2) -> str:
     """Return the visible suggestions heading while keeping identity out of presentation."""
-    default_heading = (
-        PRCodeSuggestionsHeader.SUMMARY.value
-        .removeprefix("## ")
-        .removesuffix(" ✨")
-    )
     heading = _get_configured_heading(
         "pr_code_suggestions.suggestions_heading",
-        default_heading,
+        "PR 代码建议",
     )
     markdown_prefix = "#" * markdown_level
     return f"{markdown_prefix} {heading} ✨"

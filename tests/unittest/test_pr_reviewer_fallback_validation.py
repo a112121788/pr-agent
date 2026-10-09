@@ -130,7 +130,7 @@ async def test_malformed_primary_then_valid_fallback_publishes_review_without_fa
 
     assert reviewer._get_prediction.await_args_list == [call("primary-model"), call("fallback-model")]
     assert git_provider.publish_comment.call_args_list == [
-        call("Preparing review...", is_temporary=True),
+        call("正在准备审查...", is_temporary=True),
         call("rendered fallback review"),
     ]
     assert all("Failed to review PR" not in str(args) for args in git_provider.publish_comment.call_args_list)
@@ -162,7 +162,7 @@ async def test_all_malformed_models_publish_one_failure_result(monkeypatch, fall
 
     assert reviewer._get_prediction.await_args_list == [call("primary-model"), call("fallback-model")]
     assert git_provider.publish_comment.call_args_list == [
-        call("Preparing review...", is_temporary=True),
+        call("正在准备审查...", is_temporary=True),
         call("Failed to review PR"),
     ]
     git_provider.remove_comment.assert_called_once_with(progress_comment)

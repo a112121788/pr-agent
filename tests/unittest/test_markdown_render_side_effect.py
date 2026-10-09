@@ -27,8 +27,8 @@ def test_the_other_fields_still_render():
     """Keep the remaining rows while excluding todo_summary."""
     out = convert_to_markdown_v2(copy.deepcopy(DATA), gfm_supported=True)
 
-    assert "Estimated effort to review" in out
-    assert "No security concerns identified" in out
+    assert "预计审查工作量" in out
+    assert "未发现安全问题" in out
 
 
 def test_rendering_twice_gives_the_same_output():

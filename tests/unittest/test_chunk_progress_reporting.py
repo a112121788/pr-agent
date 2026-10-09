@@ -1,6 +1,6 @@
 """In-place chunk progress reporting for the `/review` and `/improve` chunked flows.
 
-The placeholder both tools publish is frozen today: `/review` writes `"Preparing review..."`
+The placeholder both tools publish is frozen today: `/review` writes `"正在准备审查..."`
 once and `/improve` writes the animated work-in-progress body, then neither is touched until
 the final output replaces it. A chunked run makes several parallel model calls plus retries
 that can take minutes, so both now rewrite the placeholder as chunks settle. These tests cover
@@ -259,11 +259,11 @@ async def test_review_progress_comment_reports_each_settled_chunk(published_revi
     await _run_chunked_review(reviewer)
 
     assert edits == [
-        "Preparing review... analyzed 1 of 2 chunks",
-        "Preparing review... analyzed 2 of 2 chunks",
+        "正在准备审查... analyzed 1 of 2 chunks",
+        "正在准备审查... analyzed 2 of 2 chunks",
     ]
     # The placeholder stays temporary and is still removed before the review is published.
-    provider.publish_comment.assert_any_call("Preparing review...", is_temporary=True)
+    provider.publish_comment.assert_any_call("正在准备审查...", is_temporary=True)
     provider.remove_comment.assert_called_once()
 
 
@@ -275,7 +275,7 @@ async def test_review_progress_comment_reports_a_failed_chunk(published_review):
     await _run_chunked_review(reviewer)
 
     assert reviewer.review_failed_chunk_count == 1
-    assert edits[-1] == "Preparing review... analyzed 2 of 2 chunks, 1 chunk failed"
+    assert edits[-1] == "正在准备审查... analyzed 2 of 2 chunks, 1 chunk failed"
     assert reviewer.review_chunk_count == 2
 
 
@@ -296,7 +296,7 @@ async def test_review_progress_counts_include_chunks_an_earlier_attempt_finished
 
     # One pending chunk remained, so the single new edit already reads as the full count
     # rather than restarting at 1.
-    assert edits == ["Preparing review... analyzed 2 of 2 chunks"]
+    assert edits == ["正在准备审查... analyzed 2 of 2 chunks"]
 
 
 @pytest.mark.asyncio
@@ -315,7 +315,7 @@ async def test_review_progress_never_moves_backward_across_a_fallback(published_
             await reviewer._prepare_chunked_prediction("model-a")
         await reviewer._prepare_chunked_prediction("model-b")
 
-    reported = [body.removeprefix("Preparing review... ").strip() for body in edits]
+    reported = [body.removeprefix("正在准备审查... ").strip() for body in edits]
     counts = [
         (int(parts[1]), int(parts[3]))
         for parts in (line.split() for line in reported)
@@ -323,7 +323,7 @@ async def test_review_progress_never_moves_backward_across_a_fallback(published_
     ]
     assert counts == sorted(counts)
     # The retry starts clean instead of showing the dead attempt's "2 of 2, 1 failed".
-    assert "Preparing review..." in edits
+    assert "正在准备审查..." in edits
     assert reviewer.review_failed_chunk_count == 0
 
 
@@ -349,7 +349,7 @@ async def test_review_progress_is_skipped_for_an_auto_command(published_review):
 
     assert edits == []
     assert all(
-        call.args[:1] != ("Preparing review...",)
+        call.args[:1] != ("正在准备审查...",)
         for call in provider.publish_comment.call_args_list
     )
 
@@ -364,7 +364,7 @@ async def test_review_progress_is_skipped_when_progress_output_is_off(published_
 
     assert edits == []
     # The placeholder itself is unchanged; only its in-place updates are gated.
-    provider.publish_comment.assert_any_call("Preparing review...", is_temporary=True)
+    provider.publish_comment.assert_any_call("正在准备审查...", is_temporary=True)
 
 
 @pytest.mark.asyncio
@@ -682,8 +682,8 @@ async def test_review_progress_writes_the_comment_and_the_check_run_together(pub
     await _run_chunked_review(reviewer)
 
     assert edits == [
-        "Preparing review... analyzed 1 of 2 chunks",
-        "Preparing review... analyzed 2 of 2 chunks",
+        "正在准备审查... analyzed 1 of 2 chunks",
+        "正在准备审查... analyzed 2 of 2 chunks",
     ]
     assert check_run_lines == ["analyzed 1 of 2 chunks", "analyzed 2 of 2 chunks"]
 

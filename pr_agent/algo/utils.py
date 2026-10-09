@@ -172,7 +172,7 @@ def convert_to_markdown_v2(output_data: dict,
         return ""
 
     if get_settings().get("pr_reviewer.enable_intro_text", False):
-        markdown_text += "Here are some key observations to aid the review process:\n\n"
+        markdown_text += "以下是协助审查的关键观察：\n\n"
 
     if gfm_supported:
         markdown_text += "<table>\n"
@@ -185,7 +185,7 @@ def convert_to_markdown_v2(output_data: dict,
         key_nice = key.replace('_', ' ').capitalize()
         emoji = emojis.get(key_nice, "")
         if 'Estimated effort to review' in key_nice:
-            key_nice = 'Estimated effort to review'
+            key_nice = '预计审查工作量'
             value = str(value).strip()
             if value.isnumeric():
                 value_int = int(value)
@@ -209,15 +209,15 @@ def convert_to_markdown_v2(output_data: dict,
             if gfm_supported:
                 markdown_text += "<tr><td>"
                 if is_value_no(value):
-                    markdown_text += f"{emoji}&nbsp;<strong>No relevant tests</strong>"
+                    markdown_text += f"{emoji}&nbsp;<strong>没有相关测试</strong>"
                 else:
-                    markdown_text += f"{emoji}&nbsp;<strong>PR contains tests</strong>"
+                    markdown_text += f"{emoji}&nbsp;<strong>拉取请求包含测试</strong>"
                 markdown_text += "</td></tr>\n"
             else:
                 if is_value_no(value):
-                    markdown_text += f'### {emoji} No relevant tests\n\n'
+                    markdown_text += f'### {emoji} 没有相关测试\n\n'
                 else:
-                    markdown_text += f"### {emoji} PR contains tests\n\n"
+                    markdown_text += f"### {emoji} 拉取请求包含测试\n\n"
         elif 'ticket compliance check' in key_nice.lower():
             markdown_text = ticket_markdown_logic(emoji, markdown_text, value, gfm_supported)
         elif 'contribution time cost estimate' in key_nice.lower():
@@ -245,17 +245,17 @@ def convert_to_markdown_v2(output_data: dict,
             if gfm_supported:
                 markdown_text += "<tr><td>"
                 if is_value_no(value):
-                    markdown_text += f"{emoji}&nbsp;<strong>No security concerns identified</strong>"
+                    markdown_text += f"{emoji}&nbsp;<strong>未发现安全问题</strong>"
                 else:
-                    markdown_text += f"{emoji}&nbsp;<strong>Security concerns</strong><br><br>\n\n"
+                    markdown_text += f"{emoji}&nbsp;<strong>安全问题</strong><br><br>\n\n"
                     value = _ci.emphasize_header(value.strip()) if isinstance(value, str) else _ci.as_review_text(value)
                     markdown_text += f"{value}"
                 markdown_text += "</td></tr>\n"
             else:
                 if is_value_no(value):
-                    markdown_text += f'### {emoji} No security concerns identified\n\n'
+                    markdown_text += f'### {emoji} 未发现安全问题\n\n'
                 else:
-                    markdown_text += f"### {emoji} Security concerns\n\n"
+                    markdown_text += f"### {emoji} 安全问题\n\n"
                     value = _ci.emphasize_header(
                         value.strip(), only_markdown=True) if isinstance(value, str) else _ci.as_review_text(value)
                     markdown_text += f"{value}\n\n"
@@ -327,18 +327,18 @@ def convert_to_markdown_v2(output_data: dict,
             if is_value_no(value):
                 if gfm_supported:
                     markdown_text += "<tr><td>"
-                    markdown_text += f"{emoji}&nbsp;<strong>No major issues detected</strong>"
+                    markdown_text += f"{emoji}&nbsp;<strong>未发现重大问题</strong>"
                     markdown_text += "</td></tr>\n"
                 else:
-                    markdown_text += f"### {emoji} No major issues detected\n\n"
+                    markdown_text += f"### {emoji} 未发现重大问题\n\n"
             else:
                 issues = value
                 if gfm_supported:
                     markdown_text += "<tr><td>"
                     # markdown_text += f"{emoji}&nbsp;<strong>{key_nice}</strong><br><br>\n\n"
-                    markdown_text += f"{emoji}&nbsp;<strong>Recommended focus areas for review</strong><br><br>\n\n"
+                    markdown_text += f"{emoji}&nbsp;<strong>建议重点审查</strong><br><br>\n\n"
                 else:
-                    markdown_text += f"### {emoji} Recommended focus areas for review\n\n#### \n"
+                    markdown_text += f"### {emoji} 建议重点审查\n\n#### \n"
                 for issue in issues:
                     try:
                         if not issue or not isinstance(issue, dict):

@@ -5,7 +5,7 @@ PR_HEADER_START_WITH = (
 )
 REVIEW_START_WITH = (
     "## PR Reviewer Guide 🔍\n\n<!-- pr-agent:review:full -->\n\n"
-    "<table>\n<tr><td>⏱️&nbsp;<strong>Estimated effort to review</strong>:"
+    "<table>\n<tr><td>⏱️&nbsp;<strong>预计审查工作量</strong>:"
 )
 IMPROVE_START_WITH_REGEX_PATTERN = (
     r"^## PR Code Suggestions ✨\n\n"

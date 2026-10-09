@@ -38,7 +38,7 @@ def test_render_a_single_concern_string_unchanged():
 @pytest.mark.parametrize("value", ["No", "no", "none", "false"])
 def test_a_no_answer_still_reports_no_concerns(value):
     """Keep the 'no concerns' wording for every value is_value_no accepts."""
-    assert "No security concerns identified" in render(value)
+    assert "未发现安全问题" in render(value)
 
 
 @pytest.mark.parametrize("value", ["", None])

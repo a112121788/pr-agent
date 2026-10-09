@@ -64,7 +64,7 @@ PR-Agent 支持的每一个配置选项，按节分组。[configuration.toml](ht
 | `retry_same_model_on_length` | false | 为 true 时，因输出上限而被截断的空响应会在同一模型上重试，而不是直接转到 fallback_models |
 | `skip_keys` | [] |  |
 | `custom_reasoning_model` | false | 为 true 时，对不支持聊天式输入的模型禁用系统消息和温度控制 |
-| `response_language` | "en-US" | PR 响应的语言区域代码，格式为 ISO 3166 和 ISO 639（例如 "en-US"、"it-IT"、"zh-CN" 等） |
+| `response_language` | "zh-CN" | PR 响应的语言区域代码，格式为 ISO 3166 和 ISO 639（例如 "en-US"、"it-IT"、"zh-CN" 等） |
 | `repo_context_files` | ["AGENTS.md"] | 要作为 AI 提示词上下文包含的、相对仓库的文件（例如 AGENTS.md、CLAUDE.md）；设为 [] 可禁用本地上下文。结构化条目 {"repo_id" = ..., "file_path" = ...} 会从同一命名空间/所有者中选择一个同级默认分支文件；repo_id 必须位于下方由主机签发的 repo_context_sibling_repos 允许列表中。读取使用同级仓库的默认分支，并共享 repo_context_max_lines；仓库设置可以选择条目，评论参数不能覆盖此键 |
 | `repo_context_from_default_branch` | true | 从仓库默认分支读取仓库上下文文件（只信任默认分支的内容）。设为 false 则改为从 PR 目标分支读取。 |
 | `repo_context_max_lines` | 500 | 仓库上下文的最大渲染总行数，包括包裹标签 |
@@ -167,7 +167,7 @@ PR-Agent 支持的每一个配置选项，按节分组。[configuration.toml](ht
 | `publish_review_failure_comment` | true | 设为 false 可抑制审查失败评论，而不改变命令的失败状态。 |
 | `publish_error_details` | false | 在手动审查评论中发布确定的、已脱敏的失败原因。不使用 AI 调用。 |
 | `persistent_comment` | true |  |
-| `review_heading` | "PR Reviewer Guide" | 完整审查和增量审查评论的可见基础标题。身份另行跟踪。 |
+| `review_heading` | "PR 审查指南" | 完整审查和增量审查评论的可见基础标题。身份另行跟踪。 |
 | `persistent_finding_state` | true | 在完整的审查运行之间持久化审查发现状态。 |
 | `max_previous_findings_chars` | 8000 | 先前审查所存储发现的字符预算，作为上下文提供给 /review，以便它保持原有措辞而不是换种说法重新提出，并跳过其 GitLab 行内讨论已被人工解决的发现（需要 persistent_finding_state）；0 表示禁用。 |
 | `inline_key_issues` | false | 在平台能够验证行内评论发布的地方（GitHub、Bitbucket Cloud、Azure DevOps、GitLab），把每条审查发现发布为行内评论。 |
@@ -254,7 +254,7 @@ PR-Agent 支持的每一个配置选项，按节分组。[configuration.toml](ht
 | `dual_publishing_score_threshold` | -1 | -1 表示禁用，[0-10] 用于设置同时在表格中和作为可提交建议发布代码建议的阈值（>=） |
 | `focus_only_on_problems` | true |  |
 | `extra_instructions` | "" |  |
-| `suggestions_heading` | "PR Code Suggestions" | 摘要表格形式的 /improve 评论的可见基础标题。身份另行跟踪。 |
+| `suggestions_heading` | "PR 代码建议" | 摘要表格形式的 /improve 评论的可见基础标题。身份另行跟踪。 |
 | `enable_help_text` | false |  |
 | `enable_chat_text` | false |  |
 | `persistent_comment` | true |  |

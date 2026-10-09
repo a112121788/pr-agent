@@ -196,7 +196,7 @@ def test_prepare_pr_review_appends_complete_coverage_footer():
         settings.pr_reviewer.enable_review_coverage_footer = original_enable_review_coverage_footer
 
     assert review.startswith("original review")
-    assert "⚠️ **Review coverage:**" in review
+    assert "⚠️ **审查覆盖范围：**" in review
     assert "- `src/one.py`" in review
     assert "- `nested/two.md`" in review
     assert "\n\n<hr>\n\n" in review
@@ -215,7 +215,7 @@ def test_prepare_pr_review_hides_coverage_footer_when_disabled():
         settings.pr_reviewer.enable_review_coverage_footer = original_enable_review_coverage_footer
 
     assert review == "original review"
-    assert "Review coverage" not in review
+    assert "审查覆盖范围" not in review
 
 
 def test_prepare_pr_review_places_coverage_footer_before_help_text():
@@ -233,7 +233,7 @@ def test_prepare_pr_review_places_coverage_footer_before_help_text():
         settings.pr_reviewer.enable_review_coverage_footer = original_enable_review_coverage_footer
         settings.pr_reviewer.enable_help_text = original_enable_help_text
 
-    assert review.index("⚠️ **Review coverage:**") < review.index("help text")
+    assert review.index("⚠️ **审查覆盖范围：**") < review.index("help text")
 
 
 def test_prepare_pr_review_leaves_original_content_unchanged_without_remaining_files():
@@ -242,7 +242,7 @@ def test_prepare_pr_review_leaves_original_content_unchanged_without_remaining_f
     review = _render_review(reviewer, [])
 
     assert review == "original review"
-    assert "Review coverage" not in review
+    assert "审查覆盖范围" not in review
 
 
 def test_prepare_pr_review_warns_on_invalid_model_output_without_changing_markdown():
@@ -382,7 +382,7 @@ def test_prepare_pr_review_reports_number_of_files_beyond_coverage_limit():
 
     review = _render_review(reviewer, remaining_files)
 
-    assert "... and 3 more" in review
+    assert "... 另有 3 个文件" in review
     assert "- `file_50.py`" not in review
 
 
@@ -753,10 +753,11 @@ def test_should_publish_review_no_suggestions_respects_config():
     try:
         settings.pr_reviewer.publish_output_no_suggestions = False
         assert reviewer._should_publish_review_no_suggestions("No major issues detected") is False
+        assert reviewer._should_publish_review_no_suggestions("未发现重大问题") is False
         assert reviewer._should_publish_review_no_suggestions("A major issue was detected") is True
 
         settings.pr_reviewer.publish_output_no_suggestions = True
-        assert reviewer._should_publish_review_no_suggestions("No major issues detected") is True
+        assert reviewer._should_publish_review_no_suggestions("未发现重大问题") is True
     finally:
         settings.pr_reviewer.publish_output_no_suggestions = original_publish_no_suggestions
 
@@ -773,7 +774,7 @@ async def test_run_removes_its_progress_comment_when_quiet_output_suppresses_rev
     reviewer.incremental = SimpleNamespace(is_incremental=False)
     reviewer.vars = {}
     reviewer.prediction = None
-    reviewer._prepare_pr_review = lambda: "No major issues detected"
+    reviewer._prepare_pr_review = lambda: "未发现重大问题"
 
     async def fake_retry(prepare_fn, model_type=None, git_provider=None):
         reviewer.prediction = "prediction"
@@ -798,7 +799,7 @@ async def test_run_removes_its_progress_comment_when_quiet_output_suppresses_rev
         settings.config.is_auto_command = original["is_auto_command"]
         settings.pr_reviewer.publish_output_no_suggestions = original["publish_output_no_suggestions"]
 
-    git_provider.publish_comment.assert_called_once_with("Preparing review...", is_temporary=True)
+    git_provider.publish_comment.assert_called_once_with("正在准备审查...", is_temporary=True)
     git_provider.remove_comment.assert_called_once_with(progress_comment)
     git_provider.remove_initial_comment.assert_not_called()
     git_provider.publish_persistent_comment.assert_not_called()
@@ -858,7 +859,7 @@ async def test_run_removes_its_progress_comment_when_review_generation_fails(
         settings.config.propagate_tool_errors = original["propagate_tool_errors"]
         settings.pr_reviewer.publish_review_failure_comment = original["publish_review_failure_comment"]
 
-    expected_comments = [(("Preparing review...",), {"is_temporary": True})]
+    expected_comments = [(("正在准备审查...",), {"is_temporary": True})]
     if expect_failure_comment:
         expected_comments.append((("Failed to review PR",), {}))
     assert git_provider.publish_comment.call_args_list == expected_comments
@@ -911,7 +912,7 @@ async def test_run_re_raises_incomplete_provider_diff_after_progress_cleanup(mon
 
     assert exc_info.value is incomplete_diff_error
     git_provider.remove_comment.assert_called_once_with(progress_comment)
-    git_provider.publish_comment.assert_called_once_with("Preparing review...", is_temporary=True)
+    git_provider.publish_comment.assert_called_once_with("正在准备审查...", is_temporary=True)
 
 
 @pytest.mark.asyncio
@@ -958,7 +959,7 @@ async def test_run_publishes_sanitized_failure_reason_when_enabled(monkeypatch):
         settings.pr_reviewer.publish_error_details = original["publish_error_details"]
 
     assert git_provider.publish_comment.call_args_list == [
-        (("Preparing review...",), {"is_temporary": True}),
+        (("正在准备审查...",), {"is_temporary": True}),
         ((
             "Failed to review PR\n\n"
             "**Reason:** The model provider rejected the request because the API account has insufficient credits. "
@@ -1034,7 +1035,7 @@ async def test_run_does_not_publish_an_empty_review(
         settings.pr_reviewer.persistent_comment = original["persistent_comment"]
 
     assert git_provider.publish_comment.call_args_list == [
-        (("Preparing review...",), {"is_temporary": True}),
+        (("正在准备审查...",), {"is_temporary": True}),
         (("Failed to review PR",), {}),
     ]
     git_provider.publish_persistent_comment.assert_not_called()
@@ -1081,7 +1082,7 @@ async def test_run_publishes_failure_result_when_progress_comment_has_no_handle(
         settings.config.propagate_tool_errors = original["propagate_tool_errors"]
 
     assert git_provider.publish_comment.call_args_list == [
-        (("Preparing review...",), {"is_temporary": True}),
+        (("正在准备审查...",), {"is_temporary": True}),
         (("Failed to review PR",), {}),
     ]
     git_provider.remove_comment.assert_not_called()
@@ -1214,7 +1215,7 @@ async def test_run_publishes_failure_result_when_progress_cleanup_fails(monkeypa
         settings.config.propagate_tool_errors = original["propagate_tool_errors"]
 
     assert git_provider.publish_comment.call_args_list == [
-        (("Preparing review...",), {"is_temporary": True}),
+        (("正在准备审查...",), {"is_temporary": True}),
         (("Failed to review PR",), {}),
     ]
     git_provider.remove_comment.assert_called_once_with(progress_comment)
@@ -1267,7 +1268,7 @@ async def test_run_failure_result_publication_does_not_mask_review_error(
         settings.config.propagate_tool_errors = original["propagate_tool_errors"]
 
     assert git_provider.publish_comment.call_args_list == [
-        (("Preparing review...",), {"is_temporary": True}),
+        (("正在准备审查...",), {"is_temporary": True}),
         (("Failed to review PR",), {}),
     ]
     git_provider.remove_comment.assert_called_once_with(progress_comment)
@@ -1344,7 +1345,7 @@ def review_label_settings():
 
 def test_set_review_labels_replaces_stale_review_labels_and_keeps_user_labels(review_label_settings):
     git_provider = MagicMock()
-    git_provider.get_pr_labels.return_value = ["Review effort 1/5", "Possible security concern", "keep-me"]
+    git_provider.get_pr_labels.return_value = ["审查工作量1/5", "Possible security concern", "keep-me"]
     reviewer = _make_reviewer(git_provider)
     data = {
         "review": {
@@ -1356,8 +1357,8 @@ def test_set_review_labels_replaces_stale_review_labels_and_keeps_user_labels(re
     reviewer.set_review_labels(data)
 
     git_provider.publish_labels.assert_called_once_with([
-        "Review effort 3/5",
-        "Possible security concern",
+        "审查工作量3/5",
+        "可能存在安全问题",
         "keep-me",
     ])
 
@@ -1387,10 +1388,10 @@ def test_set_review_labels_security_label_matches_the_rendered_review_body(
     reviewer.set_review_labels(data)
 
     published = git_provider.publish_labels.call_args[0][0]
-    assert ("Possible security concern" in published) is expect_label
+    assert ("可能存在安全问题" in published) is expect_label
 
     body = convert_to_markdown_v2(data)
-    assert ("<strong>Security concerns</strong>" in body) is expect_label
+    assert ("<strong>安全问题</strong>" in body) is expect_label
 
 
 @pytest.mark.parametrize("missing_value", [None, ""])
@@ -1412,7 +1413,7 @@ def test_set_review_labels_keeps_existing_security_label_when_verdict_is_missing
     if missing_value is None:
         assert "Possible security concern" in published
     else:
-        assert "Possible security concern" not in published
+        assert "可能存在安全问题" not in published
     assert "keep-me" in published
 
 
@@ -1431,7 +1432,7 @@ def test_set_review_labels_does_not_label_security_free_localized_review(review_
         reviewer.set_review_labels(data)
 
         published = git_provider.publish_labels.call_args[0][0]
-        assert "Possible security concern" not in published
+        assert "可能存在安全问题" not in published
     finally:
         settings.config.response_language = original_language
 
@@ -1502,7 +1503,7 @@ async def test_run_threads_only_the_final_review_comment(monkeypatch, persistent
     reviewer.incremental = SimpleNamespace(is_incremental=False)
     reviewer.vars = {}
     reviewer.prediction = None
-    review_text = "## PR Reviewer Guide 🔍\n\nsome findings"
+    review_text = "## PR 审查指南 🔍\n\nsome findings"
     reviewer._prepare_pr_review = lambda: review_text
 
     async def fake_extract_tickets(git_provider, vars):
@@ -1547,7 +1548,7 @@ async def test_run_threads_only_the_final_review_comment(monkeypatch, persistent
     else:
         assert "as_thread" not in publish.call_args.kwargs
     # The temporary progress comment is published without as_thread regardless of the flag.
-    git_provider.publish_comment.assert_any_call("Preparing review...", is_temporary=True)
+    git_provider.publish_comment.assert_any_call("正在准备审查...", is_temporary=True)
     git_provider.remove_comment.assert_called_once_with(progress_comment)
     git_provider.remove_initial_comment.assert_not_called()
 

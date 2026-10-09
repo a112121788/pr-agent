@@ -106,34 +106,34 @@ class TestConvertToMarkdownV2Branches:
             {"review": {"security_concerns": "No"}},
             incremental_review="2 commits",
         )
-        assert "Incremental PR Reviewer Guide" in out
+        assert "Incremental PR 审查指南" in out
         assert "Review for commits since previous PR-Agent review 2 commits" in out
 
     def test_relevant_tests_yes_branch_gfm(self):
         out = convert_to_markdown_v2(
             {"review": {"relevant_tests": "Yes"}}
         )
-        assert "<strong>PR contains tests</strong>" in out
+        assert "<strong>拉取请求包含测试</strong>" in out
         assert "<table>" in out and "</table>" in out
 
     def test_relevant_tests_yes_branch_non_gfm(self):
         out = convert_to_markdown_v2(
             {"review": {"relevant_tests": "Yes"}}, gfm_supported=False
         )
-        assert "### 🧪 PR contains tests" in out
+        assert "### 🧪 拉取请求包含测试" in out
         assert "<table>" not in out
 
     def test_relevant_tests_no_branch_non_gfm(self):
         out = convert_to_markdown_v2(
             {"review": {"relevant_tests": "No"}}, gfm_supported=False
         )
-        assert "### 🧪 No relevant tests" in out
+        assert "### 🧪 没有相关测试" in out
 
     def test_security_concerns_with_details_gfm(self):
         out = convert_to_markdown_v2(
             {"review": {"security_concerns": "SQL injection: details follow"}}
         )
-        assert "<strong>Security concerns</strong>" in out
+        assert "<strong>安全问题</strong>" in out
         # emphasize_header wraps the part before ':' in <strong>.
         assert "<strong>SQL injection:</strong>" in out
 
@@ -142,20 +142,20 @@ class TestConvertToMarkdownV2Branches:
             {"review": {"security_concerns": "SQL injection: details"}},
             gfm_supported=False,
         )
-        assert "### 🔒 Security concerns" in out
+        assert "### 🔒 安全问题" in out
         assert "**SQL injection:**" in out
 
     def test_key_issues_no_major_issues_gfm(self):
         out = convert_to_markdown_v2(
             {"review": {"key_issues_to_review": "No"}}
         )
-        assert "<strong>No major issues detected</strong>" in out
+        assert "<strong>未发现重大问题</strong>" in out
 
     def test_key_issues_no_major_issues_non_gfm(self):
         out = convert_to_markdown_v2(
             {"review": {"key_issues_to_review": "No"}}, gfm_supported=False
         )
-        assert "### ⚡ No major issues detected" in out
+        assert "### ⚡ 未发现重大问题" in out
 
     def test_key_issues_possible_bug_header_softened(self):
         mock_provider = Mock()
@@ -205,14 +205,14 @@ class TestConvertToMarkdownV2Branches:
         out = convert_to_markdown_v2(
             {"review": {"estimated_effort_to_review_[1-5]": "3, because of churn"}}
         )
-        assert "Estimated effort to review</strong>: 3 🔵🔵🔵⚪⚪" in out
+        assert "预计审查工作量</strong>: 3 🔵🔵🔵⚪⚪" in out
 
     def test_estimated_effort_invalid_value_is_skipped(self):
         # Completely unparsable value falls through `continue` and is omitted.
         out = convert_to_markdown_v2(
             {"review": {"estimated_effort_to_review_[1-5]": "not-a-number"}}
         )
-        assert "Estimated effort to review" not in out
+        assert "预计审查工作量" not in out
 
     def test_can_be_split_single_item_renders_no_themes(self):
         out = convert_to_markdown_v2(

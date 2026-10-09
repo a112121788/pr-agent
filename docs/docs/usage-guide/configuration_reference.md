@@ -64,7 +64,7 @@ to-do list.
 | `retry_same_model_on_length` | false | when true, an empty response truncated by the output cap is retried on the same model instead of moving straight to fallback_models |
 | `skip_keys` | [] |  |
 | `custom_reasoning_model` | false | when true, disables system messages and temperature controls for models that don't support chat-style inputs |
-| `response_language` | "en-US" | Language locales code for PR responses in ISO 3166 and ISO 639 format (e.g., "en-US", "it-IT", "zh-CN", ...) |
+| `response_language` | "zh-CN" | Language locales code for PR responses in ISO 3166 and ISO 639 format (e.g., "en-US", "it-IT", "zh-CN", ...) |
 | `repo_context_files` | ["AGENTS.md"] | Repository-relative files (e.g. AGENTS.md, CLAUDE.md) to include as AI prompt context; set to [] to disable local context. A structured entry {"repo_id" = ..., "file_path" = ...} selects a sibling default-branch file from the same namespace/owner; repo_id must be in the host-issued repo_context_sibling_repos allowlist below. Reads use the sibling default branch and share repo_context_max_lines; repository settings may select entries, comment arguments cannot override this key |
 | `repo_context_from_default_branch` | true | Read repo context files from the repository default branch (trusts only default-branch content). Set to false to read from the PR target branch instead. |
 | `repo_context_max_lines` | 500 | Maximum total rendered lines for repo context, including wrapper tags |
@@ -167,7 +167,7 @@ to-do list.
 | `publish_review_failure_comment` | true | Set to false to suppress review failure comments without changing the command's failure status. |
 | `publish_error_details` | false | Publish a deterministic, sanitized failure reason in manual review comments. No AI call is used. |
 | `persistent_comment` | true |  |
-| `review_heading` | "PR Reviewer Guide" | Visible base heading for full and incremental review comments. Identity is tracked separately. |
+| `review_heading` | "PR 审查指南" | Visible base heading for full and incremental review comments. Identity is tracked separately. |
 | `persistent_finding_state` | true | Persist review finding state across complete review runs. |
 | `max_previous_findings_chars` | 8000 | Character budget for the findings stored by earlier reviews, given to /review as context so it keeps their wording instead of re-raising them reworded, and skips findings whose GitLab inline thread a human resolved (needs persistent_finding_state); 0 disables it. |
 | `inline_key_issues` | false | Publish each review finding as an inline comment where the provider can verify inline-comment publication (GitHub, Bitbucket Cloud, Azure DevOps, GitLab). |
@@ -254,7 +254,7 @@ to-do list.
 | `dual_publishing_score_threshold` | -1 | -1 to disable, [0-10] to set the threshold (>=) for publishing a code suggestion both in a table and as committable |
 | `focus_only_on_problems` | true |  |
 | `extra_instructions` | "" |  |
-| `suggestions_heading` | "PR Code Suggestions" | Visible base heading for summary-table /improve comments. Identity is tracked separately. |
+| `suggestions_heading` | "PR 代码建议" | Visible base heading for summary-table /improve comments. Identity is tracked separately. |
 | `enable_help_text` | false |  |
 | `enable_chat_text` | false |  |
 | `persistent_comment` | true |  |

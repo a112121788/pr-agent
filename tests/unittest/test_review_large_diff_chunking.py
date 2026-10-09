@@ -373,7 +373,7 @@ async def test_exhausted_fallbacks_publish_partial_review_only_when_chunks_succe
     assert reviewer.review_chunk_count == 3
     assert reviewer.review_failed_chunk_count == 1
     assert reviewer.remaining_files_list == []
-    assert "1 chunk(s) failed and are not covered by this review." in published
+    assert "其中 1 段失败，未包含在本次审查中。" in published
     issues = reviewer.prediction_data["review"]["key_issues_to_review"]
     assert [issue["relevant_file"].strip() for issue in issues] == ["a.py", "c.py"]
 
@@ -436,7 +436,7 @@ async def test_exhausted_fallbacks_propagate_partial_review_failure_when_configu
         restore_settings(snapshot)
 
     published = reviewer.git_provider.publish_comment.call_args.args[0]
-    assert "1 chunk(s) failed and are not covered by this review." in published
+    assert "其中 1 段失败，未包含在本次审查中。" in published
     assert reviewer.review_failed_chunk_count == 1
     issues = reviewer.prediction_data["review"]["key_issues_to_review"]
     assert [issue["relevant_file"].strip() for issue in issues] == ["a.py", "c.py"]
@@ -629,8 +629,8 @@ def test_a_chunked_review_says_how_many_chunks_it_was_built_from():
     review = _render_review(reviewer)
 
     assert review.startswith("original review")
-    assert "ℹ️ **Chunked review:**" in review
-    assert "reviewed in 3 chunks" in review
+    assert "ℹ️ **分段审查：**" in review
+    assert "拆成 3 段分别审查" in review
     assert "failed" not in review
 
 
@@ -641,7 +641,7 @@ def test_a_chunked_review_reports_the_chunks_that_failed():
 
     review = _render_review(reviewer)
 
-    assert "1 chunk(s) failed and are not covered by this review." in review
+    assert "其中 1 段失败，未包含在本次审查中。" in review
 
 
 def test_a_single_call_review_says_nothing_about_chunks():
@@ -661,5 +661,5 @@ def test_the_chunk_note_comes_before_the_review_coverage_footer():
     finally:
         restore_settings(snapshot)
 
-    assert review.index("Chunked review:") < review.index("⚠️ **Review coverage:**")
+    assert review.index("分段审查：") < review.index("⚠️ **审查覆盖范围：**")
     assert "- `left_out.py`" in review

@@ -186,7 +186,7 @@ def test_temporary_comment_not_emitted(cfg, capsys):
     cfg("plain_diff.content", DIFF)
     cfg("plain_diff.output_path", None)
     provider = PlainDiffGitProvider(None)
-    provider.publish_comment("Preparing review...", is_temporary=True)
+    provider.publish_comment("正在准备审查...", is_temporary=True)
     captured = capsys.readouterr()
     assert "Preparing review" not in captured.out
 
