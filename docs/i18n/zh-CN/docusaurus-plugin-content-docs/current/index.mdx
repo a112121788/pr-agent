@@ -19,11 +19,12 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 ## 快速开始
 
-在终端里审查一个 Gitee 拉取请求。准备一个 OpenAI 密钥和一个 Gitee 令牌即可。
+在终端里审查一个 Gitee 拉取请求。准备一个 OpenAI 密钥、一个 OpenAI 兼容的 API 地址和一个 Gitee 令牌即可。
 
 ```bash
 docker run --rm -it \
   -e OPENAI__KEY=<your_openai_key> \
+  -e OPENAI__API_BASE=https://your-gateway.example/v1 \
   -e CONFIG__GIT_PROVIDER=gitee \
   -e GITEE__PERSONAL_ACCESS_TOKEN=<your_gitee_token> \
   pragent/pr-agent:latest --pr_url <gitee_pr_url> review
