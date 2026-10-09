@@ -892,6 +892,7 @@ dependencies = [
     { name = "litellm" },
     { name = "loguru" },
     { name = "openai" },
+    { name = "openai-codex" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-sdk" },
@@ -1012,12 +1013,13 @@ requires-dist = [
     { name = "langchain", marker = "extra == 'langchain'" },
     { name = "langchain-core", marker = "extra == 'langchain'" },
     { name = "langchain-openai", marker = "extra == 'langchain'" },
-    { name = "langfuse", specifier = "==3.14.5" },
+    { name = "langfuse", specifier = ">=4" },
     { name = "litellm", specifier = "==1.104.0" },
     { name = "loguru", specifier = "==0.7.3" },
     { name = "mangum", marker = "extra == 'lambda'", specifier = "==0.22.0" },
     { name = "msrest", marker = "extra == 'azure'", specifier = "==0.7.1" },
     { name = "openai", specifier = ">=1.55.3" },
+    { name = "openai-codex", specifier = ">=0.162.0,<0.163" },
     { name = "opentelemetry-api", specifier = "==1.43.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'otel-grpc'", specifier = "==1.43.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = "==1.43.0" },
@@ -1830,23 +1832,22 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "3.14.5"
+version = "4.15.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
     { name = "httpx" },
-    { name = "openai" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-sdk" },
     { name = "packaging" },
     { name = "pydantic" },
-    { name = "requests" },
+    { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/6b/7a945e8bc56cbf343b6f6171fd45870b0ea80ea38463b2db8dd5a9dc04a2/langfuse-3.14.5.tar.gz", hash = "sha256:2f543ec1540053d39b08a50ed5992caf1cd54d472a55cb8e5dcf6d4fcb7ff631", size = 235474, upload-time = "2026-02-23T10:42:47.721Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/19/59253a357d77147e8cd3ad97817519e158af5d3336654656c92c2fc922f1/langfuse-4.15.6.tar.gz", hash = "sha256:af80ed1199e57c2641c9f228066bf9dc324657c06ce6e68660118fa46b237e35", size = 392968, upload-time = "2026-09-24T13:32:47.032Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/a1/10f04224542d6a57073c4f339b6763836a0899c98966f1d4ffcf56d2cf61/langfuse-3.14.5-py3-none-any.whl", hash = "sha256:5054b1c705ec69bce2d7077ce7419727ac629159428da013790979ca9cae77d5", size = 421240, upload-time = "2026-02-23T10:42:46.085Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/c5/927a01c47c0adf53832c6e5e35951e3d4998072ef955f3bb8e87e6d10517/langfuse-4.15.6-py3-none-any.whl", hash = "sha256:2364d5f17342301a8651ef166abb5bb260aaadd94d1ac72aa30c298b3a395d85", size = 706806, upload-time = "2026-09-24T13:32:48.577Z" },
 ]
 
 [[package]]
@@ -2365,6 +2366,35 @@ wheels = [
 ]
 
 [[package]]
+name = "openai-codex"
+version = "0.162.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openai-codex-cli-bin" },
+    { name = "packaging" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a7/0a/597379f19aeef7059c6d83e4f44d98b25090765dfd1ee31002d5bb54c22f/openai_codex-0.162.0.tar.gz", hash = "sha256:10533557b34a3121878fcd7749dacd0af09bd14445647082e07da096045701dd", size = 90227, upload-time = "2026-10-08T19:10:36.141Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b0/66/ef68b93e6a42c83c28dd7c5e00eeb7940bb34be40a3777b94316858de3b5/openai_codex-0.162.0-py3-none-any.whl", hash = "sha256:83c88364e5405432af6ccc48e604a3de837b3ea28f1d1bad2b0b1faa70a35e49", size = 98389, upload-time = "2026-10-08T19:10:34.593Z" },
+]
+
+[[package]]
+name = "openai-codex-cli-bin"
+version = "0.162.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/5f/80a42a6f1619f262bbc3dcf5eb992b796c3bc54997e50812e9c8b169bddf/openai_codex_cli_bin-0.162.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:0fe74fea8208ca603c9a04abcda75e5f8794a9618f3b064493ab38122a497f72", size = 134769561, upload-time = "2026-10-08T19:09:01.101Z" },
+    { url = "https://files.pythonhosted.org/packages/25/0e/a375f5d782777e2bb4787ae0c41c476702f433aa092a31ec910fbc474ae7/openai_codex_cli_bin-0.162.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:146c965ee57f545cc66c367f51e9ce6598f6a120290b8881e74fccd5032a45cf", size = 123950032, upload-time = "2026-10-08T19:09:10.545Z" },
+    { url = "https://files.pythonhosted.org/packages/14/27/7e946974d7bfe9ab7cc71f582e8cea030d18860763e25875635106895fb6/openai_codex_cli_bin-0.162.0-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:c7fd4aee3a73d3e30f5c6edecaf3ada54000eb6f7c1c14b00ee701c4ed10a779", size = 131956979, upload-time = "2026-10-08T19:09:16.603Z" },
+    { url = "https://files.pythonhosted.org/packages/94/73/9b4cd136c07a7a8aad687f9ebb13753a100a895b5867a32bc07d0784f564/openai_codex_cli_bin-0.162.0-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:fa854ffc9cb066932d3bb2541b8542ed78acb112171a71561924adb49b6bf209", size = 141550770, upload-time = "2026-10-08T19:09:23.981Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/b9/479937f1eb8e8f4e3e5dd38b532fee6fb5b498be019469f43ed8bf178eb5/openai_codex_cli_bin-0.162.0-py3-none-musllinux_1_1_aarch64.whl", hash = "sha256:6ff2f18adec1956a6bc265c32a081e5930c679c261a69560aa101a8125522c9b", size = 153097472, upload-time = "2026-10-08T19:09:32.763Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/00/da99722aaea59401ccadd38383353e603c403bfc129e19292203ef3d0bbb/openai_codex_cli_bin-0.162.0-py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:24803d524cca37a78bea528b0e0b9586751f174cb559fe7984fd464302e53bbd", size = 162963203, upload-time = "2026-10-08T19:09:42.123Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/51/9eaed6c8ac038637e781839be18ddb1645b07796c3ae25422c64c610157b/openai_codex_cli_bin-0.162.0-py3-none-win_amd64.whl", hash = "sha256:84381b2464ad51605b4e4fe0a81899ad094cf7f090c02d4e0089556a01a2c544", size = 151752253, upload-time = "2026-10-08T19:09:49.926Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/1f/ccdc118fcd955bbd2bc39965645d4194218fa6c7a7d2143f9d2f8aa8d19d/openai_codex_cli_bin-0.162.0-py3-none-win_arm64.whl", hash = "sha256:053bf0965c54eba214569cb2f62ad6647caaecf1c371ea797c30f9468e471316", size = 140565812, upload-time = "2026-10-08T19:09:56.644Z" },
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.43.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2557,11 +2587,11 @@ wheels = [
 
 [[package]]
 name = "packaging"
-version = "25.0"
+version = "26.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b96ca8f8c3ba19e6a61c8253c72794544580a7b6c24d/packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f", size = 165727, upload-time = "2025-04-19T11:48:59.673Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce895c0e6303a5ab7d53da063554f534556b134a54d6093/packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79", size = 313412, upload-time = "2026-08-04T18:15:28.737Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484", size = 66469, upload-time = "2025-04-19T11:48:57.875Z" },
+    { url = "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c", size = 129956, upload-time = "2026-08-04T18:15:27.159Z" },
 ]
 
 [[package]]

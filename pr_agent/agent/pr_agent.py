@@ -10,7 +10,7 @@ from starlette_context import context, request_cycle_context
 
 from pr_agent.agent.request_policy import RequestOutcome, enforce_request_policy
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
-from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
+from pr_agent.algo.ai_handlers.codex_ai_handler import CodexAIHandler
 from pr_agent.algo.cli_args import CliArgs
 from pr_agent.algo.comment_identity import (
     add_comment_identity,
@@ -310,7 +310,7 @@ def _record_token_metrics(action: str, git_provider: str) -> None:
 
 
 class PRAgent:
-    def __init__(self, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
+    def __init__(self, ai_handler: partial[BaseAiHandler,] = CodexAIHandler):
         self.ai_handler = ai_handler  # handler factory passed to each tool when it is instantiated
 
     async def _handle_request(
