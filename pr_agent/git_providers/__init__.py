@@ -18,6 +18,7 @@ _BUILTIN_GIT_PROVIDERS: dict[str, tuple[str, str]] = {
     "local": ("pr_agent.git_providers.local_git_provider", "LocalGitProvider"),
     "gerrit": ("pr_agent.git_providers.gerrit_provider", "GerritProvider"),
     "gitea": ("pr_agent.git_providers.gitea_provider", "GiteaProvider"),
+    "gitee": ("pr_agent.git_providers.gitee_provider", "GiteeProvider"),
     "plain-diff": ("pr_agent.git_providers.plain_diff_provider", "PlainDiffGitProvider"),
 }
 _PROVIDER_CLASS_NAMES = {class_name: provider_id for provider_id, (_, class_name) in _BUILTIN_GIT_PROVIDERS.items()}

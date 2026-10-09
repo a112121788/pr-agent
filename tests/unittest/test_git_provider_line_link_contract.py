@@ -16,6 +16,7 @@ from pr_agent.git_providers.bitbucket_provider import BitbucketProvider
 from pr_agent.git_providers.bitbucket_server_provider import BitbucketServerProvider
 from pr_agent.git_providers.git_provider import GitProvider
 from pr_agent.git_providers.gitea_provider import GiteaProvider
+from pr_agent.git_providers.gitee_provider import GiteeProvider
 from pr_agent.git_providers.github_provider import GithubProvider
 from pr_agent.git_providers.gitlab_provider import GitLabProvider
 
@@ -77,6 +78,16 @@ def _gitlab_provider() -> GitLabProvider:
 def _gitea_provider() -> GiteaProvider:
     provider = GiteaProvider.__new__(GiteaProvider)
     provider.base_url_html = "https://gitea.example"
+    provider.owner = "owner"
+    provider.repo = "repo"
+    provider.logger = MagicMock()
+    provider.get_pr_branch = MagicMock(return_value=BRANCH)
+    return provider
+
+
+def _gitee_provider() -> GiteeProvider:
+    provider = GiteeProvider.__new__(GiteeProvider)
+    provider.base_url = "https://gitee.example"
     provider.owner = "owner"
     provider.repo = "repo"
     provider.logger = MagicMock()
@@ -148,6 +159,20 @@ PROVIDER_CONTRACTS = (
         name="gitea",
         tier=AnchorTier.RANGE,
         factory=_gitea_provider,
+        extract_anchor=_fragment,
+        file_reference=FILE,
+        expected_anchors=(
+            "",
+            "L7",
+            "L4-L10",
+            "L10-L10",
+            "L10",
+        ),
+    ),
+    ProviderContract(
+        name="gitee",
+        tier=AnchorTier.RANGE,
+        factory=_gitee_provider,
         extract_anchor=_fragment,
         file_reference=FILE,
         expected_anchors=(
@@ -283,6 +308,7 @@ def test_get_line_link_follows_provider_contract(
     [
         pytest.param(_gitlab_provider, "ref_type=heads", id="gitlab"),
         pytest.param(_gitea_provider, "", id="gitea"),
+        pytest.param(_gitee_provider, "", id="gitee"),
     ],
 )
 def test_path_line_links_encode_reserved_filename(factory, expected_query):

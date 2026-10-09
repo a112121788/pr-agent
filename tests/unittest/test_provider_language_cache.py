@@ -17,6 +17,7 @@ from pr_agent.git_providers.bitbucket_server_provider import BitbucketServerProv
 from pr_agent.git_providers.codecommit_provider import CodeCommitProvider
 from pr_agent.git_providers.gerrit_provider import GerritProvider
 from pr_agent.git_providers.gitea_provider import GiteaProvider
+from pr_agent.git_providers.gitee_provider import GiteeProvider
 from pr_agent.git_providers.github_provider import GithubProvider
 from pr_agent.git_providers.local_git_provider import LocalGitProvider
 
@@ -66,6 +67,16 @@ def _gitea_provider(languages=LANGUAGES):
     provider.repo = "repo"
     provider.repo_api = SimpleNamespace(get_languages=MagicMock(return_value=languages))
     return provider, provider.repo_api
+
+
+def _gitee_provider(languages=LANGUAGES):
+    provider = GiteeProvider.__new__(GiteeProvider)
+    provider.owner = "owner"
+    provider.repo = "repo"
+    # Gitee answers {"languages": [{"language": ..., "percent": ...}, ...]}.
+    entries = [{"language": name, "percent": percent} for name, percent in languages.items()]
+    provider.api = SimpleNamespace(request=MagicMock(return_value={"languages": entries}))
+    return provider, provider.api
 
 
 def _bitbucket_provider(repo_language="python"):
@@ -185,6 +196,30 @@ def test_rest_provider_get_languages_retries_empty_results(factory):
     assert provider.get_languages() == LANGUAGES
     assert provider.get_languages() == LANGUAGES
     assert repo_api.get_languages.call_count == 2
+
+
+def test_gitee_get_languages_unwraps_the_envelope_once():
+    provider, client = _gitee_provider()
+
+    first = provider.get_languages()
+    second = provider.get_languages()
+
+    assert first == LANGUAGES
+    assert second is first
+    assert client.request.call_count == 1
+
+
+def test_gitee_get_languages_retries_an_empty_answer():
+    # Gitee wraps the list in {"languages": [...]}, so an empty list usually means the lookup
+    # failed; caching it would freeze a transient failure for the whole command.
+    provider, client = _gitee_provider()
+    entries = [{"language": name, "bytes": size} for name, size in LANGUAGES.items()]
+    client.request = MagicMock(side_effect=[{"languages": []}, {"languages": entries}])
+
+    assert provider.get_languages() == {}
+    assert provider.get_languages() == LANGUAGES
+    assert provider.get_languages() == LANGUAGES
+    assert client.request.call_count == 2
 
 
 def test_bitbucket_server_get_languages_and_files_share_one_fetch():
@@ -351,6 +386,7 @@ MEMOIZED_PROVIDERS = {
     CodeCommitProvider.__name__,
     GerritProvider.__name__,
     GiteaProvider.__name__,
+    GiteeProvider.__name__,
     GithubProvider.__name__,
     LocalGitProvider.__name__,
 }

@@ -24,6 +24,7 @@ from pr_agent.git_providers.codecommit_provider import CodeCommitProvider
 from pr_agent.git_providers.gerrit_provider import GerritProvider
 from pr_agent.git_providers.git_provider import GitProvider
 from pr_agent.git_providers.gitea_provider import GiteaProvider
+from pr_agent.git_providers.gitee_provider import MAX_COMMENT_CHARS, GiteeProvider
 from pr_agent.git_providers.github_provider import GithubProvider
 from pr_agent.git_providers.gitlab_provider import GitLabProvider
 from pr_agent.git_providers.local_git_provider import LocalGitProvider
@@ -121,6 +122,45 @@ def _gitea(monkeypatch) -> GiteaProvider:
     return provider
 
 
+def _gitee(monkeypatch) -> GiteeProvider:
+    provider = GiteeProvider.__new__(GiteeProvider)
+    provider.logger = MagicMock()
+    provider.owner = "owner"
+    provider.repo = "repo"
+    provider.pr_number = 7
+    provider.issue_number = None
+    provider.enabled_pr = True
+    provider.enabled_issue = False
+    provider.sha = "head-sha"
+    provider.base_sha = "base-sha"
+    provider.base_ref = "main"
+    provider.base_url = "https://gitee.example"
+    provider.api_base = "https://gitee.example/api/v5"
+    provider.gitee_access_token = "token"
+    provider.max_comment_chars = MAX_COMMENT_CHARS
+    provider.file_contents = {}
+    provider.filtered_diff_file_names = []
+    provider.comments_list = []
+    provider.temp_comments = []
+    provider.unreviewed_files_map = {}
+    provider.diff_files = None
+    provider.git_files = None
+    provider.pr = None
+    provider._user_login = None
+    provider.api = MagicMock()
+
+    def request(method, path, **_kwargs):
+        if path.endswith("/commits"):
+            return [{"sha": "head-sha", "html_url": "", "commit": {"message": COMMIT_MESSAGE}}]
+        if path.endswith("/comments"):
+            return [{"id": COMMENT_ID, "body": COMMENT_BODY}]
+        return {}
+
+    provider.api.request.side_effect = request
+    provider._set_pr_commits()
+    return provider
+
+
 def _gerrit(monkeypatch) -> GerritProvider:
     provider = GerritProvider.__new__(GerritProvider)
     provider.parsed_url = SimpleNamespace()
@@ -203,6 +243,7 @@ PROVIDERS: dict[str, tuple[type[GitProvider], Callable[[pytest.MonkeyPatch], Git
     "github": (GithubProvider, _github),
     "gitlab": (GitLabProvider, _gitlab),
     "gitea": (GiteaProvider, _gitea),
+    "gitee": (GiteeProvider, _gitee),
     "gerrit": (GerritProvider, _gerrit),
     "azure-devops": (AzureDevopsProvider, _azure_devops),
     "bitbucket": (BitbucketProvider, _bitbucket),
@@ -250,6 +291,10 @@ PREDICATE_CONTRACTS = (
                 "Gitea forwards identity arguments but cannot safely activate identity tracking "
                 "until it normalizes dictionary-shaped comment payloads."
             ),
+            "gitee": DeliberateMismatch(
+                "Gitee supports editing its comments but cannot verify a comment's author yet, so "
+                "identity tracking stays off and an existing canonical review comment is not updated."
+            ),
         },
     ),
     PredicateContract(
@@ -271,7 +316,7 @@ METHOD_CONTRACTS = (
         args=(),
         noop_value="",
         check_supported=_is_commit_text,
-        tiers=_tiers(supported=("github", "gitlab", "gitea", "gerrit")),
+        tiers=_tiers(supported=("github", "gitlab", "gitea", "gitee", "gerrit")),
     ),
     MethodContract(
         name="get_issue_comments",
@@ -283,6 +328,7 @@ METHOD_CONTRACTS = (
                 "github",
                 "gitlab",
                 "gitea",
+                "gitee",
                 "gerrit",
                 "azure-devops",
                 "bitbucket-server",
@@ -326,7 +372,8 @@ METHOD_CONTRACTS = (
         noop_value=None,
         check_supported=lambda _: None,
         tiers=_tiers(
-            supported=("github", "gitlab", "gitea", "azure-devops", "bitbucket", "bitbucket-server", "local"),
+            supported=("github", "gitlab", "gitea", "gitee", "azure-devops", "bitbucket", "bitbucket-server",
+                       "local"),
         ),
         # Signature + return-annotation contract: the providers that fetch repo-context files
         # must expose the same hook so the cache can key on the revision being read.
@@ -424,6 +471,13 @@ SUGGESTION_OUTCOME_CONTRACTS = (
     SuggestionOutcomeContract(
         provider_name="gitea",
         build_provider=lambda mp, tmp: _gitea(mp),
+        make_fail=lambda p, mp, tmp: setattr(p, "publish_inline_comments", MagicMock(return_value=False)),
+        make_succeed=lambda p, mp, tmp: setattr(p, "publish_inline_comments", MagicMock(return_value=True)),
+        payload=SUGGESTION_PAYLOAD,
+    ),
+    SuggestionOutcomeContract(
+        provider_name="gitee",
+        build_provider=lambda mp, tmp: _gitee(mp),
         make_fail=lambda p, mp, tmp: setattr(p, "publish_inline_comments", MagicMock(return_value=False)),
         make_succeed=lambda p, mp, tmp: setattr(p, "publish_inline_comments", MagicMock(return_value=True)),
         payload=SUGGESTION_PAYLOAD,

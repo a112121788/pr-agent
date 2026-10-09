@@ -395,6 +395,16 @@ _This section only documents commented-out examples; see the [TOML source](https
 | `push_commands` | ["/describe", "/review"] |  |
 
 
+## `[gitee]` {#gitee}
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `url` | "https://gitee.com" |  |
+| `personal_access_token` | "" | Gitee personal access token. Prefer GITEE.PERSONAL_ACCESS_TOKEN in pr_agent/settings/.secrets.toml or the GITEE__PERSONAL_ACCESS_TOKEN environment variable over storing a token here. |
+| `repo_setting` | ".pr_agent.toml" | Path of the repository settings file, read from the pull request's target branch. |
+| `skip_ssl_verification` | false |  |
+
+
 ## `[bitbucket]` {#bitbucket}
 
 | Key | Default | Description |

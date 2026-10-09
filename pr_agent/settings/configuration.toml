@@ -415,6 +415,21 @@ push_commands = [
     "/review",
 ]
 
+[gitee]
+url = "https://gitee.com"
+# Optional API base URL. Defaults to `<url>/api/v5`, which is what gitee.com serves; set it
+# only to reach a proxy or mirror that exposes the same v5 API.
+# api_base = ""
+# Gitee personal access token. Prefer GITEE.PERSONAL_ACCESS_TOKEN in
+# pr_agent/settings/.secrets.toml or the GITEE__PERSONAL_ACCESS_TOKEN environment variable
+# over storing a token here.
+personal_access_token = ""
+# Path of the repository settings file, read from the pull request's target branch.
+repo_setting = ".pr_agent.toml"
+skip_ssl_verification = false
+# Path to a custom CA bundle used to verify the Gitee host.
+# ssl_ca_cert = ""
+
 [bitbucket]
 identity_request_timeout = 30 # positive seconds for authenticated-account verification requests
 

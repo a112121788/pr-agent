@@ -77,7 +77,7 @@ def filter_ignored(files, platform = 'github'):
                     # The patterns are anchored, so strip it before matching; otherwise no
                     # pattern ever matches and [ignore] is inert on Azure.
                     files = [f for f in files if not r.match(f.lstrip('/'))]
-                elif platform == 'gitea':
+                elif platform in ('gitea', 'gitee'):
                     files = [f for f in files if not r.match(f.get("filename", ""))]
                 elif platform == "gerrit":
                     files_o = []
