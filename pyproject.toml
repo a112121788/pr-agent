@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pr-agent"
+name = "gitee-pr-agent"
 version = "0.47.0"
 
 authors = [
@@ -15,10 +15,10 @@ maintainers = [
   { name = "Ofir Friedman", email = "ofir.f@qodo.ai" },
 ]
 
-description = "PR-Agent aims to help efficiently review and handle pull requests, by providing AI feedback and suggestions."
+description = "Gitee PR-Agent 是审核工厂的核心机，只为 Gitee 拉取请求收集中文审查证据。"
 readme = "README.md"
 requires-python = ">=3.12"
-keywords = ["AI", "Agents", "Pull Request", "Automation", "Code Review"]
+keywords = ["AI", "Gitee", "Pull Request", "Code Review", "审核工厂"]
 license = { file = "LICENSE" }
 
 classifiers = [
@@ -113,7 +113,7 @@ google = [
 ]
 mosaico = ["a2a-sdk[http-server]==1.0.3"]
 # Preserve the dependency set that the published Docker images shipped before provider SDKs became optional.
-all = ["pr-agent[github,gitlab,bitbucket,azure,codecommit,gitea,google,mosaico]"]
+all = ["gitee-pr-agent[github,gitlab,bitbucket,azure,codecommit,gitea,google,mosaico]"]
 # AWS Lambda deployment (docker/Dockerfile.lambda).
 # Keep mangum >=0.21.0 for Python 3.14: older releases call
 # asyncio.get_event_loop() with no fallback, which raises RuntimeError
@@ -131,11 +131,12 @@ langchain = [
 ]
 
 [project.scripts]
+gitee-pr-agent = "pr_agent.cli:run"
 pr-agent = "pr_agent.cli:run"
 
 [dependency-groups]
 # Keep the full optional integration matrix available to the unit suite without publishing it as a base dependency.
-integration-dev = ["pr-agent[all]"]
+integration-dev = ["gitee-pr-agent[all]"]
 # 'similar issue' tool. Install with: uv sync --group similar-issue.
 # Keep this a dependency group rather than a published extra so the vector
 # database drivers stay out of the base install.

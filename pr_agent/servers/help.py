@@ -205,5 +205,5 @@ It can be invoked manually by commenting on any PR:
 /help_docs "..."
 ```
 """
-        output += "\n\nSee the [help_docs usage](https://docs.pr-agent.ai/tools/help_docs/) page for a comprehensive guide on using this tool.\n\n"
+        output += "\n\nSee the [help usage](https://docs.pr-agent.ai/tools/help/) page for the available commands.\n\n"
         return output
