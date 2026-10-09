@@ -47,7 +47,7 @@ REPO_HOST_ONLY_KEYS_BY_SECTION = {
     "gitea": frozenset({"skip_ssl_verification", "ssl_ca_cert"}),
     # api_base redirects every Gitee API call (and the access token in its query string), so a
     # reviewed repository must not be able to point it at another host.
-    "gitee": frozenset({"api_base", "skip_ssl_verification", "ssl_ca_cert"}),
+    "gitee": frozenset({"api_base", "skip_ssl_verification", "ssl_ca_cert", "webhook_secret"}),
     "github": frozenset({"deployment_type"}),
     "gitlab": frozenset({"auth_type", "ssl_verify"}),
     "huggingface": frozenset({"api_base"}),

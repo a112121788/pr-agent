@@ -31,6 +31,7 @@ _DEFAULT_PR_COMMANDS_BY_PROVIDER = {
     "github_app": _STANDARD_PR_COMMANDS,
     "gitlab": _STANDARD_PR_COMMANDS,
     "gitea": _PLAIN_PR_COMMANDS,
+    "gitee": _PLAIN_PR_COMMANDS,
     "azure_devops_server": _PLAIN_PR_COMMANDS,
     "bitbucket_app": _COMMITTABLE_PR_COMMANDS,
     "bitbucket_server": _COMMITTABLE_PR_COMMANDS,
