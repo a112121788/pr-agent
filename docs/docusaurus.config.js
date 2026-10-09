@@ -74,7 +74,10 @@ const config = {
     ],
   ],
 
-  clientModules: [require.resolve('./src/fonts.js')],
+  clientModules: [
+    require.resolve('./src/fonts.js'),
+    require.resolve('./src/keyboard-pagination.js'),
+  ],
 
   // kapa.ai "Ask AI" widget: https://docs.kapa.ai/integrations/website-widget/installation/docusaurus
   scripts: [
