@@ -5,8 +5,8 @@
 [config]
 max_webhook_request_body_bytes = 5242880 # maximum request body accepted by webhook servers (5 MiB)
 # models
-model="gpt-5.6"
-fallback_models=["gpt-5.6-terra"]
+model="codex-auto-review"
+fallback_models=["gpt-6.1-sol"]
 #model_reasoning="gpt-5.6-terra" # dedicated reasoning model for self-reflection
 #model_weak="gpt-5.6-luna" # optional, a weaker model to use for some easier tasks
 # CLI

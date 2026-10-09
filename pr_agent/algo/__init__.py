@@ -258,6 +258,8 @@ MAX_TOKENS = {
     'gpt-5.2-2025-12-11': 400000,  # 400K, but may be limited by config.max_model_tokens
     'gpt-5.2-codex': 400000,  # 400K, but may be limited by config.max_model_tokens
     'gpt-5.3-codex': 400000,  # 400K, but may be limited by config.max_model_tokens
+    # Codex catalog default context window; the 1M ceiling is opt-in, so keep the safe 272K pin.
+    'codex-auto-review': 272000,
     'gpt-5.4': 272000,  # 272K safe default without opt-in 1M context parameters
     'gpt-5.4-2026-03-05': 272000,  # 272K safe default without opt-in 1M context parameters
     'gpt-5.4-mini': 400000,  # 400K, but may be limited by config.max_model_tokens
