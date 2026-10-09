@@ -10,7 +10,7 @@ fallback_models=["glm-5.3"]
 #model_reasoning="gpt-5.6-terra" # dedicated reasoning model for self-reflection
 #model_weak="gpt-5.6-luna" # optional, a weaker model to use for some easier tasks
 # CLI
-git_provider="github"
+git_provider="gitee"
 publish_output=true
 publish_output_progress=true
 progress_gif_url="" # optional, override for the progress loading gif url (example: 'https://.../spinner.gif').

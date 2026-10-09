@@ -200,7 +200,8 @@ def run(inargs=None, args=None):
 
     with _cli_settings_scope():
         if diff_mode:
-            get_settings().set("config.git_provider", "plain-diff")
+            parser.error("Plain diff mode is unavailable; this build supports Gitee pull requests only")
+            get_settings().set("config.git_provider", "gitee")
             get_settings().set("plain_diff.content", diff_content)
             get_settings().set("plain_diff.output_path", getattr(args, "output", None))
             get_settings().set("plain_diff.json_output_path", getattr(args, "json_output", None))

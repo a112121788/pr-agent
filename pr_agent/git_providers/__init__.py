@@ -9,28 +9,10 @@ from pr_agent.config_loader import get_settings
 from pr_agent.git_providers.git_provider import GitProvider
 
 _BUILTIN_GIT_PROVIDERS: dict[str, tuple[str, str]] = {
-    "github": ("pr_agent.git_providers.github_provider", "GithubProvider"),
-    "gitlab": ("pr_agent.git_providers.gitlab_provider", "GitLabProvider"),
-    "bitbucket": ("pr_agent.git_providers.bitbucket_provider", "BitbucketProvider"),
-    "bitbucket_server": ("pr_agent.git_providers.bitbucket_server_provider", "BitbucketServerProvider"),
-    "azure": ("pr_agent.git_providers.azuredevops_provider", "AzureDevopsProvider"),
-    "codecommit": ("pr_agent.git_providers.codecommit_provider", "CodeCommitProvider"),
-    "local": ("pr_agent.git_providers.local_git_provider", "LocalGitProvider"),
-    "gerrit": ("pr_agent.git_providers.gerrit_provider", "GerritProvider"),
-    "gitea": ("pr_agent.git_providers.gitea_provider", "GiteaProvider"),
     "gitee": ("pr_agent.git_providers.gitee_provider", "GiteeProvider"),
-    "plain-diff": ("pr_agent.git_providers.plain_diff_provider", "PlainDiffGitProvider"),
 }
 _PROVIDER_CLASS_NAMES = {class_name: provider_id for provider_id, (_, class_name) in _BUILTIN_GIT_PROVIDERS.items()}
-_PROVIDER_EXTRAS = {
-    "github": "github",
-    "gitlab": "gitlab",
-    "bitbucket": "bitbucket",
-    "bitbucket_server": "bitbucket",
-    "azure": "azure",
-    "codecommit": "codecommit",
-    "gitea": "gitea",
-}
+_PROVIDER_EXTRAS = {}
 
 
 class _LazyGitProviderRegistry(MutableMapping[str, type[GitProvider]]):
@@ -142,10 +124,8 @@ def get_git_provider():
     # their provider through this function (e.g. PRQuestions for `ask`) must also
     # honor loaded diff content, so an extra/repo config that overwrote
     # config.git_provider can't route a supported command to a hosted provider.
-    if get_settings().get("plain_diff.content", None):
-        provider_id = "plain-diff"
-    if provider_id not in _GIT_PROVIDERS:
-        raise ValueError(f"Unknown git provider: {provider_id}")
+    if provider_id != "gitee":
+        raise ValueError(f"Only the Gitee provider is supported, got {provider_id!r}")
     return _GIT_PROVIDERS[provider_id]
 
 
@@ -172,10 +152,8 @@ def get_git_provider_with_context(pr_url) -> GitProvider:
             # Plain-diff mode is keyed on loaded diff content; it must not be
             # overridden by an extra/repo config file that sets a different
             # git_provider (apply_repo_settings merges those before this call).
-            if get_settings().get("plain_diff.content", None):
-                provider_id = "plain-diff"
-            if provider_id not in _GIT_PROVIDERS:
-                raise ValueError(f"Unknown git provider: {provider_id}")
+            if provider_id != "gitee":
+                raise ValueError(f"Only the Gitee provider is supported, got {provider_id!r}")
             git_provider = _GIT_PROVIDERS[provider_id](pr_url)
             if is_context_env:
                 context["git_provider"] = {pr_url: git_provider}

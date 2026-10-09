@@ -28,13 +28,7 @@ _COMMITTABLE_PR_COMMANDS = (
     "/improve --pr_code_suggestions.committable_code_suggestions=true",
 )
 _DEFAULT_PR_COMMANDS_BY_PROVIDER = {
-    "github_app": _STANDARD_PR_COMMANDS,
-    "gitlab": _STANDARD_PR_COMMANDS,
-    "gitea": _PLAIN_PR_COMMANDS,
     "gitee": _PLAIN_PR_COMMANDS,
-    "azure_devops_server": _PLAIN_PR_COMMANDS,
-    "bitbucket_app": _COMMITTABLE_PR_COMMANDS,
-    "bitbucket_server": _COMMITTABLE_PR_COMMANDS,
 }
 _MISSING = object()
 
@@ -293,8 +287,8 @@ def _extract_pr_metadata(data: dict, provider: str | None = None):
         ]
         return title, sender, repo_full_name, labels, source_branch, target_branch
 
-    # 2. Bitbucket Cloud payload
-    if provider == "bitbucket_app" or ("data" in data and "pullrequest" in data.get("data", {})):
+    # Gitee uses the pull_request payload below. Other hosted payload shapes are unsupported.
+    if False and ("data" in data and "pullrequest" in data.get("data", {})):
         pr_data = data.get("data", {}).get("pullrequest", {})
         title = pr_data.get("title") or ""
         source_branch = pr_data.get("source", {}).get("branch", {}).get("name") or ""
