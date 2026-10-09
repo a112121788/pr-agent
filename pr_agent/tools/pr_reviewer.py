@@ -18,6 +18,7 @@ from pr_agent.algo.comment_identity import (
     hidden_marker_forms,
     render_hidden_marker,
 )
+from pr_agent.algo.factory_record import bind_commit, latest_intake_intent
 from pr_agent.algo.inline_comment_dedup import (
     KEY_ISSUE_LOCATION_MARKER_RE,
     InlineCommentStore,
@@ -423,7 +424,8 @@ class PRReviewer:
                     self._as_non_authoritative_review(pr_review),
                     **review_thread_kwargs,
                 )
-            elif get_settings().pr_reviewer.persistent_comment and not self.incremental.is_incremental:
+            pr_review = bind_commit(pr_review, self.git_provider.get_pr_head_sha())
+            if get_settings().pr_reviewer.persistent_comment and not self.incremental.is_incremental:
                 final_update_message = get_settings().pr_reviewer.final_update_message
                 persistent_args = dict(
                     initial_header=pr_review.split("\n", 1)[0],
@@ -1327,7 +1329,8 @@ class PRReviewer:
                                                git_provider=self.git_provider,
                                                files=diff_files)
         pr_title = getattr(self.git_provider.pr, "title", "") if self.git_provider.pr else ""
-        rule_findings = review_rule_findings(diff_files, str(pr_title or ""))
+        intake_intent = latest_intake_intent(self.git_provider.get_issue_comments_newest_first())
+        rule_findings = review_rule_findings(diff_files, str(pr_title or ""), intake_intent)
         rule_section = render_review_rule_section(rule_findings)
         if rule_section:
             markdown_text = f"{rule_section}\n\n{markdown_text}"

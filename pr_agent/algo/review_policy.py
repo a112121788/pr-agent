@@ -81,8 +81,19 @@ def find_spec_violations(diff_files: Iterable, pr_title: str = "") -> list[Revie
     return findings
 
 
-def review_rule_findings(diff_files: Iterable, pr_title: str = "") -> list[ReviewRuleFinding]:
-    return find_blocking_tags(diff_files) + find_spec_violations(diff_files, pr_title)
+def find_dual_line_violation(intake_intent: str = "") -> list[ReviewRuleFinding]:
+    """Block only an explicitly declared dual-line change."""
+    if intake_intent != "双线":
+        return []
+    return [ReviewRuleFinding("严重问题", "这是双线变更，请先拆成两张拉取请求，本次不给予通过")]
+
+
+def review_rule_findings(diff_files: Iterable, pr_title: str = "", intake_intent: str = "") -> list[ReviewRuleFinding]:
+    return (
+        find_blocking_tags(diff_files)
+        + find_spec_violations(diff_files, pr_title)
+        + find_dual_line_violation(intake_intent)
+    )
 
 
 def render_review_rule_section(findings: Iterable[ReviewRuleFinding]) -> str:

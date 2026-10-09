@@ -20,6 +20,7 @@ from pr_agent.algo.comment_identity import (
     format_pr_code_suggestions_header,
     hidden_marker_forms,
 )
+from pr_agent.algo.factory_record import bind_commit
 from pr_agent.algo.git_patch_processing import decouple_and_convert_to_hunks_with_lines_numbers
 from pr_agent.algo.pr_processing import (
     DELETED_FILES_,
@@ -494,6 +495,7 @@ class PRCodeSuggestions:
                         pr_body += show_run_details(self.git_provider.is_supported("gfm_markdown"))
 
                     # publish the PR comment
+                    pr_body = bind_commit(pr_body, self.git_provider.get_pr_head_sha())
                     if get_settings().pr_code_suggestions.persistent_comment: # true by default
                         published_comment = self.publish_persistent_comment_with_history(
                             self.git_provider,

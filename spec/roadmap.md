@@ -2,32 +2,37 @@
 
 ## 北极星
 
-让 PR-Agent 的 `/describe`、`/review`、`/ask`、`/improve` 能在 Gitee 拉取请求上闭环运行，并且发布行为可验证、可回退。
+Gitee PR-Agent 先做审核工厂的核心机：为一张 Gitee 拉取请求收集中文证据。工厂补齐后，受理、取证、判定、汇入四段都留下可核对的记录，机器仍不代替人判定，也不代替人合并。
 
 ## Now
 
-- Gitee provider 核心读写路径已在本地 `main` 的 `3b3dc06e`。真实写入、行内评论定位、Webhook 和文档站还没做。
+- 核心机已能对 Gitee PR 运行 `/describe`、`/review`、`/improve` 和 `/ask`。
+- 团队强规则、中文评论、Gitee-only 构建和中文文档已在本地 `main`。
+- 缺三段记录：提出人的受理、负责人的判定、汇入前的提交号核对。
 
 ## Next
 
-1. 在一个指定的 Gitee PR 上验证描述、评论和标签写入。
-2. 用真实 diff 核对行内评论的 `position`。
-3. 用一次真实 Gitee Webhook 投递核对事件字段。
-4. 用真实 Gitee Webhook 投递核对事件字段，再决定是否补 logo 和发布流水线。
+1. `FACTORY-1`：用 `/intake` 记录意图，不改写作者原话。
+2. `FACTORY-2`：证据评论绑定当前提交号。
+3. `FACTORY-3`：用 `/verdict` 记录放行、退回或等待。
+4. `FACTORY-4`：汇入前只做检查，人仍在 Gitee 上点击合并。
+5. `FACTORY-5`：双线变更先标成必须拆分。
 
 ## Later
 
-- 持久评论、反应和代码建议的真实回归。
-- 私有化 Gitee 部署的 API base 与证书配置样例。
+- 判定人权限名单。
+- 旧版契约和新版契约的自动对照。
+- 真实 Webhook 投递核对。
 
 ## 质量门槛
 
-- 新增 provider 必须通过共享契约测试：方法契约、行链接、请求策略、语言缓存。
-- 不新增运行时依赖。Gitee 继续用 urllib3。
-- token 只从 `GITEE.PERSONAL_ACCESS_TOKEN` 或 `GITEE_ACCESS_TOKEN` 读取，不写入仓库。
+- 模型输出不能写入受理意图，也不能直接变成判定。
+- 判定和证据都必须带当前 head SHA。SHA 变化后，旧记录失效。
+- 机器不调用 Gitee 合并接口。
+- 不新增运行时依赖。
 
 ## 风险
 
-- Gitee OpenAPI 与 GitHub 形状不一致：语言列表、diff `patch` 对象、评论时间线都已在 provider 内归一，后续改动要回归这些形状。
-- 行内评论的 `position` 还没有真实 diff 证据。
-- Webhook 载荷与鉴权方式尚未对照官方事件文档核实。
+- 把审查评论里的“批准”误当成工厂判定。
+- 企业版 Gitee 的议题接口可能返回 404，受理不能依赖它一定可读。
+- 双线识别若靠模型语义，会误拆正常改动。第一版只用显式声明。

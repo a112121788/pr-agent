@@ -36,11 +36,14 @@ from pr_agent.tools.pr_config import PRConfig
 from pr_agent.tools.pr_description import PRDescription
 from pr_agent.tools.pr_generate_labels import PRGenerateLabels
 from pr_agent.tools.pr_help_message import PRHelpMessage
+from pr_agent.tools.pr_intake import PRIntake
 from pr_agent.tools.pr_line_questions import PR_LineQuestions
+from pr_agent.tools.pr_merge_check import PRMergeCheck
 from pr_agent.tools.pr_questions import PRQuestions
 from pr_agent.tools.pr_reviewer import PRReviewer
 from pr_agent.tools.pr_similar_issue import PRSimilarIssue
 from pr_agent.tools.pr_update_changelog import PRUpdateChangelog
+from pr_agent.tools.pr_verdict import PRVerdict
 
 # Keep the established import path available to integrations and tests while the
 # shared handler works against the provider-neutral base exception.
@@ -66,6 +69,10 @@ command2class = {
     "similar_issue": PRSimilarIssue,
     "add_docs": PRAddDocs,
     "generate_labels": PRGenerateLabels,
+    "intake": PRIntake,
+    "verdict": PRVerdict,
+    "merge_check": PRMergeCheck,
+    "merge-check": PRMergeCheck,
     # SECURITY: "/help_docs" is temporarily disabled while the clone-target validation
     # fix is reviewed (see issue #2445). Re-enable by restoring `"help_docs": PRHelpDocs`
     # and its import once the hardening PR is merged.

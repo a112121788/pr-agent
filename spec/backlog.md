@@ -88,7 +88,81 @@
 | Risk | 中文页不能使用指向未翻译文件的相对 Markdown 链接 |
 | Rollback | 删除 `docs/i18n/zh-CN/`，并移除 `docusaurus.config.js` 的 `i18n` 配置 |
 
+## Ready
+
+### `FACTORY-1` - 受理记录
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 提出人用一条评论留下意图，机器只保存，不改写 |
+| Scope | 新增 `/intake 新业务\|旧版迭代\|新版升级\|双线`。写入结构化评论。不判定，不合并 |
+| Evidence | 审核工厂四段；当前评论没有独立受理记录 |
+| Acceptance | 四种意图之一能发布受理评论，并包含原话、目标分支和 head SHA；非法意图被拒绝且不发布 |
+| Risk | 模型或命令别名改写作者原话 |
+| Rollback | 不注册 `/intake` |
+
+### `FACTORY-2` - 证据绑定提交号
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 审查证据失效点清楚：提交一变，旧证据不再代表当前改动 |
+| Scope | `/review` 与 `/improve` 评论头部增加 head SHA。不新增判定 |
+| Evidence | `eclouddev/hlzs_web#2896` 的评论没有提交号 |
+| Acceptance | 新评论第一段含完整 SHA；离线渲染测试锁定该行 |
+| Risk | 长 SHA 影响现有评论识别 |
+| Rollback | 去掉 SHA 行 |
+
+## Draft
+
+### `FACTORY-3` - 人工判定
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | draft |
+| 优先级 | P1 |
+| Outcome | 负责人用 `/verdict 放行\|退回\|等待` 留下判定，模型的“批准”不能代替 |
+| Scope | 解析三个词并发布判定评论。先记录评论人，不做权限名单 |
+| Evidence | 审查结论目前只是模型草稿 |
+| Acceptance | 三个词能绑定当前 SHA；其他词拒绝；审查正文里的“批准”不会生成判定 |
+| Risk | 任意评论者都能写判定 |
+| Rollback | 不注册 `/verdict` |
+
+依赖 `FACTORY-1` 和 `FACTORY-2`。
+
+### `FACTORY-4` - 汇入前检查
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | draft |
+| 优先级 | P1 |
+| Outcome | 没有当前提交的“放行”时，机器明确说不能汇入 |
+| Scope | `/merge-check` 只发布检查结果。不调用 Gitee 合并接口 |
+| Evidence | 当前没有汇入闸门 |
+| Acceptance | 缺判定、SHA 不一致、判定为退回或等待时结果都是不能汇入；放行且 SHA 一致时结果是可以由人合并 |
+| Risk | 用户以为命令会自动合并 |
+| Rollback | 不注册 `/merge-check` |
+
+依赖 `FACTORY-3`。
+
+### `FACTORY-5` - 双线先拆
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | draft |
+| 优先级 | P2 |
+| Outcome | 明确声明为双线的改动不能被一次审查放行 |
+| Scope | 受理意图为“双线”时添加阻塞规则。不做语义猜测 |
+| Evidence | 课程要求双线变更先拆；`review_policy.py` 还没有该规则 |
+| Acceptance | `/intake 双线` 后，审查评论包含“先拆成两张拉取请求” |
+| Risk | 把普通大改动误判为双线 |
+| Rollback | 删除该规则 |
+
 ## Icebox
 
-- 持久评论与反应的真实回归。
-- 私有化 Gitee 的证书与 API base 样例。
+- 判定人权限名单。
+- 旧版契约和新版契约的自动对照。
+- 真实 Gitee Webhook 投递核对。
