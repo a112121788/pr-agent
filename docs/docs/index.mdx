@@ -19,7 +19,7 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 ## 先看它替你做哪一段
 
-Gitee PR-Agent 是审核工厂的核心机。它只做中间的「取证」：阅读一张 Gitee 拉取请求，把证据写成中文评论。它不会替负责人决定能不能合并，也不会自己按下合并按钮。
+Gitee PR-Agent 是审核工厂这套代理系统里的核心机。受理、规则、取证、判定、汇入检查各自只做一段，并通过评论交接。它阅读一张 Gitee 拉取请求，把证据写成中文评论；负责人才写判定，有权限的人才在 Gitee 上合并。
 
 <img src="/img/factory-flow-zh.svg" alt="审核分成四段。绿色的取证由 Gitee PR-Agent 完成，其余三段由人完成。" />
 

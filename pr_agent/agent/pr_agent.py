@@ -42,6 +42,7 @@ from pr_agent.tools.pr_merge_check import PRMergeCheck
 from pr_agent.tools.pr_questions import PRQuestions
 from pr_agent.tools.pr_reviewer import PRReviewer
 from pr_agent.tools.pr_similar_issue import PRSimilarIssue
+from pr_agent.tools.pr_status import PRStatus
 from pr_agent.tools.pr_update_changelog import PRUpdateChangelog
 from pr_agent.tools.pr_verdict import PRVerdict
 
@@ -72,6 +73,7 @@ command2class = {
     "intake": PRIntake,
     "verdict": PRVerdict,
     "merge_check": PRMergeCheck,
+    "status": PRStatus,
     "merge-check": PRMergeCheck,
     # SECURITY: "/help_docs" is temporarily disabled while the clone-target validation
     # fix is reviewed (see issue #2445). Re-enable by restoring `"help_docs": PRHelpDocs`

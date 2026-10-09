@@ -74,6 +74,49 @@ def latest_verdict(comments) -> tuple[str | None, str]:
     return None, ""
 
 
+def latest_evidence_sha(comments) -> str:
+    """Read the newest evidence comment. A verdict record is not evidence."""
+    for comment in comments or []:
+        body = getattr(comment, "body", "") or ""
+        if "判定记录" in body or "汇入检查" in body or "受理记录" in body:
+            continue
+        match = COMMIT_LINE.search(body)
+        if match and ("PR 审查指南" in body or "PR 代码建议" in body):
+            return match.group("sha")
+    return ""
+
+
+def render_status(intent: str, evidence_sha: str, verdict: str | None, verdict_sha: str, current_sha: str) -> str:
+    """Show which stage owns the next action. This command changes no other record."""
+    evidence_current = bool(evidence_sha and evidence_sha == current_sha)
+    verdict_current = bool(verdict and verdict_sha == current_sha)
+    if not intent:
+        stage = "受理"
+        action = "提出人运行 /intake"
+    elif not evidence_current:
+        stage = "取证"
+        action = "运行 /review 或 /improve"
+    elif not verdict_current:
+        stage = "判定"
+        action = "负责人运行 /verdict"
+    elif verdict == "放行":
+        stage = "汇入"
+        action = "有权限的人在 Gitee 上合并"
+    else:
+        stage = "判定"
+        action = f"最新判定是{verdict}，先不要合并"
+    return "\n".join([
+        "## 工厂状态",
+        "",
+        f"- 当前段：{stage}",
+        f"- 下一步：{action}",
+        f"- 受理：{intent or '缺失'}",
+        f"- 证据提交号：{evidence_sha or '缺失'}",
+        f"- 判定：{verdict or '缺失'}",
+        f"- 当前提交号：{current_sha or '未读取'}",
+    ])
+
+
 def latest_intake_intent(comments) -> str:
     """Read an explicitly recorded intake intent. Ordinary prose never counts."""
     for comment in comments or []:

@@ -13,7 +13,8 @@ class HelpMessage:
                 "> - **/generate_labels**: Generate labels for the PR based on the PR's contents.   \n" \
                 "> - **/intake**: Record one of 新业务, 旧版迭代, 新版升级, or 双线.   \n" \
                 "> - **/verdict**: Record 放行, 退回, or 等待 for the current commit.   \n" \
-                "> - **/merge-check**: Check whether a person may merge. It never merges.   \n\n" \
+                "> - **/merge-check**: Check whether a person may merge. It never merges.   \n" \
+                "> - **/status**: Show the current factory stage.   \n\n" \
                 ">See the [tools guide](https://docs.pr-agent.ai/tools/) for more details.\n" \
                 ">To list the possible configuration parameters, add a **/config** comment.   \n"
        return commands_text

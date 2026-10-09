@@ -2,10 +2,12 @@ from types import SimpleNamespace
 
 from pr_agent.algo.factory_record import (
     bind_commit,
+    latest_evidence_sha,
     latest_intake_intent,
     latest_verdict,
     parse_verdict,
     render_merge_check,
+    render_status,
 )
 from pr_agent.algo.review_policy import review_rule_findings
 
@@ -45,6 +47,20 @@ def test_matching_pass_verdict_allows_a_person_to_merge():
     assert "可以由人合并" in render_merge_check("放行", "abc1234567", "abc1234567")
     assert "不能汇入" in render_merge_check("放行", "abc1234567", "def1234567")
     assert "不能汇入" in render_merge_check("退回", "abc1234567", "abc1234567")
+
+
+def test_status_names_the_missing_stage_and_ignores_review_approval():
+    comments = [
+        _comment("## 审查结论\n\n结论：批准\n提交号：abc1234567"),
+        _comment("## 受理记录\n\n- 意图：旧版迭代"),
+    ]
+
+    assert latest_evidence_sha(comments) == ""
+    status = render_status("旧版迭代", "", None, "", "abc1234567")
+    assert "- 当前段：取证" in status
+
+    complete = render_status("旧版迭代", "abc1234567", "放行", "abc1234567", "abc1234567")
+    assert "- 当前段：汇入" in complete
 
 
 def test_only_an_explicit_dual_line_intake_blocks_review():
