@@ -5,7 +5,7 @@ import styles from './styles.module.css';
 
 const HERO_COPY = {
   en: {
-    lede: 'Describe, review and improve Gitee pull requests. Run it from a comment, a webhook or one Docker command.',
+    lede: 'The core machine of the review factory. It gathers evidence on a Gitee pull request; people keep the verdict and the merge.',
     install: 'Install on Gitee',
     github: 'Browse the tools',
     worksWith: 'Runs on',
@@ -35,7 +35,7 @@ const HERO_COPY = {
     works: 'works',
   },
   'zh-CN': {
-    lede: '描述、审查并改进 Gitee 拉取请求。可以从评论、Webhook 或一条 Docker 命令运行。',
+    lede: '审核工厂的核心机。它在 Gitee 拉取请求上收集证据；判定和汇入仍由人完成。',
     install: '安装到 Gitee',
     github: '查看工具',
     worksWith: '运行于',

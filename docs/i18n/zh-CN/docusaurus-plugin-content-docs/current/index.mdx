@@ -19,7 +19,7 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 ## 快速开始
 
-Gitee PR-Agent 每次审查一个 Gitee 拉取请求。默认模型是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。
+Gitee PR-Agent 是审核工厂的核心机。它为一张 Gitee 拉取请求收集证据。判定仍由人写下，汇入仍在 Gitee 上完成。默认模型是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。
 
 ```bash
 docker run --rm -it \
@@ -39,7 +39,7 @@ https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/7
 
 <div className="pra-cta-row">
 
-[配置 Gitee Webhook](pathname:///installation/gitee/) [本地运行](pathname:///installation/locally/)
+[查看审核四段](pathname:///overview/review_factory/) [配置 Gitee Webhook](pathname:///installation/gitee/)
 
 </div>
 

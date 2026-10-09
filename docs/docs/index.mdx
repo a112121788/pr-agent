@@ -19,7 +19,7 @@ import MaintainerAvatars from '@site/src/components/MaintainerAvatars';
 
 ## Quick start
 
-Gitee PR-Agent reviews one Gitee pull request at a time. The default model is `gpt-6.1-sol`, with `glm-5.3` as the fallback.
+Gitee PR-Agent is the core machine of the review factory. It collects evidence for one Gitee pull request. A person still writes the verdict, and Gitee still performs the merge. The default model is `gpt-6.1-sol`, with `glm-5.3` as the fallback.
 
 ```bash
 docker run --rm -it \
@@ -39,7 +39,7 @@ https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/7
 
 <div className="pra-cta-row">
 
-[Configure the Gitee webhook](./installation/gitee.md) [Run it locally](./installation/locally.md)
+[See the four review stages](./overview/review_factory.md) [Configure the Gitee webhook](./installation/gitee.md)
 
 </div>
 

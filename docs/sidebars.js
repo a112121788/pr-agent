@@ -11,6 +11,7 @@ const sidebars = {
   // How do I start using it?
   getStarted: [
     {type: 'doc', id: 'usage-guide/introduction', label: 'Introduction'},
+    {type: 'doc', id: 'overview/review_factory', label: 'Review factory'},
     {type: 'doc', id: 'overview/supported_platforms', label: 'Supported platforms'},
     {
       type: 'category',
