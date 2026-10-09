@@ -93,7 +93,6 @@ const sidebars = {
       collapsible: false,
       items: [
         {type: 'doc', id: 'tools/help', label: '帮助'},
-        {type: 'doc', id: 'tools/help_docs', label: '帮助文档'},
       ],
     },
   ],

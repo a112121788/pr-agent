@@ -55,7 +55,7 @@ docker run --rm -it \
 | **[`/update_changelog`](./update_changelog.md)** | 以评论发布的变更日志草稿。不会推送文件。 |
 | **[`/similar_issue`](./similar_issues.md)** | 没有检索结果：不支持议题索引，命令会说明这一点后停止。 |
 | **[`/help`](./help.md)** | 命令列表，或根据这些文档作出的回答。 |
-| **[`/help_docs`](./help_docs.md)** | 没有效果。该命令已禁用且未注册。 |
+
 
 ## 已验证的拉取请求
 

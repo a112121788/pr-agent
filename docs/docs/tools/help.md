@@ -29,4 +29,4 @@ ecloud-tcr.tencentcloudcr.com/ecloud_project/pr-agent:latest \
 
 接受的 URL 是 `https://gitee.com/owner/repo/pulls/N` 和 `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`。
 
-`/help_docs` 是另一条命令，而且已经[禁用](./help_docs.md)。`/similar_issue` 不会搜索 Gitee 议题，见[相似议题](./similar_issues.md)。
+`/similar_issue` 不会搜索 Gitee 议题，见[相似议题](./similar_issues.md)。
