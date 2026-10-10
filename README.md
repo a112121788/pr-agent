@@ -62,6 +62,8 @@ OPENAI__API_BASE=<模型地址>
 
 默认模型是 `glm-5.3`，备用模型是 `gpt-6.1-sol`，评论语言是 `zh-CN`。
 
+Webhook 服务同时提供驾驶舱，路径是 `/dashboard`。先登记 `owner/repo`，再点「登记」后面的「批量审查」。打开页面不会自动审查。正在审查的拉取请求标成「审查中」，同一张不能同时再审一次。说明见 [驾驶舱](docs/docs/usage-guide/dashboard.md)。
+
 本地安装后也可以运行：
 
 ```bash

@@ -215,6 +215,19 @@
 | Risk | 空的 `CODEX_HOME` 不再读取镜像里的 `~/.codex` 登录；密钥和地址仍由 `OPENAI__KEY` / `OPENAI__API_BASE` 传入 |
 | Rollback | 去掉 `CODEX_HOME`，恢复所有调用共享默认状态目录 |
 
+### `DOCS-1` - 补上驾驶舱说明
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P2 |
+| Outcome | 读者能从文档知道如何登记仓库、批量审查，以及审查中的拉取请求不能再开一次 |
+| Scope | 新增 `docs/docs/usage-guide/dashboard.md`，并在侧栏、README 和审核工厂页加上入口。不改驾驶舱行为 |
+| Evidence | 批量审查已在首页，文档仍只写单张点审查 |
+| Acceptance | 文档含「批量审查」「审查中」和 `/dashboard`；侧栏登记了 `usage-guide/dashboard` |
+| Risk | 文档与以后的按钮文案再次分叉 |
+| Rollback | 删除该页，并去掉侧栏和 README 中的链接 |
+
 ### `REVIEW-2` - 首页登记后可批量审查
 
 | 字段 | 内容 |

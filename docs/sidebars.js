@@ -37,6 +37,7 @@ const sidebars = {
       collapsible: false,
       items: [
         {type: 'doc', id: 'usage-guide/automations_and_usage', label: '用法与自动化'},
+        {type: 'doc', id: 'usage-guide/dashboard', label: '驾驶舱'},
         {type: 'doc', id: 'usage-guide/push_outputs', label: '推送输出'},
         {type: 'doc', id: 'usage-guide/mail_notifications', label: '邮件通知'},
       ],
