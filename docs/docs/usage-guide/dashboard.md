@@ -28,7 +28,7 @@ Webhook 镜像在 `/dashboard` 提供驾驶舱。容器内端口是 `3000`。打
 ## 内测
 
 1. 构建镜像：`docker build -f docker/Dockerfile --target gitee_app -t pr-agent:gitee_app .`
-2. 用 `docker/dashboard.sh` 启动，并传入 `GITEE__PERSONAL_ACCESS_TOKEN` 和 `OPENAI__KEY`。可选 `OPENAI__API_BASE`。数据卷是 `pr-agent-data`。
+2. 用 `docker/dashboard.sh` 启动。脚本把 shell 中的 `GITEE__PERSONAL_ACCESS_TOKEN`、`OPENAI__KEY` 和可选的 `OPENAI__API_BASE` 传进容器。也可以改用 `--env-file`。数据卷是 `pr-agent-data`。
 3. 打开 `/dashboard`。页头应有「构建」。
 4. 输入 `owner/repo`，点「登记」。
 5. 点「批量审查」，或在一张拉取请求上点「审查」。

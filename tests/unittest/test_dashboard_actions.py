@@ -1,3 +1,7 @@
+import os
+import subprocess
+from pathlib import Path
+
 import pytest
 
 from pr_agent.dashboard.actions import parse_repo, pull_detail
@@ -631,3 +635,71 @@ def test_drive_pass_reviews_then_merges_only_the_current_pass(monkeypatch, tmp_p
     assert again.status_code == 303
     assert merged == []
     assert not any("判定：放行" in comment for comment in published)
+
+
+def _dashboard_script(tmp_path, monkeypatch):
+    """Point docker at a recorder so the start script can run without a daemon."""
+    log = tmp_path / "docker.log"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    docker = bindir / "docker"
+    docker.write_text("#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$DOCKER_ARG_LOG\"\nexit 0\n")
+    docker.chmod(0o755)
+    monkeypatch.setenv("DOCKER_ARG_LOG", str(log))
+    monkeypatch.setenv("PATH", f"{bindir}{os.pathsep}{os.environ['PATH']}")
+    script = Path(__file__).resolve().parents[2] / "docker" / "dashboard.sh"
+    return script, log
+
+
+def _docker_run_line(log: Path) -> str:
+    lines = [line for line in log.read_text().splitlines() if line.startswith("run ")]
+    assert len(lines) == 1
+    return lines[0]
+
+
+def test_dashboard_script_forwards_host_credentials_into_docker_run(tmp_path, monkeypatch):
+    script, log = _dashboard_script(tmp_path, monkeypatch)
+    monkeypatch.setenv("GITEE__PERSONAL_ACCESS_TOKEN", "gitee-token-for-test")
+    monkeypatch.setenv("OPENAI__KEY", "openai-key-for-test")
+    monkeypatch.setenv("OPENAI__API_BASE", "https://example.test/v1")
+
+    completed = subprocess.run([str(script)], check=False, capture_output=True, text=True)
+
+    assert completed.returncode == 0, completed.stderr
+    run = _docker_run_line(log)
+    assert "-e GITEE__PERSONAL_ACCESS_TOKEN=gitee-token-for-test" in run
+    assert "-e OPENAI__KEY=openai-key-for-test" in run
+    assert "-e OPENAI__API_BASE=https://example.test/v1" in run
+    assert run.endswith("pr-agent:gitee_app")
+
+
+def test_dashboard_script_refuses_to_start_without_credentials(tmp_path, monkeypatch):
+    script, log = _dashboard_script(tmp_path, monkeypatch)
+    monkeypatch.delenv("GITEE__PERSONAL_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("OPENAI__KEY", raising=False)
+
+    completed = subprocess.run([str(script)], check=False, capture_output=True, text=True)
+
+    assert completed.returncode == 1
+    assert "GITEE__PERSONAL_ACCESS_TOKEN" in completed.stderr
+    assert "OPENAI__KEY" in completed.stderr
+    assert not log.exists()
+
+
+def test_dashboard_script_leaves_env_file_credentials_intact(tmp_path, monkeypatch):
+    script, log = _dashboard_script(tmp_path, monkeypatch)
+    monkeypatch.delenv("GITEE__PERSONAL_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("OPENAI__KEY", raising=False)
+    monkeypatch.delenv("OPENAI__API_BASE", raising=False)
+
+    completed = subprocess.run(
+        [str(script), "--env-file", str(tmp_path / "secrets.env")],
+        check=False, capture_output=True, text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    run = _docker_run_line(log)
+    assert "--env-file" in run
+    assert "GITEE__PERSONAL_ACCESS_TOKEN" not in run
+    assert "OPENAI__KEY" not in run
+    assert "OPENAI__API_BASE" not in run
