@@ -128,13 +128,18 @@ async def pull_request_fragment(url: str):
 
 @router.post("/dashboard/run")
 async def run_pull_request_command(
-    background_tasks: BackgroundTasks, pr_url: str = Form(...), command: str = Form(...)
+    request: Request,
+    background_tasks: BackgroundTasks,
+    pr_url: str = Form(...),
+    command: str = Form(...),
 ):
     """Queue one command and return immediately. The worker updates the conversation."""
     store = FactoryStore(database_url())
     store.setup()
     job_id = store.enqueue(pr_url, command)
     background_tasks.add_task(_finish_review_job, job_id, pr_url, command)
+    if request.headers.get("x-requested-with") == "fetch":
+        return Response(render_conversation_body(pr_url), media_type="text/html")
     return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)
 
 

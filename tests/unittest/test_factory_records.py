@@ -50,15 +50,22 @@ def test_matching_pass_verdict_allows_a_person_to_merge():
 
 
 def test_gitee_comments_become_pipeline_records():
-    from pr_agent.algo.factory_record import records_from_comments
+    from pr_agent.algo.factory_record import comment_feed, records_from_comments
 
-    records = records_from_comments("https://gitee.com/o/r/pulls/1", [
-        {"body": "提交号：abc1234567\n\n## PR 审查指南"},
-        {"body": "普通讨论，不是审核记录"},
-    ])
+    comments = [
+        {"body": "提交号：abc1234567\n\n## PR 审查指南", "user": {"login": "bot"}, "created_at": "t1"},
+        {"body": "普通讨论，不是审核记录", "user": {"login": "ada"}},
+        {"body": "Failed to review PR", "user": {"login": "bot"}},
+    ]
+    records = records_from_comments("https://gitee.com/o/r/pulls/1", comments)
 
     assert [record.record_type for record in records] == ["审查"]
     assert records[0].stage == "取证"
+    feed = comment_feed(comments)
+    assert [item["kind"] for item in feed] == ["审查", "评论", "审查失败"]
+    assert feed[2]["stage"] == "失败"
+    assert feed[2]["text"] == "审查没有完成。"
+    assert "提交号：" not in feed[0]["text"]
 
 
 def test_status_names_the_missing_stage_and_ignores_review_approval():

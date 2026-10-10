@@ -32,12 +32,46 @@ def _client() -> _GiteeApiClient:
     )
 
 
-def pull_comments(pr_url: str) -> list[dict]:
-    """Read the published Gitee comments for one pull request, oldest first."""
+def _pull_path(pr_url: str) -> tuple[str, str, str]:
+    """Return owner, repo, and number. Enterprise URLs keep the real repo before /pulls/."""
     match = re.search(r"/([^/]+)/([^/]+)/pulls/(\d+)(?:$|[/?#])", pr_url)
     if not match:
         raise ValueError("无法识别 Gitee 拉取请求地址")
-    owner, repo, number = match.groups()
+    return match.group(1), match.group(2), match.group(3)
+
+
+def pull_detail(pr_url: str) -> dict:
+    """Read the title, author, and branches shown at the top of the pipeline."""
+    owner, repo, number = _pull_path(pr_url)
+    payload = _client().request("GET", f"/repos/{owner}/{repo}/pulls/{number}")
+    if not isinstance(payload, dict):
+        raise ValueError("Gitee 没有返回这张拉取请求")
+    user = payload.get("user") or {}
+    head = payload.get("head") or {}
+    base = payload.get("base") or {}
+    state = payload.get("state") or ""
+    if payload.get("merged"):
+        state_label = "已合并"
+    elif state == "open":
+        state_label = "开放中"
+    elif state == "closed":
+        state_label = "已关闭"
+    else:
+        state_label = state or "未知状态"
+    return {
+        "number": payload.get("number") or number,
+        "title": payload.get("title") or "",
+        "author": user.get("login") if isinstance(user, dict) else "",
+        "head": head.get("ref") if isinstance(head, dict) else "",
+        "base": base.get("ref") if isinstance(base, dict) else "",
+        "url": payload.get("html_url") or pr_url,
+        "state_label": state_label,
+    }
+
+
+def pull_comments(pr_url: str) -> list[dict]:
+    """Read the published Gitee comments for one pull request, oldest first."""
+    owner, repo, number = _pull_path(pr_url)
     payload = _client().request(
         "GET", f"/repos/{owner}/{repo}/pulls/{number}/comments",
         params={"page": 1, "per_page": 100, "direction": "asc"},

@@ -118,30 +118,44 @@ def render_status(intent: str, evidence_sha: str, verdict: str | None, verdict_s
     ])
 
 
+def _comment_body(comment) -> str:
+    if isinstance(comment, Mapping):
+        return comment.get("body") or ""
+    return getattr(comment, "body", "") or ""
+
+
+def _classify_comment(body: str) -> tuple[str, str, str] | None:
+    """Return kind, stage, and short summary for one factory comment."""
+    if "受理记录" in body:
+        intent = re.search(r"^- 意图：(?P<intent>.+)$", body, re.MULTILINE)
+        summary = intent.group("intent") if intent else ""
+        return "受理", "受理", summary
+    if "判定记录" in body:
+        verdict = VERDICT_LINE.search(body)
+        summary = verdict.group("verdict") if verdict else ""
+        return "判定", "判定", summary
+    if "汇入检查" in body:
+        return "汇入检查", "汇入", "汇入检查"
+    if "PR 审查指南" in body:
+        return "审查", "取证", "PR 审查指南"
+    if "PR 代码建议" in body:
+        return "建议", "取证", "PR 代码建议"
+    return None
+
+
 def records_from_comments(pr_url: str, comments) -> list:
     """Turn published Gitee comments into factory records. Ordinary prose is ignored."""
     from pr_agent.dashboard.store import FactoryRecord
 
     records = []
     for comment in comments or []:
-        body = comment.get("body", "") if isinstance(comment, Mapping) else getattr(comment, "body", "")
-        body = body or ""
+        body = _comment_body(comment)
+        classified = _classify_comment(body)
+        if not classified:
+            continue
+        kind, stage, summary = classified
         commit = COMMIT_LINE.search(body)
         sha = commit.group("sha") if commit else ""
-        if "受理记录" in body:
-            intent = re.search(r"^- 意图：(?P<intent>.+)$", body, re.MULTILINE)
-            kind, stage, summary = "受理", "受理", intent.group("intent") if intent else ""
-        elif "判定记录" in body:
-            verdict = VERDICT_LINE.search(body)
-            kind, stage, summary = "判定", "判定", verdict.group("verdict") if verdict else ""
-        elif "汇入检查" in body:
-            kind, stage, summary = "汇入检查", "汇入", "汇入检查"
-        elif "PR 审查指南" in body:
-            kind, stage, summary = "审查", "取证", "PR 审查指南"
-        elif "PR 代码建议" in body:
-            kind, stage, summary = "建议", "取证", "PR 代码建议"
-        else:
-            continue
         created = comment.get("created_at", "") if isinstance(comment, Mapping) else ""
         body_text = "\n".join(line for line in body.splitlines() if not line.startswith("提交号：")).strip()
         records.append(FactoryRecord(
@@ -151,6 +165,44 @@ def records_from_comments(pr_url: str, comments) -> list:
             sha, body_text or summary, created,
         ))
     return records
+
+
+def comment_feed(comments) -> list[dict]:
+    """Return every comment a person should see, including ones that are not factory records."""
+    items = []
+    for comment in comments or []:
+        body = _comment_body(comment).strip()
+        if not body:
+            continue
+        if isinstance(comment, Mapping):
+            created = str(comment.get("created_at") or "")
+            user = comment.get("user") or {}
+            author = user.get("login") if isinstance(user, Mapping) else ""
+            path = str(comment.get("path") or "")
+            line = comment.get("new_line") or ""
+            where = f"{path}:{line}" if path and line else path
+        else:
+            created, author, where = "", "", ""
+        classified = _classify_comment(body)
+        if classified:
+            kind, stage, _summary = classified
+            text = "\n".join(line for line in body.splitlines() if not line.startswith("提交号：")).strip()
+        elif body.startswith("Failed to review PR"):
+            kind, stage = "审查失败", "失败"
+            rest = body.removeprefix("Failed to review PR").strip()
+            text = "审查没有完成。" if not rest else f"审查没有完成。\n{rest}"
+        else:
+            kind, stage = "评论", "评论"
+            text = "\n".join(line for line in body.splitlines() if not line.startswith("提交号：")).strip()
+        items.append({
+            "stage": stage,
+            "kind": kind,
+            "text": text or body,
+            "created_at": created,
+            "author": author or "",
+            "where": where,
+        })
+    return items
 
 
 def latest_intake_intent(comments) -> str:
