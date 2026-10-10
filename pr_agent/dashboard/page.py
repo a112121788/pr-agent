@@ -19,28 +19,6 @@ def _counts(records) -> dict[str, int]:
     return counts
 
 
-def _cards(records) -> str:
-    if not records:
-        return "<p class='empty'>还没有审核记录</p>"
-    cards = []
-    for record in records:
-        link = escape(record.pr_url)
-        cards.append(
-            "<article class='card'>"
-            f"<span class='stage'>{escape(record.stage)}</span>"
-            f"<strong>{escape(record.record_type)}</strong>"
-            f"<a href='{link}'>{link}</a>"
-            f"<p>{escape(record.summary or '没有摘要')}</p>"
-            "<small>"
-            f"意图 {escape(record.intent or '未记录')} · "
-            f"判定 {escape(record.verdict or '未记录')} · "
-            f"提交 {escape((record.head_sha or '未读取')[:12])}"
-            "</small>"
-            "</article>"
-        )
-    return "\n".join(cards)
-
-
 def _repos(store: FactoryStore) -> str:
     blocks = []
     for owner, repo in store.repos():
@@ -337,8 +315,7 @@ def render_dashboard(limit: int = 50) -> str:
 </form>
 </div>
 {repos}
-<ol>{summary}</ol>
-<section class="cards">{_cards(records)}</section>"""
+<ol>{summary}</ol>"""
     return _page("审核工厂驾驶舱", content)
 
 

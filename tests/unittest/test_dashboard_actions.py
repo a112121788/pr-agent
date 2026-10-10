@@ -221,7 +221,8 @@ def test_dashboard_shows_three_modes_and_does_not_present_a_return_as_merged(mon
         assert "人工加速" not in body
         assert "辅助驾驶" not in body
         assert "确认这一步" not in body
-        assert "判定 退回" in body
+        assert "判定 退回" not in body
+        assert "https://gitee.com/o/r/pulls/9" not in body
         assert "已汇入" not in body
         assert "已合并" not in body
 

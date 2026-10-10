@@ -30,7 +30,8 @@ def test_sqlite_round_trip_and_dashboard(monkeypatch, tmp_path):
     assert store.begin_job("https://gitee.com/o/r/pulls/1", "review") is not None
     page = render_dashboard()
     assert "审核工厂驾驶舱" in page
-    assert "新业务" in page
+    assert "新业务" not in page
+    assert "https://gitee.com/o/r/pulls/1" not in page
     assert "sqlite:///" not in page
     stuck = store.begin_job("https://gitee.com/o/r/pulls/9", "review")
     assert stuck is not None
