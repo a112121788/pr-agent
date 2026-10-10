@@ -17,7 +17,7 @@ from starlette_context.middleware import RawContextMiddleware
 from pr_agent.agent.pr_agent import PRAgent
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.dashboard.actions import parse_repo, run_review
-from pr_agent.dashboard.page import render_conversation, render_dashboard
+from pr_agent.dashboard.page import render_conversation, render_conversation_body, render_dashboard
 from pr_agent.dashboard.store import FactoryStore, database_url
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
@@ -118,6 +118,12 @@ async def forget_repo(owner: str = Form(...), repo: str = Form(...)):
 async def pull_request_conversation(url: str):
     """Show one pull request's review as a conversation."""
     return Response(render_conversation(url), media_type="text/html")
+
+
+@router.get("/dashboard/pr/fragment")
+async def pull_request_fragment(url: str):
+    """Return only the changing pipeline content so the page can refresh quietly."""
+    return Response(render_conversation_body(url), media_type="text/html")
 
 
 @router.post("/dashboard/run")

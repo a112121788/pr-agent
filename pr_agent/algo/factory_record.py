@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 
 VERDICTS = ("放行", "退回", "等待")
 COMMIT_LINE = re.compile(r"^提交号：(?P<sha>[0-9a-fA-F]{7,64})$", re.MULTILINE)
@@ -115,6 +116,41 @@ def render_status(intent: str, evidence_sha: str, verdict: str | None, verdict_s
         f"- 判定：{verdict or '缺失'}",
         f"- 当前提交号：{current_sha or '未读取'}",
     ])
+
+
+def records_from_comments(pr_url: str, comments) -> list:
+    """Turn published Gitee comments into factory records. Ordinary prose is ignored."""
+    from pr_agent.dashboard.store import FactoryRecord
+
+    records = []
+    for comment in comments or []:
+        body = comment.get("body", "") if isinstance(comment, Mapping) else getattr(comment, "body", "")
+        body = body or ""
+        commit = COMMIT_LINE.search(body)
+        sha = commit.group("sha") if commit else ""
+        if "受理记录" in body:
+            intent = re.search(r"^- 意图：(?P<intent>.+)$", body, re.MULTILINE)
+            kind, stage, summary = "受理", "受理", intent.group("intent") if intent else ""
+        elif "判定记录" in body:
+            verdict = VERDICT_LINE.search(body)
+            kind, stage, summary = "判定", "判定", verdict.group("verdict") if verdict else ""
+        elif "汇入检查" in body:
+            kind, stage, summary = "汇入检查", "汇入", "汇入检查"
+        elif "PR 审查指南" in body:
+            kind, stage, summary = "审查", "取证", "PR 审查指南"
+        elif "PR 代码建议" in body:
+            kind, stage, summary = "建议", "取证", "PR 代码建议"
+        else:
+            continue
+        created = comment.get("created_at", "") if isinstance(comment, Mapping) else ""
+        body_text = "\n".join(line for line in body.splitlines() if not line.startswith("提交号：")).strip()
+        records.append(FactoryRecord(
+            pr_url, kind, stage,
+            summary if kind == "受理" else "",
+            summary if kind == "判定" else "",
+            sha, body_text or summary, created,
+        ))
+    return records
 
 
 def latest_intake_intent(comments) -> str:

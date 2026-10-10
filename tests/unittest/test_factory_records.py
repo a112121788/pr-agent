@@ -49,6 +49,18 @@ def test_matching_pass_verdict_allows_a_person_to_merge():
     assert "不能汇入" in render_merge_check("退回", "abc1234567", "abc1234567")
 
 
+def test_gitee_comments_become_pipeline_records():
+    from pr_agent.algo.factory_record import records_from_comments
+
+    records = records_from_comments("https://gitee.com/o/r/pulls/1", [
+        {"body": "提交号：abc1234567\n\n## PR 审查指南"},
+        {"body": "普通讨论，不是审核记录"},
+    ])
+
+    assert [record.record_type for record in records] == ["审查"]
+    assert records[0].stage == "取证"
+
+
 def test_status_names_the_missing_stage_and_ignores_review_approval():
     comments = [
         _comment("## 审查结论\n\n结论：批准\n提交号：abc1234567"),

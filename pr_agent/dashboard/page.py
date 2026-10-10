@@ -2,7 +2,8 @@
 
 from html import escape
 
-from pr_agent.dashboard.actions import open_pulls
+from pr_agent.algo.factory_record import records_from_comments
+from pr_agent.dashboard.actions import open_pulls, pull_comments
 from pr_agent.dashboard.store import FactoryStore, database_url
 
 
@@ -69,32 +70,66 @@ def _repos(store: FactoryStore) -> str:
     return "\n".join(blocks) or "<p class='empty'>还没有登记仓库</p>"
 
 
-def render_conversation(pr_url: str) -> str:
-    """Render one pull request's jobs and records from oldest to newest."""
+def render_conversation_body(pr_url: str) -> str:
+    """Return the pipeline feed without the page frame."""
     store = FactoryStore(database_url())
     store.setup()
     jobs = store.jobs_for(pr_url)
-    records = [record for record in reversed(store.latest(200)) if record.pr_url == pr_url]
-    lines = [
-        f"<p class='job'>{escape(command)} · {escape(status)}<br>{escape(summary or '')}</p>"
-        for _job_id, command, status, summary, _created in jobs
-    ]
-    lines += [
-        "<article class='card'>"
-        f"<strong>{escape(record.record_type)}</strong><p>{escape(record.summary or '')}</p></article>"
-        for record in records
-    ]
-    body = "\n".join(lines) or "<p class='empty'>还没有审核对话</p>"
-    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="5"><title>审核对话</title></head>
-<body><main><a href="/dashboard">返回驾驶舱</a><h1>审核对话</h1>
-<p>{escape(pr_url)}</p><section class="cards">{body}</section>
-<form method="post" action="/dashboard/run">
-<input type="hidden" name="pr_url" value="{escape(pr_url)}">
+    error = ""
+    try:
+        records = records_from_comments(pr_url, pull_comments(pr_url))
+    except Exception as exc:
+        records = []
+        error = str(exc)
+    steps = "".join(
+        f"<li class='{'done' if any(record.stage == stage for record in records) else ''}'>{escape(stage)}</li>"
+        for stage in ("受理", "取证", "判定", "汇入")
+    )
+    messages = []
+    if error:
+        messages.append(f"<article class='card'><span class='stage'>失败</span><strong>Gitee</strong><p>{escape(error)}</p></article>")
+    for _job_id, command, status, summary, _created in jobs:
+        messages.append(
+            "<article class='card'>"
+            f"<span class='stage'>{escape(status)}</span><strong>{escape(command)}</strong>"
+            f"<p>{escape(summary or '正在处理')}</p></article>"
+        )
+    for record in records:
+        text = escape(record.summary or "没有摘要").replace("\n", "<br>")
+        messages.append(
+            "<article class='card'>"
+            f"<span class='stage'>{escape(record.stage)}</span>"
+            f"<strong>{escape(record.record_type)}</strong>"
+            f"<small>{escape(record.created_at or '')}</small>"
+            f"<div class='message'>{text}</div></article>"
+        )
+    feed = "\n".join(messages) or "<p class='empty'>还没有审核记录</p>"
+    return f"<ol class='steps'>{steps}</ol><section class='cards'>{feed}</section>"
+
+
+def render_conversation(pr_url: str) -> str:
+    """Render one pull request's jobs and records from oldest to newest."""
+    safe_url = escape(pr_url)
+    content = f"""<a href="/dashboard">返回驾驶舱</a>
+<h1>审核流水线</h1>
+<p class="lead"><a href="{safe_url}">在 Gitee 打开这张拉取请求</a></p>
+<div id="pipeline">{render_conversation_body(pr_url)}</div>
+<form class="dock" method="post" action="/dashboard/run">
+<input type="hidden" name="pr_url" value="{safe_url}">
 <button name="command" value="review">审查</button>
-<button name="command" value="improve">建议</button>
-<button name="command" value="status">状态</button>
-</form></main></body></html>"""
+<button class="secondary" name="command" value="improve">建议</button>
+<button class="secondary" name="command" value="status">状态</button>
+</form>
+<script>
+const target = new URLSearchParams(location.search).get("url");
+async function refreshPipeline() {{
+  if (document.hidden) return;
+  const response = await fetch("/dashboard/pr/fragment?url=" + encodeURIComponent(target));
+  if (response.ok) document.querySelector("#pipeline").innerHTML = await response.text();
+}}
+setInterval(refreshPipeline, 5000);
+</script>"""
+    return _page("审核流水线", content)
 
 
 def render_dashboard(limit: int = 50) -> str:
@@ -108,12 +143,28 @@ def render_dashboard(limit: int = 50) -> str:
         f"<li><span>{escape(stage)}</span><strong>{count}</strong></li>"
         for stage, count in counts.items()
     )
+    content = f"""<h1>审核工厂驾驶舱</h1>
+<p class="lead">登记仓库、查看打开的拉取请求，并发起审查。合并仍由人在 Gitee 上完成。</p>
+<form class="repo-form" method="post" action="/dashboard/repos">
+<input name="repo" placeholder="添加仓库，例如 owner/repo" aria-label="添加仓库" required>
+<button>登记</button>
+</form>
+{repos}
+<ol>{summary}</ol>
+<section class="cards">{_cards(records)}</section>"""
+    return _page("审核工厂驾驶舱", content)
+
+
+def _page(title: str, content: str, refresh: bool = False) -> str:
+    """Wrap dashboard content in the shared visual frame."""
+    refresh_tag = '<meta http-equiv="refresh" content="5">' if refresh else ""
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>审核工厂看板</title>
+{refresh_tag}
+<title>{escape(title)}</title>
 <style>
 body {{ margin: 0; background: #f6f3ec; color: #243036; font-family: "PingFang SC", sans-serif; }}
 main {{ max-width: 980px; margin: auto; padding: 32px 20px 64px; }}
@@ -139,6 +190,11 @@ button.secondary {{ background: #e7f4ee; color: #0f6b4c; }}
 a {{ color: #0f6b4c; overflow-wrap: anywhere; text-decoration: none; }}
 .card p, small, .error {{ color: #66717a; }}
 .empty {{ padding: 28px; text-align: center; }}
+.steps {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 18px 0; padding: 0; list-style: none; }}
+.steps li {{ text-align: center; color: #66717a; }}
+.steps li.done {{ background: #e7f4ee; color: #0f6b4c; font-weight: 700; }}
+.message {{ max-height: 280px; overflow: auto; line-height: 1.6; white-space: pre-wrap; }}
+.dock {{ position: sticky; bottom: 12px; display: flex; gap: 8px; background: white; border: 1px solid #e4ddd0; border-radius: 8px; padding: 12px; }}
 @media (max-width: 720px) {{
   ol {{ grid-template-columns: 1fr 1fr; }}
   .pr {{ display: block; }}
@@ -146,18 +202,6 @@ a {{ color: #0f6b4c; overflow-wrap: anywhere; text-decoration: none; }}
 }}
 </style>
 </head>
-<body>
-<main>
-<h1>审核工厂驾驶舱</h1>
-<p class="lead">登记仓库、查看打开的拉取请求，并发起审查。合并仍由人在 Gitee 上完成。</p>
-<form class="repo-form" method="post" action="/dashboard/repos">
-<input name="repo" placeholder="添加仓库，例如 owner/repo" aria-label="添加仓库" required>
-<button>登记</button>
-</form>
-{repos}
-<ol>{summary}</ol>
-<section class="cards">{_cards(records)}</section>
-</main>
-</body>
+<body><main>{content}</main></body>
 </html>
 """

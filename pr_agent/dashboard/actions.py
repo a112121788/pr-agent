@@ -32,6 +32,19 @@ def _client() -> _GiteeApiClient:
     )
 
 
+def pull_comments(pr_url: str) -> list[dict]:
+    """Read the published Gitee comments for one pull request, oldest first."""
+    match = re.search(r"/([^/]+)/([^/]+)/pulls/(\d+)(?:$|[/?#])", pr_url)
+    if not match:
+        raise ValueError("无法识别 Gitee 拉取请求地址")
+    owner, repo, number = match.groups()
+    payload = _client().request(
+        "GET", f"/repos/{owner}/{repo}/pulls/{number}/comments",
+        params={"page": 1, "per_page": 100, "direction": "asc"},
+    )
+    return payload if isinstance(payload, list) else []
+
+
 def open_pulls(owner: str, repo: str) -> list[dict]:
     """Return the open pull requests for one watched repository."""
     payload = _client().request("GET", f"/repos/{owner}/{repo}/pulls", params={"state": "open"})
