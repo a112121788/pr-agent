@@ -215,6 +215,19 @@
 | Risk | 空的 `CODEX_HOME` 不再读取镜像里的 `~/.codex` 登录；密钥和地址仍由 `OPENAI__KEY` / `OPENAI__API_BASE` 传入 |
 | Rollback | 去掉 `CODEX_HOME`，恢复所有调用共享默认状态目录 |
 
+### `REVIEW-2` - 首页登记后可批量审查
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 登记仓库之后，可以手动一次审查已登记仓库里打开的拉取请求 |
+| Scope | 驾驶舱首页「登记」后面增加「批量审查」，提交到已有的 `/dashboard/drive`。打开页面不自动审查。正在审查的同一张不再开一次 |
+| Evidence | 用户要求首页登记后面添加批量审查 |
+| Acceptance | 页面上「批量审查」出现在「登记」之后；GET `/dashboard` 不启动审查；POST `/dashboard/drive` 才启动 |
+| Risk | 一次会为多张未在审的拉取请求排队 |
+| Rollback | 去掉该按钮，保留单张「审查」 |
+
 ### `REVIEW-1` - 审查只保留自动驾驶
 
 | 字段 | 内容 |

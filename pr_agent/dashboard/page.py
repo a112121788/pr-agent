@@ -314,10 +314,15 @@ def render_dashboard(limit: int = 50) -> str:
         for stage, count in counts.items()
     )
     content = f"""<h1>审核工厂驾驶舱</h1>
+<div class="toolbar">
 <form class="repo-form" method="post" action="/dashboard/repos">
 <input name="repo" placeholder="添加仓库，例如 owner/repo" aria-label="添加仓库" required>
 <button>登记</button>
 </form>
+<form method="post" action="/dashboard/drive">
+<button class="secondary" type="submit">批量审查</button>
+</form>
+</div>
 {repos}
 <ol>{summary}</ol>
 <section class="cards">{_cards(records)}</section>"""
@@ -344,6 +349,9 @@ li {{ background: white; border: 1px solid #e4ddd0; border-radius: 8px; padding:
 li span {{ display: block; color: #66717a; }}
 li strong {{ font-size: 28px; }}
 .repo-form, .repo, .card, .empty {{ background: white; border: 1px solid #e4ddd0; border-radius: 8px; }}
+.toolbar {{ display: flex; gap: 8px; align-items: stretch; margin: 18px 0; }}
+.toolbar .repo-form {{ flex: 1; margin: 0; }}
+.toolbar form:last-child {{ display: flex; }}
 .repo-form {{ display: flex; gap: 8px; padding: 12px; margin: 18px 0; }}
 input, button {{ font: inherit; border-radius: 6px; }}
 input {{ flex: 1; border: 1px solid #d9d3c7; padding: 10px 12px; }}

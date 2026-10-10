@@ -220,6 +220,28 @@ def test_dashboard_shows_three_modes_and_does_not_present_a_return_as_merged(mon
         assert "已合并" not in body
 
 
+def test_batch_review_button_sits_after_register_and_starts_one_pass(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path}/factory.db"
+    monkeypatch.setattr("pr_agent.dashboard.page.database_url", lambda: url)
+    monkeypatch.setattr("pr_agent.servers.gitee_app.database_url", lambda: url)
+    started = []
+    monkeypatch.setattr(
+        "pr_agent.servers.gitee_app.execute_registered",
+        lambda *args, **kwargs: started.append(1),
+    )
+    from fastapi.testclient import TestClient
+
+    from pr_agent.servers.gitee_app import app
+
+    client = TestClient(app)
+    page = client.get("/dashboard").text
+    assert page.index("登记") < page.index("批量审查")
+    assert started == []
+    response = client.post("/dashboard/drive", follow_redirects=False)
+    assert response.status_code == 303
+    assert started == [1]
+
+
 def test_opening_the_dashboard_does_not_start_a_review(monkeypatch, tmp_path):
     url = f"sqlite:///{tmp_path}/factory.db"
     monkeypatch.setattr("pr_agent.dashboard.page.database_url", lambda: url)
