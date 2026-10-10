@@ -3,8 +3,9 @@
 import hashlib
 from html import escape
 
-from pr_agent.algo.factory_record import comment_feed, records_from_comments
+from pr_agent.algo.factory_record import comment_feed, comments_from_records, records_from_comments
 from pr_agent.dashboard.actions import open_pulls, pull_comments, pull_detail
+from pr_agent.dashboard.drive import _decision_for, load_rules, preview_registered
 from pr_agent.dashboard.store import FactoryStore, database_url
 
 _COMMANDS = {"review": "审查", "improve": "建议", "status": "状态", "describe": "描述"}
@@ -271,10 +272,59 @@ setInterval(refreshPipeline, 5000);
     return _page("审核流水线", content)
 
 
+def _mode_switch(mode: str) -> str:
+    buttons = []
+    for name in ("人工加速", "辅助驾驶", "自动驾驶"):
+        css = "" if name == mode else " class='secondary'"
+        buttons.append(f"<button type='submit' name='mode' value='{name}'{css}>{name}</button>")
+    return "<form class='repo-form' method='post' action='/dashboard/mode'>" + "".join(buttons) + "</form>"
+
+
+def _decision_card(pr_url: str, decision, mode: str) -> str:
+    confirm = ""
+    if mode == "辅助驾驶" and decision.action == "提案":
+        confirm = (
+            "<form method='post' action='/dashboard/confirm'>"
+            f"<input type='hidden' name='pr_url' value='{escape(pr_url)}'>"
+            "<button class='secondary' type='submit'>确认这一步</button></form>"
+        )
+    return (
+        "<article class='card'><header class='card-top'>"
+        f"<strong>{escape(decision.action)}</strong>"
+        f"<span class='stage'>{escape(decision.mode)}</span></header>"
+        f"<a href='/dashboard/pr?url={escape(pr_url)}'>{escape(pr_url)}</a>"
+        f"<p>{escape(decision.reason)}</p>{confirm}</article>"
+    )
+
+
+def _decision_cards(store: FactoryStore, mode: str) -> str:
+    grouped = {}
+    for record in store.latest(50):
+        grouped.setdefault(record.pr_url, []).append(record)
+    cards = []
+    for pr_url, group in grouped.items():
+        sha = next((item.head_sha for item in group if item.head_sha), "")
+        pull = {"url": pr_url, "sha": sha, "title": "", "body": ""}
+        decision = _decision_for(mode, pull, comments_from_records(group), False, load_rules)
+        cards.append(_decision_card(pr_url, decision, mode))
+    seen = set(grouped)
+    try:
+        live = preview_registered(store)
+    except Exception:
+        live = []
+    for pr_url, decision in live:
+        if pr_url in seen:
+            continue
+        cards.append(_decision_card(pr_url, decision, mode))
+    body = "\n".join(cards) or "<p class='empty'>打开的拉取请求会出现在这里</p>"
+    return f"<section class='cards'>{body}</section>"
+
+
 def render_dashboard(limit: int = 50) -> str:
     """Return one Chinese HTML page. The database URL itself is not shown."""
     store = FactoryStore(database_url())
     store.setup()
+    mode = store.get_mode()
     repos = _repos(store)
     records = store.latest(limit)
     counts = _counts(records)
@@ -283,12 +333,18 @@ def render_dashboard(limit: int = 50) -> str:
         for stage, count in counts.items()
     )
     content = f"""<h1>审核工厂驾驶舱</h1>
-<p class="lead">登记仓库、查看打开的拉取请求，并发起审查。合并仍由人在 Gitee 上完成。</p>
+<p class="lead">人工加速不自动写记录。辅助驾驶只提案，确认后才判定或汇入。自动驾驶只在当前提交已放行时汇入。</p>
+<p>当前模式：{escape(mode)}</p>
+{_mode_switch(mode)}
+<form class="repo-form" method="post" action="/dashboard/drive">
+<button type="submit">运行本轮</button>
+</form>
 <form class="repo-form" method="post" action="/dashboard/repos">
 <input name="repo" placeholder="添加仓库，例如 owner/repo" aria-label="添加仓库" required>
 <button>登记</button>
 </form>
 {repos}
+{_decision_cards(store, mode)}
 <ol>{summary}</ol>
 <section class="cards">{_cards(records)}</section>"""
     return _page("审核工厂驾驶舱", content)

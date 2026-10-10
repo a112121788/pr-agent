@@ -891,6 +891,16 @@ class GiteeProvider(GitProvider):
             )
         return comments
 
+    def merge_pull_request(self) -> Optional[Dict[str, Any]]:
+        """Merge the current pull request. Callers must already have passed the factory gate."""
+        if not (self.owner and self.repo and self.pr_number):
+            raise GiteeApiError(0, "PUT", "/pulls/merge", "拉取请求地址不完整")
+        return self.api.request(
+            "PUT",
+            f"/repos/{self.owner}/{self.repo}/pulls/{self.pr_number}/merge",
+            body={"merge_method": "merge"},
+        )
+
     def publish_comment(self, comment: str, is_temporary: bool = False) -> Optional[Dict[str, Any]]:
         if is_temporary and not get_settings().config.publish_output_progress:
             self.logger.debug("Skipping publish_comment for temporary comment")

@@ -17,6 +17,7 @@ from starlette_context.middleware import RawContextMiddleware
 from pr_agent.agent.pr_agent import PRAgent
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.dashboard.actions import parse_repo, run_review
+from pr_agent.dashboard.drive import continue_pull, execute_registered
 from pr_agent.dashboard.page import render_conversation, render_conversation_body, render_dashboard
 from pr_agent.dashboard.store import FactoryStore, database_url
 from pr_agent.git_providers.utils import apply_repo_settings
@@ -104,6 +105,46 @@ async def watch_repo(repo: str = Form(...)):
     return RedirectResponse("/dashboard", status_code=303)
 
 
+def _start_review(background_tasks: BackgroundTasks):
+    def start(pr_url: str, job_id: int, head_sha: str = ""):
+        background_tasks.add_task(_finish_review_job, job_id, pr_url, "review", head_sha)
+
+    return start
+
+
+@router.post("/dashboard/mode")
+async def choose_mode(background_tasks: BackgroundTasks, mode: str = Form(...)):
+    """Switch the cockpit mode. Autopilot starts one pass; manual mode writes nothing."""
+    store = FactoryStore(database_url())
+    store.setup()
+    try:
+        store.set_mode(mode)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if mode == "自动驾驶":
+        execute_registered(store, start_review=_start_review(background_tasks))
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+@router.post("/dashboard/drive")
+async def drive_once(background_tasks: BackgroundTasks):
+    """Run one pass in the current mode. The decision function still gates every write."""
+    store = FactoryStore(database_url())
+    store.setup()
+    execute_registered(store, start_review=_start_review(background_tasks))
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+@router.post("/dashboard/confirm")
+async def confirm_step(background_tasks: BackgroundTasks, pr_url: str = Form(...)):
+    """Let assisted mode perform the proposed verdict or merge. Other modes ignore it."""
+    store = FactoryStore(database_url())
+    store.setup()
+    confirmed = pr_url if store.get_mode() == "辅助驾驶" else ""
+    execute_registered(store, confirmed_url=confirmed, start_review=_start_review(background_tasks))
+    return RedirectResponse("/dashboard", status_code=303)
+
+
 @router.post("/dashboard/repos/remove")
 async def forget_repo(owner: str = Form(...), repo: str = Form(...)):
     """Remove one watched repository without deleting its Gitee data or review history."""
@@ -143,13 +184,16 @@ async def run_pull_request_command(
     return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)
 
 
-async def _finish_review_job(job_id: int, pr_url: str, command: str):
+async def _finish_review_job(job_id: int, pr_url: str, command: str, head_sha: str = ""):
     store = FactoryStore(database_url())
     try:
         summary = await run_review(pr_url, command)
         store.finish_job(job_id, "完成", summary)
     except Exception as error:
         store.finish_job(job_id, "失败", str(error))
+        return
+    if command == "review" and head_sha:
+        continue_pull(store, pr_url, head_sha)
 
 
 @router.post("/api/v1/gitee_webhooks")

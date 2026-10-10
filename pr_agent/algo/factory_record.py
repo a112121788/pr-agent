@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
+from dataclasses import dataclass
+from types import SimpleNamespace
 
 VERDICTS = ("放行", "退回", "等待")
-COMMIT_LINE = re.compile(r"^提交号：(?P<sha>[0-9a-fA-F]{7,64})$", re.MULTILINE)
-VERDICT_LINE = re.compile(r"^判定：(?P<verdict>放行|退回|等待)$", re.MULTILINE)
+COMMIT_LINE = re.compile(r"^(?:- )?提交号：(?P<sha>[0-9a-fA-F]{7,64})$", re.MULTILINE)
+VERDICT_LINE = re.compile(r"^(?:- )?判定：(?P<verdict>放行|退回|等待)$", re.MULTILINE)
+DRIVE_MODES = ("人工加速", "辅助驾驶", "自动驾驶")
+INTENTS = ("新业务", "旧版迭代", "新版升级", "双线")
+_INTENT_LINE = re.compile(
+    r"(?:^|\n)\s*(?:[-*]\s*)?意图：(?P<intent>新业务|旧版迭代|新版升级|双线)\s*(?:\n|$)"
+)
 
 
 def commit_record(head_sha: str) -> str:
@@ -64,10 +71,16 @@ def render_merge_check(verdict: str | None, verdict_sha: str, current_sha: str) 
     ])
 
 
+def _body(comment) -> str:
+    if isinstance(comment, Mapping):
+        return comment.get("body") or ""
+    return getattr(comment, "body", "") or ""
+
+
 def latest_verdict(comments) -> tuple[str | None, str]:
     """Read the newest valid verdict comment. Review text cannot satisfy this check."""
     for comment in comments or []:
-        body = getattr(comment, "body", "") or ""
+        body = _body(comment)
         verdict = VERDICT_LINE.search(body)
         commit = COMMIT_LINE.search(body)
         if verdict and commit and "判定记录" in body:
@@ -78,7 +91,7 @@ def latest_verdict(comments) -> tuple[str | None, str]:
 def latest_evidence_sha(comments) -> str:
     """Read the newest evidence comment. A verdict record is not evidence."""
     for comment in comments or []:
-        body = getattr(comment, "body", "") or ""
+        body = _body(comment)
         if "判定记录" in body or "汇入检查" in body or "受理记录" in body:
             continue
         match = COMMIT_LINE.search(body)
@@ -119,9 +132,7 @@ def render_status(intent: str, evidence_sha: str, verdict: str | None, verdict_s
 
 
 def _comment_body(comment) -> str:
-    if isinstance(comment, Mapping):
-        return comment.get("body") or ""
-    return getattr(comment, "body", "") or ""
+    return _body(comment)
 
 
 def _classify_comment(body: str) -> tuple[str, str, str] | None:
@@ -208,8 +219,158 @@ def comment_feed(comments) -> list[dict]:
 def latest_intake_intent(comments) -> str:
     """Read an explicitly recorded intake intent. Ordinary prose never counts."""
     for comment in comments or []:
-        body = getattr(comment, "body", "") or ""
+        body = _body(comment)
         match = re.search(r"^- 意图：(?P<intent>新业务|旧版迭代|新版升级|双线)$", body, re.MULTILINE)
         if match and "受理记录" in body:
             return match.group("intent")
     return ""
+
+
+def explicit_intent(text: str) -> str:
+    """Return one exact intent written by a person. Missing or mixed text stays empty."""
+    found = list(dict.fromkeys(_INTENT_LINE.findall(text or "")))
+    if len(found) != 1:
+        return ""
+    return found[0]
+
+
+@dataclass(frozen=True)
+class DriveDecision:
+    """One next step. Flags are the only permission to write or merge."""
+
+    mode: str
+    action: str
+    reason: str
+    intent: str = ""
+    verdict: str = ""
+    head_sha: str = ""
+    write_intake: bool = False
+    collect_evidence: bool = False
+    write_verdict: bool = False
+    merge: bool = False
+
+
+def merge_allowed(verdict: str | None, verdict_sha: str, current_sha: str, intent: str = "") -> bool:
+    """Allow a merge only when this commit itself carries 放行 and the change is not dual-line."""
+    if intent == "双线":
+        return False
+    return bool(verdict == "放行" and verdict_sha and current_sha and verdict_sha == current_sha)
+
+
+def comments_from_records(records) -> list:
+    """Rebuild the comment shapes the gate already knows how to read."""
+    comments = []
+    for record in records or []:
+        if record.stage == "受理" and record.intent:
+            comments.append(SimpleNamespace(body=f"## 受理记录\n\n- 意图：{record.intent}"))
+        elif record.stage == "判定" and record.verdict:
+            comments.append(SimpleNamespace(
+                body=f"## 判定记录\n\n判定：{record.verdict}\n提交号：{record.head_sha}"
+            ))
+        elif record.stage == "取证" and record.head_sha:
+            title = "PR 代码建议" if record.record_type == "建议" else "PR 审查指南"
+            comments.append(SimpleNamespace(body=f"提交号：{record.head_sha}\n\n## {title}"))
+    return comments
+
+
+def _armed(mode: str, confirmed: bool) -> bool:
+    if mode == "自动驾驶":
+        return True
+    if mode == "辅助驾驶":
+        return bool(confirmed)
+    return False
+
+
+def _hold(mode: str, reason: str, **fields) -> DriveDecision:
+    return DriveDecision(mode, "留给人工", reason, **fields)
+
+
+def decide_drive(
+    mode: str,
+    comments,
+    head_sha: str,
+    stated_intent: str = "",
+    confirmed: bool = False,
+    rule_findings=None,
+) -> DriveDecision:
+    """Choose the next cockpit step. Model prose never becomes 放行."""
+    if mode not in DRIVE_MODES:
+        raise ValueError("未知驾驶模式")
+    intent = latest_intake_intent(comments)
+    evidence_sha = latest_evidence_sha(comments)
+    verdict, verdict_sha = latest_verdict(comments)
+    stated = stated_intent if stated_intent in INTENTS else ""
+    common = {"intent": intent, "head_sha": head_sha}
+
+    if intent == "双线":
+        return _hold(mode, "双线需要先拆开，不能放行，也不能汇入", **common)
+
+    if verdict:
+        if merge_allowed(verdict, verdict_sha, head_sha, intent):
+            if mode == "人工加速":
+                return _hold(mode, "可以由人合并。人工加速不自动汇入", verdict=verdict, **common)
+            if not _armed(mode, confirmed):
+                return DriveDecision(
+                    mode, "提案", "建议汇入。确认后才会合并", verdict=verdict, **common
+                )
+            return DriveDecision(
+                mode, "汇入", "当前提交已有放行", verdict=verdict, merge=True, **common
+            )
+        if verdict_sha != head_sha:
+            reason = "判定对应的提交已经变化，不能汇入"
+        else:
+            reason = f"最新判定是{verdict}，不能汇入"
+        return _hold(mode, reason, verdict=verdict, **common)
+
+    if not intent:
+        if not stated:
+            return _hold(mode, "意图无法确定，不编造受理", **common)
+        if not _armed(mode, confirmed):
+            reason = "人工加速不自动写受理" if mode == "人工加速" else f"建议受理为{stated}"
+            action = "留给人工" if mode == "人工加速" else "提案"
+            return DriveDecision(mode, action, reason, intent=stated, head_sha=head_sha)
+        return DriveDecision(
+            mode, "受理", f"按显式意图受理为{stated}",
+            intent=stated, head_sha=head_sha, write_intake=True,
+        )
+
+    if evidence_sha != head_sha:
+        if not _armed(mode, confirmed):
+            reason = "人工加速不自动取证" if mode == "人工加速" else "建议对当前提交取证"
+            action = "留给人工" if mode == "人工加速" else "提案"
+            return DriveDecision(mode, action, reason, **common)
+        return DriveDecision(
+            mode, "取证", "取证绑定当前提交", collect_evidence=True, **common
+        )
+
+    if rule_findings is None:
+        return _hold(mode, "无法判定。审查里的批准不能当成放行", **common)
+    proposed = "退回" if list(rule_findings) else "放行"
+    if proposed not in VERDICTS or (proposed == "放行" and intent == "双线"):
+        return _hold(mode, "无法判定，留给人工", **common)
+    if not _armed(mode, confirmed):
+        reason = "人工加速不自动判定" if mode == "人工加速" else f"建议判定为{proposed}"
+        action = "留给人工" if mode == "人工加速" else "提案"
+        return DriveDecision(mode, action, reason, verdict=proposed, **common)
+    return DriveDecision(
+        mode, "判定", f"判定为{proposed}", verdict=proposed, write_verdict=True, **common
+    )
+
+
+def apply_drive(decision: DriveDecision, effects) -> list[str]:
+    """Perform at most the flags on a decision. A 退回 or 双线 still cannot merge."""
+    done = []
+    if decision.write_intake and decision.intent in INTENTS:
+        effects.write_intake(decision.intent, decision.head_sha)
+        done.append("受理")
+    if decision.collect_evidence and decision.head_sha:
+        effects.collect_evidence(decision.head_sha)
+        done.append("取证")
+    blocked_pass = decision.verdict == "放行" and decision.intent == "双线"
+    if decision.write_verdict and decision.verdict in VERDICTS and not blocked_pass:
+        effects.write_verdict(decision.verdict, decision.head_sha)
+        done.append("判定")
+    if decision.merge and decision.verdict == "放行" and decision.intent != "双线" and decision.head_sha:
+        effects.merge(decision.head_sha)
+        done.append("汇入")
+    return done

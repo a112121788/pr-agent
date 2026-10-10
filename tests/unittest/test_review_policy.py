@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+from pr_agent.algo.factory_record import decide_drive
 from pr_agent.algo.review_policy import review_rule_findings, review_sections
 
 
@@ -31,6 +32,22 @@ def test_feature_change_with_matching_spec_passes():
     ], "feat: add activity form")
 
     assert findings == []
+
+
+def test_dual_line_rules_and_an_approval_word_do_not_open_the_merge_gate():
+    findings = review_rule_findings([], "", "双线")
+    comments = [
+        SimpleNamespace(body="## 审查结论\n\n结论：批准\n提交号：abc1234567"),
+        SimpleNamespace(body="提交号：abc1234567\n\n## PR 审查指南"),
+        SimpleNamespace(body="## 受理记录\n\n- 意图：双线"),
+    ]
+
+    decision = decide_drive("自动驾驶", comments, "abc1234567", rule_findings=findings)
+
+    assert findings[0].summary.startswith("这是双线变更")
+    assert decision.merge is False
+    assert decision.verdict != "放行"
+    assert decision.write_verdict is False
 
 
 def test_review_sections_put_blocking_issues_first_and_state_no_blockers():

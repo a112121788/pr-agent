@@ -70,13 +70,20 @@ def pull_detail(pr_url: str) -> dict:
 
 
 def pull_comments(pr_url: str) -> list[dict]:
-    """Read the published Gitee comments for one pull request, oldest first."""
+    """Read published comments oldest first, following pages so a new verdict is not hidden."""
     owner, repo, number = _pull_path(pr_url)
-    payload = _client().request(
-        "GET", f"/repos/{owner}/{repo}/pulls/{number}/comments",
-        params={"page": 1, "per_page": 100, "direction": "asc"},
-    )
-    return payload if isinstance(payload, list) else []
+    comments = []
+    for page in range(1, 21):
+        payload = _client().request(
+            "GET", f"/repos/{owner}/{repo}/pulls/{number}/comments",
+            params={"page": page, "per_page": 100, "direction": "asc"},
+        )
+        if not isinstance(payload, list) or not payload:
+            break
+        comments.extend(item for item in payload if isinstance(item, dict))
+        if len(payload) < 100:
+            break
+    return comments
 
 
 def open_pulls(owner: str, repo: str) -> list[dict]:
@@ -84,10 +91,19 @@ def open_pulls(owner: str, repo: str) -> list[dict]:
     payload = _client().request("GET", f"/repos/{owner}/{repo}/pulls", params={"state": "open"})
     if not isinstance(payload, list):
         return []
-    return [
-        {"number": item.get("number"), "title": item.get("title") or "", "url": item.get("html_url") or ""}
-        for item in payload if item.get("html_url")
-    ]
+    pulls = []
+    for item in payload:
+        if not item.get("html_url"):
+            continue
+        head = item.get("head") or {}
+        pulls.append({
+            "number": item.get("number"),
+            "title": item.get("title") or "",
+            "body": item.get("body") or "",
+            "url": item.get("html_url") or "",
+            "sha": head.get("sha") if isinstance(head, dict) else "",
+        })
+    return pulls
 
 
 async def run_review(pr_url: str, command: str) -> str:

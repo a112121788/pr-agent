@@ -33,6 +33,12 @@ CREATE TABLE IF NOT EXISTS review_jobs (
     created_at TEXT NOT NULL
 )
 """
+CREATE_MODE = """
+CREATE TABLE IF NOT EXISTS cockpit_state (
+    id INTEGER PRIMARY KEY,
+    mode TEXT NOT NULL
+)
+"""
 CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS factory_records (
     id INTEGER PRIMARY KEY,
@@ -81,6 +87,7 @@ class FactoryStore:
             connection.execute(CREATE_REPOS)
             connection.execute(CREATE_JOBS)
             connection.execute(CREATE_TABLE)
+            connection.execute(CREATE_MODE)
             connection.commit()
 
     def add(self, record: FactoryRecord):
@@ -137,6 +144,27 @@ class FactoryStore:
         statement = "SELECT id, command, status, summary, created_at FROM review_jobs WHERE pr_url = ? ORDER BY id"
         with self._connect() as connection:
             return connection.execute(_sql(statement, self.url), (pr_url,)).fetchall()
+
+    def get_mode(self) -> str:
+        """Return the cockpit mode. An empty database stays on the manual setting."""
+        self.setup()
+        statement = "SELECT mode FROM cockpit_state WHERE id = 1"
+        with self._connect() as connection:
+            row = connection.execute(statement).fetchone()
+        mode = row[0] if row else ""
+        if mode not in ("人工加速", "辅助驾驶", "自动驾驶"):
+            return "人工加速"
+        return mode
+
+    def set_mode(self, mode: str):
+        if mode not in ("人工加速", "辅助驾驶", "自动驾驶"):
+            raise ValueError("未知驾驶模式")
+        delete = "DELETE FROM cockpit_state WHERE id = 1"
+        insert = "INSERT INTO cockpit_state (id, mode) VALUES (1, ?)"
+        with self._connect() as connection:
+            connection.execute(_sql(delete, self.url))
+            connection.execute(_sql(insert, self.url), (mode,))
+            connection.commit()
 
     def repos(self) -> list[tuple[str, str]]:
         statement = "SELECT owner, repo FROM watched_repos ORDER BY id DESC"
