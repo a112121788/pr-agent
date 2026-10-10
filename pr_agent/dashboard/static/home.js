@@ -93,6 +93,12 @@ function renderPull(pull) {
     link.href = "/dashboard/pr?url=" + encodeURIComponent(pull.url);
   }
   link.textContent = "#" + pull.number + " " + pull.title;
+  const slot = document.createElement("span");
+  slot.className = "run-slot";
+  slot.setAttribute("aria-live", "polite");
+  const title = document.createElement("span");
+  title.className = "pr-title";
+  title.append(link, slot);
   const actions = document.createElement("span");
   actions.className = "pr-actions";
   for (const [command, label, secondary] of [
@@ -108,11 +114,7 @@ function renderPull(pull) {
     button.addEventListener("click", () => runCommand(row, command));
     actions.append(button);
   }
-  const slot = document.createElement("span");
-  slot.className = "run-slot";
-  slot.setAttribute("aria-live", "polite");
-  actions.append(slot);
-  row.append(link, actions);
+  row.append(title, actions);
   if (pull.reviewing) {
     paint(row, pull.status || "运行中", "review");
     arm(row, pull.job_id, "review");

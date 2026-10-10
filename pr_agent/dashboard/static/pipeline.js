@@ -42,24 +42,18 @@ function link(url, label) {
 }
 
 function renderIdentity(identity) {
-  const root = document.querySelector("#identity");
-  root.replaceChildren();
+  const title = document.querySelector("#identity-title");
+  const meta = document.querySelector("#identity-meta");
+  title.replaceChildren();
+  meta.replaceChildren();
   if (!identity || !identity.named) {
-    const lead = document.createElement("p");
-    lead.className = "lead";
-    lead.append(link(identity && identity.gitee_url, "在 Gitee 打开这张拉取请求"));
-    root.append(lead);
+    meta.append(link(identity && identity.gitee_url, "在 Gitee 打开这张拉取请求"));
     return;
   }
-  const title = document.createElement("p");
-  title.className = "identity";
   const number = document.createElement("span");
   number.textContent = "#" + identity.number;
-  title.append(number, document.createTextNode(identity.title || ""));
-  const lead = document.createElement("p");
-  lead.className = "lead";
-  lead.append(document.createTextNode((identity.meta || "") + " · "), link(identity.gitee_url, "在 Gitee 打开"));
-  root.append(title, lead);
+  title.append(number, document.createTextNode(" " + (identity.title || "")));
+  meta.append(document.createTextNode((identity.meta || "") + " · "), link(identity.gitee_url, "在 Gitee 打开"));
 }
 
 function renderPipeline(data) {

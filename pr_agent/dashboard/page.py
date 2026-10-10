@@ -205,7 +205,13 @@ def render_conversation(pr_url: str) -> str:
     safe_url = escape(pr_url)
     content = f"""<a href="/dashboard">返回驾驶舱</a>
 <h1>审核流水线</h1>
-<div id="identity"></div>
+<div id="identity">
+<div class="identity-row">
+<p class="identity" id="identity-title"></p>
+<span class="run-slot" id="run-slot" aria-live="polite"></span>
+</div>
+<p class="lead" id="identity-meta"></p>
+</div>
 <div id="pipeline" aria-live="polite"></div>
 <form class="dock" id="actions" method="post" action="/dashboard/run">
 <input type="hidden" name="pr_url" value="{safe_url}">
@@ -214,7 +220,6 @@ def render_conversation(pr_url: str) -> str:
 <button type="submit" name="command" value="review">审查</button>
 <button type="submit" class="secondary" name="command" value="improve">建议</button>
 <button type="submit" class="secondary" name="command" value="status">状态</button>
-<span class="run-slot" id="run-slot" aria-live="polite"></span>
 </div>
 </form>
 <form class="dock verdicts" id="verdicts" method="post" action="/dashboard/verdict">
@@ -283,6 +288,9 @@ button.secondary {{ background: #e7f4ee; color: #0f6b4c; }}
 .repo {{ margin: 0 0 16px; padding: 16px; }}
 .repo ul {{ display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }}
 .pr {{ display: flex; justify-content: space-between; gap: 16px; align-items: center; }}
+.pr-title {{ display: flex; align-items: center; gap: 8px; min-width: 0; }}
+.identity-row {{ display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 14px; }}
+.identity-row .identity {{ margin: 0; }}
 .pr form, .pr-actions {{ display: flex; gap: 6px; align-items: center; }}
 .run-slot {{ display: inline-flex; gap: 6px; align-items: center; min-height: 16px; color: #66717a; font-size: 13px; }}
 .run-mark {{ width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #d9d3c7;
