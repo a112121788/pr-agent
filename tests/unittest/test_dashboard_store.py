@@ -1,3 +1,5 @@
+import threading
+
 from pr_agent.dashboard.page import render_dashboard
 from pr_agent.dashboard.store import FactoryRecord, FactoryStore
 
@@ -37,6 +39,30 @@ def test_sqlite_round_trip_and_dashboard(monkeypatch, tmp_path):
     assert store.jobs_for("https://gitee.com/o/r/pulls/9")[-1][2] == "失败"
     monkeypatch.setenv("PR_AGENT_BUILD", "abc1234")
     assert "构建 abc1234" in render_dashboard()
+
+
+def test_twelve_concurrent_begin_job_calls_leave_one_active_review(tmp_path):
+    url = f"sqlite:///{tmp_path}/factory.db"
+    FactoryStore(url).setup()
+    pr = "https://gitee.com/o/r/pulls/12"
+    barrier = threading.Barrier(12)
+    results = []
+
+    def worker():
+        barrier.wait()
+        results.append(FactoryStore(url).begin_job(pr, "review"))
+
+    threads = [threading.Thread(target=worker) for _ in range(12)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    created = [job_id for job_id in results if job_id is not None]
+    active = [row for row in FactoryStore(url).jobs_for(pr) if row[2] in {"排队", "运行中"}]
+    assert len(created) == 1
+    assert len(active) == 1
+    assert len(FactoryStore(url).reviewing()) == 1
 
 
 def test_postgres_uses_the_same_insert_shape(monkeypatch):

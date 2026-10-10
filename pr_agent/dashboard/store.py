@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS review_jobs (
     created_at TEXT NOT NULL
 )
 """
+CREATE_ACTIVE_JOB = """
+CREATE UNIQUE INDEX IF NOT EXISTS review_jobs_one_active
+ON review_jobs (pr_url, command)
+WHERE status IN ('排队', '运行中')
+"""
 CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS factory_records (
     id INTEGER PRIMARY KEY,
@@ -80,6 +85,7 @@ class FactoryStore:
         with self._connect() as connection:
             connection.execute(CREATE_REPOS)
             connection.execute(CREATE_JOBS)
+            connection.execute(CREATE_ACTIVE_JOB)
             connection.execute(CREATE_TABLE)
             connection.commit()
 
@@ -113,19 +119,8 @@ class FactoryStore:
 
     def begin_job(self, pr_url: str, command: str) -> int | None:
         """Start one job. Return nothing when that pull request command is already running."""
-        active = (
-            "SELECT id FROM review_jobs WHERE pr_url = ? AND command = ? AND status IN ('排队', '运行中') "
-            "ORDER BY id DESC LIMIT 1"
-        )
-        insert = "INSERT INTO review_jobs (pr_url, command, status, summary, created_at) VALUES (?, ?, '排队', '', ?)"
-        with self._connect() as connection:
-            row = connection.execute(_sql(active, self.url), (pr_url, command)).fetchone()
-            if row:
-                return None
-            created = datetime.now(timezone.utc).isoformat()
-            cursor = connection.execute(_sql(insert, self.url), (pr_url, command, created))
-            connection.commit()
-            return int(cursor.lastrowid)
+        job_id, created = self._claim_job(pr_url, command)
+        return job_id if created else None
 
     def reviewing(self) -> set[str]:
         """Pull requests whose review is queued or running."""
@@ -136,19 +131,35 @@ class FactoryStore:
 
     def enqueue(self, pr_url: str, command: str) -> int:
         """Return the running job when the same command is already active."""
-        active = (
+        job_id, _created = self._claim_job(pr_url, command)
+        if job_id is None:
+            raise RuntimeError("活动审查没有写入")
+        return job_id
+
+    def _claim_job(self, pr_url: str, command: str) -> tuple[int | None, bool]:
+        """Insert one active job. A concurrent insert loses and reads the winner."""
+        select = (
             "SELECT id FROM review_jobs WHERE pr_url = ? AND command = ? AND status IN ('排队', '运行中') "
             "ORDER BY id DESC LIMIT 1"
         )
-        insert = "INSERT INTO review_jobs (pr_url, command, status, summary, created_at) VALUES (?, ?, '排队', '', ?)"
+        insert = (
+            "INSERT INTO review_jobs (pr_url, command, status, summary, created_at) "
+            "VALUES (?, ?, '排队', '', ?)"
+        )
+        created_at = datetime.now(timezone.utc).isoformat()
         with self._connect() as connection:
-            row = connection.execute(_sql(active, self.url), (pr_url, command)).fetchone()
-            if row:
-                return int(row[0])
-            created = datetime.now(timezone.utc).isoformat()
-            cursor = connection.execute(_sql(insert, self.url), (pr_url, command, created))
-            connection.commit()
-            return int(cursor.lastrowid)
+            if self.url.startswith("sqlite:///"):
+                connection.execute("BEGIN IMMEDIATE")
+            try:
+                cursor = connection.execute(_sql(insert, self.url), (pr_url, command, created_at))
+                connection.commit()
+                return int(cursor.lastrowid), True
+            except Exception as error:
+                connection.rollback()
+                if not _unique_violation(error):
+                    raise
+            row = connection.execute(_sql(select, self.url), (pr_url, command)).fetchone()
+            return (int(row[0]) if row else None), False
 
     def release_abandoned_jobs(self) -> int:
         """Mark reviews left behind by a dead process so the button can be used again."""
@@ -198,6 +209,12 @@ class FactoryStore:
 
             return psycopg.connect(self.url)
         raise ValueError("数据库地址必须以 sqlite:/// 或 postgresql:// 开头")
+
+
+def _unique_violation(error: Exception) -> bool:
+    if isinstance(error, sqlite3.IntegrityError):
+        return True
+    return type(error).__name__ in {"UniqueViolation", "IntegrityError"}
 
 
 def _sql(statement: str, url: str) -> str:
