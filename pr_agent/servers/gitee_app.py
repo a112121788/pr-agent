@@ -7,7 +7,8 @@ import time
 from typing import Any, Mapping
 from urllib.parse import unquote
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Form, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from starlette.background import BackgroundTasks
 from starlette.middleware import Middleware
 from starlette_context import context
@@ -15,7 +16,9 @@ from starlette_context.middleware import RawContextMiddleware
 
 from pr_agent.agent.pr_agent import PRAgent
 from pr_agent.config_loader import get_settings, global_settings
+from pr_agent.dashboard.actions import parse_repo, run_review
 from pr_agent.dashboard.page import render_dashboard
+from pr_agent.dashboard.store import FactoryStore, database_url
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.servers.request_body_limit import create_server_app
@@ -89,6 +92,23 @@ def _command_from_note(body: Mapping[str, Any]) -> str:
 async def factory_dashboard():
     """Show the latest factory records. The page does not reveal the database URL."""
     return Response(render_dashboard(), media_type="text/html")
+
+
+@router.post("/dashboard/repos")
+async def watch_repo(repo: str = Form(...)):
+    """Remember one owner/repo so its open pull requests appear in the cockpit."""
+    owner, name = parse_repo(repo)
+    store = FactoryStore(database_url())
+    store.setup()
+    store.add_repo(owner, name)
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+@router.post("/dashboard/run")
+async def run_pull_request_command(pr_url: str = Form(...), command: str = Form(...)):
+    """Start one evidence command from the cockpit. The browser returns to the board."""
+    await run_review(pr_url, command)
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @router.post("/api/v1/gitee_webhooks")

@@ -14,6 +14,15 @@ from pathlib import Path
 from pr_agent.config_loader import get_settings
 from pr_agent.log import get_logger
 
+CREATE_REPOS = """
+CREATE TABLE IF NOT EXISTS watched_repos (
+    id INTEGER PRIMARY KEY,
+    owner TEXT NOT NULL,
+    repo TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(owner, repo)
+)
+"""
 CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS factory_records (
     id INTEGER PRIMARY KEY,
@@ -59,6 +68,7 @@ class FactoryStore:
 
     def setup(self):
         with self._connect() as connection:
+            connection.execute(CREATE_REPOS)
             connection.execute(CREATE_TABLE)
             connection.commit()
 
@@ -76,6 +86,18 @@ class FactoryStore:
         with self._connect() as connection:
             connection.execute(_sql(statement, self.url), values)
             connection.commit()
+
+    def add_repo(self, owner: str, repo: str):
+        created_at = datetime.now(timezone.utc).isoformat()
+        statement = "INSERT INTO watched_repos (owner, repo, created_at) VALUES (?, ?, ?)"
+        with self._connect() as connection:
+            connection.execute(_sql(statement, self.url), (owner, repo, created_at))
+            connection.commit()
+
+    def repos(self) -> list[tuple[str, str]]:
+        statement = "SELECT owner, repo FROM watched_repos ORDER BY id DESC"
+        with self._connect() as connection:
+            return connection.execute(_sql(statement, self.url)).fetchall()
 
     def latest(self, limit: int = 50) -> list[FactoryRecord]:
         self.setup()

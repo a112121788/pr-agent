@@ -71,6 +71,7 @@ dependencies = [
   # Prometheus scrape endpoint for [otel] command telemetry (native /metrics on
   # the webhook apps). Multiprocess-capable; see pr_agent/telemetry/prometheus.py.
   "prometheus-client==0.21.1",
+  "python-multipart>=0.0.20,<1",
 ]
 
 [project.urls]
