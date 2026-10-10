@@ -10,7 +10,6 @@ from types import SimpleNamespace
 VERDICTS = ("放行", "退回", "等待")
 COMMIT_LINE = re.compile(r"^(?:- )?提交号：(?P<sha>[0-9a-fA-F]{7,64})$", re.MULTILINE)
 VERDICT_LINE = re.compile(r"^(?:- )?判定：(?P<verdict>放行|退回|等待)$", re.MULTILINE)
-DRIVE_MODES = ("人工加速", "辅助驾驶", "自动驾驶")
 INTENTS = ("新业务", "旧版迭代", "新版升级", "双线")
 _INTENT_LINE = re.compile(
     r"(?:^|\n)\s*(?:[-*]\s*)?意图：(?P<intent>新业务|旧版迭代|新版升级|双线)\s*(?:\n|$)"
@@ -238,7 +237,6 @@ def explicit_intent(text: str) -> str:
 class DriveDecision:
     """One next step. Flags are the only permission to write or merge."""
 
-    mode: str
     action: str
     reason: str
     intent: str = ""
@@ -273,87 +271,46 @@ def comments_from_records(records) -> list:
     return comments
 
 
-def _armed(mode: str, confirmed: bool) -> bool:
-    if mode == "自动驾驶":
-        return True
-    if mode == "辅助驾驶":
-        return bool(confirmed)
-    return False
-
-
-def _hold(mode: str, reason: str, **fields) -> DriveDecision:
-    return DriveDecision(mode, "留给人工", reason, **fields)
+def _hold(reason: str, **fields) -> DriveDecision:
+    return DriveDecision("留给人工", reason, **fields)
 
 
 def decide_drive(
-    mode: str,
     comments,
     head_sha: str,
     stated_intent: str = "",
-    confirmed: bool = False,
     rule_findings=None,
 ) -> DriveDecision:
-    """Choose the next cockpit step. Model prose never becomes 放行."""
-    if mode not in DRIVE_MODES:
-        raise ValueError("未知驾驶模式")
+    """Choose the next autopilot step. Model prose never becomes 放行."""
     intent = latest_intake_intent(comments)
     evidence_sha = latest_evidence_sha(comments)
     verdict, verdict_sha = latest_verdict(comments)
-    stated = stated_intent if stated_intent in INTENTS else ""
     common = {"intent": intent, "head_sha": head_sha}
 
     if intent == "双线":
-        return _hold(mode, "双线需要先拆开，不能放行，也不能汇入", **common)
+        return _hold("双线需要先拆开，不能放行，也不能汇入", **common)
 
     if verdict:
         if merge_allowed(verdict, verdict_sha, head_sha, intent):
-            if mode == "人工加速":
-                return _hold(mode, "可以由人合并。人工加速不自动汇入", verdict=verdict, **common)
-            if not _armed(mode, confirmed):
-                return DriveDecision(
-                    mode, "提案", "建议汇入。确认后才会合并", verdict=verdict, **common
-                )
             return DriveDecision(
-                mode, "汇入", "当前提交已有放行", verdict=verdict, merge=True, **common
+                "汇入", "当前提交已有放行", verdict=verdict, merge=True, **common
             )
         if verdict_sha != head_sha:
             reason = "判定对应的提交已经变化，不能汇入"
         else:
             reason = f"最新判定是{verdict}，不能汇入"
-        return _hold(mode, reason, verdict=verdict, **common)
-
-    if not intent:
-        if not stated:
-            return _hold(mode, "意图无法确定，不编造受理", **common)
-        if not _armed(mode, confirmed):
-            reason = "人工加速不自动写受理" if mode == "人工加速" else f"建议受理为{stated}"
-            action = "留给人工" if mode == "人工加速" else "提案"
-            return DriveDecision(mode, action, reason, intent=stated, head_sha=head_sha)
-        return DriveDecision(
-            mode, "受理", f"按显式意图受理为{stated}",
-            intent=stated, head_sha=head_sha, write_intake=True,
-        )
+        return _hold(reason, verdict=verdict, **common)
 
     if evidence_sha != head_sha:
-        if not _armed(mode, confirmed):
-            reason = "人工加速不自动取证" if mode == "人工加速" else "建议对当前提交取证"
-            action = "留给人工" if mode == "人工加速" else "提案"
-            return DriveDecision(mode, action, reason, **common)
-        return DriveDecision(
-            mode, "取证", "取证绑定当前提交", collect_evidence=True, **common
-        )
+        return DriveDecision("取证", "提交后直接审查，证据绑定当前提交", collect_evidence=True, **common)
 
     if rule_findings is None:
-        return _hold(mode, "无法判定。审查里的批准不能当成放行", **common)
+        return _hold("无法判定。审查里的批准不能当成放行", **common)
     proposed = "退回" if list(rule_findings) else "放行"
     if proposed not in VERDICTS or (proposed == "放行" and intent == "双线"):
-        return _hold(mode, "无法判定，留给人工", **common)
-    if not _armed(mode, confirmed):
-        reason = "人工加速不自动判定" if mode == "人工加速" else f"建议判定为{proposed}"
-        action = "留给人工" if mode == "人工加速" else "提案"
-        return DriveDecision(mode, action, reason, verdict=proposed, **common)
+        return _hold("无法判定，留给人工", **common)
     return DriveDecision(
-        mode, "判定", f"判定为{proposed}", verdict=proposed, write_verdict=True, **common
+        "判定", f"判定为{proposed}", verdict=proposed, write_verdict=True, **common
     )
 
 

@@ -58,8 +58,8 @@ class GiteeEffects:
     def collect_evidence(self, head_sha):
         store = FactoryStore(database_url())
         store.setup()
-        job_id = store.enqueue(self.pr_url, "review")
-        if self.start_review:
+        job_id = store.begin_job(self.pr_url, "review")
+        if job_id is not None and self.start_review:
             self.start_review(self.pr_url, job_id, head_sha)
 
     def write_verdict(self, verdict, head_sha):
@@ -86,35 +86,32 @@ def _remember(decision: DriveDecision):
     return None
 
 
-def _settle(mode, pull, comments, confirmed, rules_for, effects=None):
-    """Apply the next automatic step. Autopilot continues until evidence or a hold."""
-    decision = _decision_for(mode, pull, comments, confirmed, rules_for)
+def _settle(pull, comments, rules_for, effects=None):
+    """Apply the next autopilot step until evidence is running or the gate stops."""
+    decision = _decision_for(pull, comments, rules_for)
     if effects is None:
         return decision
     for _ in range(4):
         done = apply_drive(decision, effects)
-        if mode != "自动驾驶" or not done or "取证" in done or "汇入" in done:
+        if not done or "取证" in done or "汇入" in done:
             return decision
         remembered = _remember(decision)
         if remembered is None:
             return decision
         comments.insert(0, remembered)
-        decision = _decision_for(mode, pull, comments, confirmed, rules_for)
+        decision = _decision_for(pull, comments, rules_for)
     return decision
 
 
-def _decision_for(mode, pull, comments, confirmed: bool, rules_for) -> DriveDecision:
+def _decision_for(pull, comments, rules_for) -> DriveDecision:
     """Ask the pure decision, and load rules only when a verdict is otherwise impossible."""
     sha = pull.get("sha") or ""
     stated = explicit_intent(f"{pull.get('title') or ''}\n{pull.get('body') or ''}")
     url = pull.get("url") or ""
-    decision = decide_drive(
-        mode, comments, sha, stated_intent=stated, confirmed=confirmed,
-    )
+    decision = decide_drive(comments, sha, stated_intent=stated)
     if decision.reason.startswith("无法判定"):
         decision = decide_drive(
-            mode, comments, sha, stated_intent=stated, confirmed=confirmed,
-            rule_findings=rules_for(url, decision.intent),
+            comments, sha, stated_intent=stated, rule_findings=rules_for(url, decision.intent),
         )
     return decision
 
@@ -124,12 +121,12 @@ def preview_registered(
 ) -> list[tuple[str, DriveDecision]]:
     """Show the next step for open pull requests without writing or merging."""
     return _walk(
-        store, confirmed_url="", pulls_for=pulls_for, comments_for=comments_for, rules_for=rules_for,
+        store, pulls_for=pulls_for, comments_for=comments_for, rules_for=rules_for,
     )
 
 
 def execute_registered(
-    store: FactoryStore, confirmed_url: str = "", start_review=None,
+    store: FactoryStore, start_review=None,
     pulls_for=None, comments_for=None, rules_for=None, effects_for=None,
 ) -> list[tuple[str, DriveDecision]]:
     """Walk registered repositories and apply only the steps decide_drive allows."""
@@ -137,13 +134,12 @@ def execute_registered(
         return GiteeEffects(url, start_review)
 
     return _walk(
-        store, confirmed_url=confirmed_url, pulls_for=pulls_for, comments_for=comments_for,
+        store, pulls_for=pulls_for, comments_for=comments_for,
         rules_for=rules_for, effects_for=effects_for or build, apply=True,
     )
 
 
-def _walk(store, confirmed_url, pulls_for, comments_for, rules_for=None, effects_for=None, apply=False):
-    mode = store.get_mode()
+def _walk(store, pulls_for, comments_for, rules_for=None, effects_for=None, apply=False):
     pulls_for = pulls_for or open_pulls
     comments_for = comments_for or pull_comments
     rules_for = rules_for or load_rules
@@ -152,30 +148,29 @@ def _walk(store, confirmed_url, pulls_for, comments_for, rules_for=None, effects
         try:
             pulls = pulls_for(owner, repo)
         except Exception as error:
-            found.append((f"{owner}/{repo}", DriveDecision(mode, "留给人工", f"没有读到打开的拉取请求：{error}")))
+            found.append((f"{owner}/{repo}", DriveDecision("留给人工", f"没有读到打开的拉取请求：{error}")))
             continue
         for pull in pulls:
             url = pull.get("url") or ""
             try:
                 comments = list(reversed(comments_for(url) or []))
-                confirmed = bool(confirmed_url) and url == confirmed_url and mode == "辅助驾驶"
                 effects = effects_for(url) if apply and effects_for else None
-                decision = _settle(mode, pull, comments, confirmed, rules_for, effects)
+                decision = _settle(pull, comments, rules_for, effects)
                 found.append((url, decision))
             except Exception as error:
                 get_logger().warning(f"驾驶舱跳过 {url}：{error}")
-                found.append((url, DriveDecision(mode, "留给人工", "这一张没有处理", head_sha=pull.get("sha") or "")))
+                found.append((url, DriveDecision("留给人工", "这一张没有处理", head_sha=pull.get("sha") or "")))
     return found
 
 
 def continue_pull(store: FactoryStore, pr_url: str, head_sha: str, comments_for=None, rules_for=None, effects_for=None):
     """Judge one pull after its evidence job finishes, then merge only when the gate allows."""
-    if store.get_mode() != "自动驾驶" or not head_sha:
+    if not head_sha:
         return []
     comments_for = comments_for or pull_comments
     rules_for = rules_for or load_rules
     effects = (effects_for or (lambda url: GiteeEffects(url)))(pr_url)
     pull = {"url": pr_url, "sha": head_sha, "title": "", "body": ""}
     comments = list(reversed(comments_for(pr_url) or []))
-    decision = _settle(store.get_mode(), pull, comments, False, rules_for, effects)
+    decision = _settle(pull, comments, rules_for, effects)
     return [(pr_url, decision)]

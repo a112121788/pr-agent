@@ -21,8 +21,13 @@ def test_sqlite_round_trip_and_dashboard(monkeypatch, tmp_path):
     first = store.enqueue("https://gitee.com/o/r/pulls/1", "review")
     second = store.enqueue("https://gitee.com/o/r/pulls/1", "review")
     assert first == second
+    assert store.begin_job("https://gitee.com/o/r/pulls/1", "review") is None
+    assert "https://gitee.com/o/r/pulls/1" in store.reviewing()
+    store.finish_job(first, "完成", "已完成")
+    assert store.reviewing() == set()
+    assert store.begin_job("https://gitee.com/o/r/pulls/1", "review") is not None
     page = render_dashboard()
-    assert "审核工厂看板" in page
+    assert "审核工厂驾驶舱" in page
     assert "新业务" in page
     assert "sqlite:///" not in page
 

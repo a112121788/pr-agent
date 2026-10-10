@@ -42,7 +42,7 @@ def test_dual_line_rules_and_an_approval_word_do_not_open_the_merge_gate():
         SimpleNamespace(body="## 受理记录\n\n- 意图：双线"),
     ]
 
-    decision = decide_drive("自动驾驶", comments, "abc1234567", rule_findings=findings)
+    decision = decide_drive(comments, "abc1234567", rule_findings=findings)
 
     assert findings[0].summary.startswith("这是双线变更")
     assert decision.merge is False

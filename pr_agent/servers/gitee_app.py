@@ -91,7 +91,7 @@ def _command_from_note(body: Mapping[str, Any]) -> str:
 
 @router.get("/dashboard")
 async def factory_dashboard():
-    """Show the latest factory records. The page does not reveal the database URL."""
+    """Show the cockpit. Opening the page does not start a review."""
     return Response(render_dashboard(), media_type="text/html")
 
 
@@ -112,36 +112,12 @@ def _start_review(background_tasks: BackgroundTasks):
     return start
 
 
-@router.post("/dashboard/mode")
-async def choose_mode(background_tasks: BackgroundTasks, mode: str = Form(...)):
-    """Switch the cockpit mode. Autopilot starts one pass; manual mode writes nothing."""
-    store = FactoryStore(database_url())
-    store.setup()
-    try:
-        store.set_mode(mode)
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    if mode == "自动驾驶":
-        execute_registered(store, start_review=_start_review(background_tasks))
-    return RedirectResponse("/dashboard", status_code=303)
-
-
 @router.post("/dashboard/drive")
 async def drive_once(background_tasks: BackgroundTasks):
-    """Run one pass in the current mode. The decision function still gates every write."""
+    """Run one autopilot pass. The decision function still gates every write."""
     store = FactoryStore(database_url())
     store.setup()
     execute_registered(store, start_review=_start_review(background_tasks))
-    return RedirectResponse("/dashboard", status_code=303)
-
-
-@router.post("/dashboard/confirm")
-async def confirm_step(background_tasks: BackgroundTasks, pr_url: str = Form(...)):
-    """Let assisted mode perform the proposed verdict or merge. Other modes ignore it."""
-    store = FactoryStore(database_url())
-    store.setup()
-    confirmed = pr_url if store.get_mode() == "辅助驾驶" else ""
-    execute_registered(store, confirmed_url=confirmed, start_review=_start_review(background_tasks))
     return RedirectResponse("/dashboard", status_code=303)
 
 
@@ -177,8 +153,9 @@ async def run_pull_request_command(
     """Queue one command and return immediately. The worker updates the conversation."""
     store = FactoryStore(database_url())
     store.setup()
-    job_id = store.enqueue(pr_url, command)
-    background_tasks.add_task(_finish_review_job, job_id, pr_url, command)
+    job_id = store.begin_job(pr_url, command)
+    if job_id is not None:
+        background_tasks.add_task(_finish_review_job, job_id, pr_url, command)
     if request.headers.get("x-requested-with") == "fetch":
         return Response(render_conversation_body(pr_url), media_type="text/html")
     return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)

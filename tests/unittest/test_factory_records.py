@@ -114,42 +114,23 @@ def _verdict(verdict="放行", sha="abc1234567"):
     return _comment(f"## 判定记录\n\n判定：{verdict}\n提交号：{sha}")
 
 
-def test_manual_mode_has_no_write_or_merge_side_effects():
+def test_a_matching_pass_merges_without_a_human_mode_switch():
     ready = [_verdict(), _evidence(), _intake()]
-    decision = decide_drive("人工加速", ready, "abc1234567", stated_intent="新业务", confirmed=True)
+    decision = decide_drive(ready, "abc1234567")
 
-    assert decision.merge is False
-    assert decision.write_intake is False
-    assert decision.collect_evidence is False
-    assert decision.write_verdict is False
-    assert apply_drive(decision, _Effects()) == []
+    assert decision.action == "汇入"
+    assert decision.merge is True
+    assert apply_drive(decision, _Effects()) == ["汇入"]
 
 
-def test_assisted_mode_only_proposes_until_a_person_confirms():
-    ready = [_verdict(), _evidence(), _intake()]
-    proposal = decide_drive("辅助驾驶", ready, "abc1234567")
-    confirmed = decide_drive("辅助驾驶", ready, "abc1234567", confirmed=True)
-
-    assert proposal.action == "提案"
-    assert proposal.merge is False
-    assert confirmed.merge is True
-    assert apply_drive(proposal, _Effects()) == []
-    assert apply_drive(confirmed, _Effects()) == ["汇入"]
-
-
-def test_autopilot_accepts_only_the_four_explicit_intents():
-    for intent in ("新业务", "旧版迭代", "新版升级", "双线"):
-        decision = decide_drive("自动驾驶", [], "abc1234567", stated_intent=intent)
+def test_a_new_pull_request_is_reviewed_without_an_intent():
+    for text in ("", "大概是新功能", "意图：新业务", "意图：双线"):
+        decision = decide_drive([], "abc1234567", stated_intent=text)
         effects = _Effects()
-        assert decision.write_intake is True
-        assert decision.intent == intent
-        assert apply_drive(decision, effects) == ["受理"]
-        assert effects.calls == [("受理", intent, "abc1234567")]
-
-    unknown = decide_drive("自动驾驶", [], "abc1234567", stated_intent="大概是新功能")
-    assert unknown.action == "留给人工"
-    assert unknown.write_intake is False
-    assert "不编造" in unknown.reason
+        assert decision.collect_evidence is True
+        assert decision.write_intake is False
+        assert apply_drive(decision, effects) == ["取证"]
+        assert effects.calls == [("取证", "abc1234567")]
 
 
 def test_dual_line_and_model_approval_never_become_a_pass():
@@ -157,7 +138,7 @@ def test_dual_line_and_model_approval_never_become_a_pass():
         _comment("## 审查结论\n\n结论：批准\n提交号：abc1234567"),
         _intake("双线"),
     ]
-    decision = decide_drive("自动驾驶", dual, "abc1234567", rule_findings=[])
+    decision = decide_drive(dual, "abc1234567", rule_findings=[])
     assert decision.verdict != "放行"
     assert decision.merge is False
     assert "不能" in decision.reason
@@ -167,7 +148,7 @@ def test_dual_line_and_model_approval_never_become_a_pass():
         _evidence(),
         _intake(),
     ]
-    held = decide_drive("自动驾驶", approved, "abc1234567")
+    held = decide_drive(approved, "abc1234567")
     assert held.action == "留给人工"
     assert held.verdict != "放行"
     assert held.merge is False
@@ -178,7 +159,7 @@ def test_only_a_matching_pass_may_merge_and_evidence_uses_the_head():
     head = "abc1234567"
 
     def gate(verdict, sha):
-        return decide_drive("自动驾驶", [_verdict(verdict, sha), _evidence(head), _intake()], head)
+        return decide_drive([_verdict(verdict, sha), _evidence(head), _intake()], head)
 
     assert gate("放行", head).merge is True
     for verdict, sha in (("退回", head), ("等待", head), ("放行", "def1234567")):
@@ -187,7 +168,7 @@ def test_only_a_matching_pass_may_merge_and_evidence_uses_the_head():
         assert "不能汇入" in decision.reason
         assert apply_drive(decision, _Effects()) == []
 
-    missing = decide_drive("自动驾驶", [_intake()], head)
+    missing = decide_drive([_intake()], head)
     assert missing.action == "取证"
     assert missing.collect_evidence is True
     assert apply_drive(missing, _Effects()) == ["取证"]
@@ -199,8 +180,8 @@ def test_only_a_matching_pass_may_merge_and_evidence_uses_the_head():
 def test_checked_rules_choose_pass_or_return_without_using_the_approval_word():
     comments = [_evidence(), _intake(), _comment("## 审查结论\n\n结论：批准")]
 
-    passed = decide_drive("自动驾驶", comments, "abc1234567", rule_findings=[])
-    blocked = decide_drive("自动驾驶", comments, "abc1234567", rule_findings=["严重问题"])
+    passed = decide_drive(comments, "abc1234567", rule_findings=[])
+    blocked = decide_drive(comments, "abc1234567", rule_findings=["严重问题"])
 
     assert passed.verdict == "放行"
     assert passed.write_verdict is True
