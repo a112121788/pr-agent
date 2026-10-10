@@ -69,6 +69,7 @@ def test_fetch_submit_returns_the_pipeline_without_a_new_page(monkeypatch, tmp_p
     )
 
     assert response.status_code == 200
+    assert response.headers["x-job-id"].isdigit()
     assert "审查失败" in response.text
     assert "审查没有完成" in response.text
     assert "<!doctype" not in response.text.lower()
@@ -141,7 +142,8 @@ def test_autopilot_does_not_merge_a_return_or_invent_an_intent(tmp_path):
     assert fresh[0][1].collect_evidence is True
 
 
-def test_a_current_pass_merges_without_confirmation_and_evidence_uses_the_head(tmp_path):
+def test_a_current_pass_merges_without_confirmation_and_evidence_uses_the_head(monkeypatch, tmp_path):
+    monkeypatch.setattr("pr_agent.dashboard.drive.auto_merge_enabled", lambda: True)
     comments = [
         {"body": "## 受理记录\n\n- 意图：旧版迭代"},
         {"body": "提交号：abc1234567\n\n## PR 审查指南"},
@@ -288,11 +290,13 @@ def test_a_running_review_is_not_started_again(monkeypatch, tmp_path):
 
     page = render_dashboard()
     assert "审查中" in page
+    assert "移除" in page
     assert "disabled" in page
     response = TestClient(app).post(
         "/dashboard/run", data={"pr_url": pr, "command": "review"}, follow_redirects=False,
     )
     assert response.status_code == 303
+    assert response.headers.get("x-job-id") is None
     assert calls == []
 
 
@@ -320,6 +324,7 @@ def test_batch_review_starts_without_intent_and_skips_a_recorded_dual_line(tmp_p
 
 
 def test_review_completion_judges_and_merges_only_a_current_pass(monkeypatch, tmp_path):
+    monkeypatch.setattr("pr_agent.dashboard.drive.auto_merge_enabled", lambda: True)
     import asyncio
 
     url = f"sqlite:///{tmp_path}/factory.db"
@@ -404,6 +409,110 @@ def test_newer_return_past_the_first_comment_page_is_not_merged(monkeypatch, tmp
     assert calls == []
 
 
+def test_default_batch_review_does_not_merge(tmp_path):
+    comments = [
+        {"body": "## 受理记录\n\n- 意图：旧版迭代"},
+        {"body": "提交号：abc1234567\n\n## PR 审查指南"},
+        {"body": "## 判定记录\n\n判定：放行\n提交号：abc1234567"},
+    ]
+    calls = []
+    found = execute_registered(
+        _store(tmp_path),
+        pulls_for=lambda _owner, _repo: [_pull()],
+        comments_for=lambda _url: comments,
+        rules_for=lambda *_args: [],
+        effects_for=lambda _url: _DriveEffects(calls),
+    )
+    assert calls == []
+    assert found[0][1].merge is False
+    assert "不自动汇入" in found[0][1].reason
+
+
+def test_verdict_from_the_conversation_does_not_merge(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path}/factory.db"
+    for target in (
+        "pr_agent.servers.gitee_app.database_url",
+        "pr_agent.dashboard.store.database_url",
+    ):
+        monkeypatch.setattr(target, lambda: url)
+    published = []
+
+    class Provider:
+        def get_pr_head_sha(self):
+            return "abc1234567"
+
+        def publish_comment(self, comment):
+            published.append(comment)
+
+        def merge_pull_request(self):
+            raise AssertionError("merged")
+
+    monkeypatch.setattr("pr_agent.git_providers.get_git_provider", lambda: (lambda _pr: Provider()))
+    from fastapi.testclient import TestClient
+
+    from pr_agent.dashboard.store import FactoryStore
+    from pr_agent.servers.gitee_app import app
+
+    pr = "https://gitee.com/o/r/pulls/4"
+    response = TestClient(app).post(
+        "/dashboard/verdict", data={"pr_url": pr, "verdict": "退回"}, follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert any("判定：退回" in comment for comment in published)
+    assert FactoryStore(url).latest()[0].verdict == "退回"
+
+
+def test_pipeline_distinguishes_a_running_review_from_a_finished_one(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path}/factory.db"
+    monkeypatch.setattr("pr_agent.dashboard.page.database_url", lambda: url)
+    monkeypatch.setattr("pr_agent.dashboard.page.pull_comments", lambda _pr: [])
+    monkeypatch.setattr("pr_agent.dashboard.page.pull_detail", lambda _pr: {
+        "number": 4, "title": "修复", "author": "ada", "head": "topic", "base": "master",
+        "url": "https://gitee.com/o/r/pulls/4", "state_label": "开放中",
+    })
+    store = FactoryStore(url)
+    store.setup()
+    pr = "https://gitee.com/o/r/pulls/4"
+    job_id = store.begin_job(pr, "review")
+    store.finish_job(job_id, "运行中", "正在审查")
+    from pr_agent.dashboard.page import render_conversation, render_conversation_body
+
+    running = render_conversation_body(pr)
+    assert "运行中" in running
+    assert "完成" not in running
+    page = render_conversation(pr)
+    assert 'value="放行"' in page
+    assert 'value="退回"' in page
+    assert 'value="等待"' in page
+    store.finish_job(job_id, "完成", "已完成 review")
+    finished = render_conversation_body(pr)
+    assert "完成" in finished
+    assert "运行中" not in finished
+
+
+def test_failed_review_keeps_the_error_and_frees_the_button(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path}/factory.db"
+    monkeypatch.setattr("pr_agent.servers.gitee_app.database_url", lambda: url)
+    store = FactoryStore(url)
+    store.setup()
+    pr = "https://gitee.com/o/r/pulls/4"
+    job_id = store.begin_job(pr, "review")
+
+    async def _boom(_pr_url, _command):
+        raise RuntimeError("模型超时")
+
+    monkeypatch.setattr("pr_agent.servers.gitee_app.run_review", _boom)
+    import asyncio
+
+    from pr_agent.servers.gitee_app import _finish_review_job
+
+    asyncio.run(_finish_review_job(job_id, pr, "review"))
+    _job, _command, status, summary, _created = store.jobs_for(pr)[-1]
+    assert status == "失败"
+    assert "模型超时" in summary
+    assert pr not in store.reviewing()
+
+
 def test_gitee_comment_is_rendered_as_markdown(monkeypatch, tmp_path):
     url = f"sqlite:///{tmp_path}/factory.db"
     monkeypatch.setattr("pr_agent.dashboard.page.database_url", lambda: url)
@@ -465,6 +574,7 @@ def test_assisted_dashboard_proposes_a_verdict_without_writing_it(monkeypatch, t
 
 
 def test_drive_pass_reviews_then_merges_only_the_current_pass(monkeypatch, tmp_path):
+    monkeypatch.setattr("pr_agent.dashboard.drive.auto_merge_enabled", lambda: True)
     url = f"sqlite:///{tmp_path}/factory.db"
     for target in (
         "pr_agent.servers.gitee_app.database_url",

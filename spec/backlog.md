@@ -122,11 +122,11 @@
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 负责人用 `/verdict 放行\|退回\|等待` 留下判定，模型的“批准”不能代替 |
 | Scope | 解析三个词并发布判定评论。先记录评论人，不做权限名单 |
-| Evidence | 审查结论目前只是模型草稿 |
+| Evidence | `parse_verdict` 拒绝「批准」；流水线「退回」只写判定记录，测试确认未调用合并 |
 | Acceptance | 三个词能绑定当前 SHA；其他词拒绝；审查正文里的“批准”不会生成判定 |
 | Risk | 任意评论者都能写判定 |
 | Rollback | 不注册 `/verdict` |
@@ -137,11 +137,11 @@
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 没有当前提交的“放行”时，机器明确说不能汇入 |
 | Scope | `/merge-check` 只发布检查结果。不调用 Gitee 合并接口 |
-| Evidence | 当前没有汇入闸门 |
+| Evidence | `render_merge_check` 与 `PRMergeCheck` 只发布检查；默认 `allow_auto_merge=false` |
 | Acceptance | 缺判定、SHA 不一致、判定为退回或等待时结果都是不能汇入；放行且 SHA 一致时结果是可以由人合并 |
 | Risk | 用户以为命令会自动合并 |
 | Rollback | 不注册 `/merge-check` |
@@ -152,11 +152,11 @@
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 明确声明为双线的改动不能被一次审查放行 |
 | Scope | 受理意图为“双线”时添加阻塞规则。不做语义猜测 |
-| Evidence | 课程要求双线变更先拆；`review_policy.py` 还没有该规则 |
+| Evidence | `review_policy.py` 对显式双线返回「先拆成两张拉取请求」；普通描述不触发 |
 | Acceptance | `/intake 双线` 后，审查评论包含“先拆成两张拉取请求” |
 | Risk | 把普通大改动误判为双线 |
 | Rollback | 删除该规则 |
@@ -167,11 +167,11 @@
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 驾驶舱只保留当前需要管理的仓库 |
 | Scope | `watched_repos` 增加删除。删除后不再列出 PR，不删除 Gitee 仓库和历史审核记录 |
-| Evidence | `FactoryStore.add_repo` 只有新增 |
+| Evidence | 页面有「移除」；`FactoryStore.remove_repo` 只删登记，SQLite 测试覆盖 |
 | Acceptance | 页面每个仓库有“移除”；移除后刷新不再出现；SQLite 测试覆盖 |
 | Risk | 误删正在审查的仓库记录 |
 | Rollback | 隐藏移除按钮 |
@@ -180,11 +180,11 @@
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 点审查后页面立即返回，长时间模型调用不再占住浏览器 |
 | Scope | `/dashboard/run` 创建任务并后台执行 `/review`、`/improve`、`/status`。同一 PR 同一命令重复点击不新建任务 |
-| Evidence | `run_review` 当前直接 `await PRAgent.handle_request` |
+| Evidence | `/dashboard/run` 立即返回并带 `X-Job-Id`；重复点击不新建；失败摘要含错误 |
 | Acceptance | 请求立即返回任务号；任务状态依次为排队、运行、完成或失败；失败保存错误摘要 |
 | Risk | 服务进程退出会丢失内存中的后台任务 |
 | Rollback | 恢复同步调用 |
@@ -254,17 +254,62 @@
 | Risk | 意图没写明的拉取请求会停在留给人工 |
 | Rollback | 恢复模式表、模式路由和确认按钮 |
 
+## Ready
+
+### `V08-1` - 内测数据重启后还在
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P0 |
+| Outcome | 内测机器重启后，已登记仓库和审查任务还在，失败任务不再一直显示审查中 |
+| Scope | 驾驶舱数据目录挂卷；任务失败写成「失败」并放开按钮；页面显示构建标识。不改审查规则，不打开自动合并 |
+| Evidence | 重建容器后登记记录消失；审查失败时按钮可能停在审查中 |
+| Acceptance | 重启同一数据卷后仓库仍在；一条失败任务的状态是失败，并且可以再次点审查；页面能读到构建标识 |
+| Risk | 挂错卷会看到空库，或把测试库当成内测库 |
+| Rollback | 去掉挂卷，继续使用容器内 `/data` |
+
+### `V09-1` - 批量审查写回一条真实评论
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P0 |
+| Outcome | 内测仓库点一次批量审查，就能在 Gitee 上看到中文审查评论 |
+| Scope | 用已登记仓库跑通批量审查和流水线 Markdown。同一张审查中不再入队。不新增意图规划 |
+| Evidence | `https://gitee.com/eclouddev/hlzs_web/pulls/2885` 评论 `51506075`，提交号 `19501d5c264ffe43d38719477fae86a3029a25e5`；运行中再次触发仍只有一条活动任务 |
+| Acceptance | 记录一张拉取请求地址、评论编号和提交号；审查未结束时再次点击不产生第二条运行中任务 |
+| Risk | 真实审查会向 Gitee 写评论，并消耗模型额度 |
+| Rollback | 停用批量审查按钮，只保留单张审查 |
+
+依赖 `V08-1`。
+
+### `V10-1` - 0.1.0 内测包
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P0 |
+| Outcome | 没有读过源码的人能按说明完成一次审查，且这次试用不会自动合并 |
+| Scope | 内测说明、已知问题、默认关闭自动合并的开关。不加入权限名单，不做意图规划 |
+| Evidence | `config.allow_auto_merge=false`；内测步骤写在 `docs/docs/usage-guide/dashboard.md` |
+| Acceptance | 按说明从启动到看到 Gitee 评论；默认配置下批量审查不会调用合并接口；说明里写明抽查问题改哪份规则 |
+| Risk | 开关默认值弄反会在内测仓库上合并 |
+| Rollback | 去掉开关，恢复「仅放行且非双线才合并」 |
+
+依赖 `V09-1`。
+
 ## Draft
 
 ### `COCKPIT-3` - 审核对话页
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 一张 PR 的审核过程按时间显示成对话 |
 | Scope | 新增 `/dashboard/pr?url=...`。展示受理、进度、审查、建议、状态和判定。页面定时刷新 |
-| Evidence | 驾驶舱目前只有记录卡片，没有单张 PR 的过程 |
+| Evidence | `/dashboard/pr` 渲染运行中与完成后的任务状态不同 |
 | Acceptance | 点击 PR 进入对话；运行中的任务显示“正在审查”；完成后出现结果 |
 | Risk | 自动刷新打断阅读 |
 | Rollback | 从 PR 行移除对话入口 |
@@ -275,11 +320,11 @@
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | draft |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 审核人不用返回列表，也能继续发起审查、建议和判定 |
 | Scope | 对话页底部提供审查、建议、状态、放行、退回、等待。判定仍写判定记录，不合并 |
-| Evidence | 对话页完成后需要承接人工动作 |
+| Evidence | 流水线有审查、建议、状态、放行、退回、等待；判定路由不调用合并 |
 | Acceptance | 五条动作都创建异步任务或判定记录；页面能看到新的对话条目 |
 | Risk | 连续点击产生重复审查 |
 | Rollback | 保留只读对话页 |

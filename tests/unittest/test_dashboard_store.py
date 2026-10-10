@@ -30,6 +30,13 @@ def test_sqlite_round_trip_and_dashboard(monkeypatch, tmp_path):
     assert "审核工厂驾驶舱" in page
     assert "新业务" in page
     assert "sqlite:///" not in page
+    stuck = store.begin_job("https://gitee.com/o/r/pulls/9", "review")
+    assert stuck is not None
+    assert store.release_abandoned_jobs() == 2
+    assert store.reviewing() == set()
+    assert store.jobs_for("https://gitee.com/o/r/pulls/9")[-1][2] == "失败"
+    monkeypatch.setenv("PR_AGENT_BUILD", "abc1234")
+    assert "构建 abc1234" in render_dashboard()
 
 
 def test_postgres_uses_the_same_insert_shape(monkeypatch):

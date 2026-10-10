@@ -44,7 +44,7 @@ def test_dual_line_rules_and_an_approval_word_do_not_open_the_merge_gate():
 
     decision = decide_drive(comments, "abc1234567", rule_findings=findings)
 
-    assert findings[0].summary.startswith("这是双线变更")
+    assert "先拆成两张拉取请求" in findings[0].summary
     assert decision.merge is False
     assert decision.verdict != "放行"
     assert decision.write_verdict is False

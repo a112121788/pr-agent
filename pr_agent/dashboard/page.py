@@ -1,6 +1,7 @@
 """Render the factory dashboard from stored stage records."""
 
 import hashlib
+import os
 from html import escape
 
 from pr_agent.algo.factory_record import comment_feed, records_from_comments
@@ -229,6 +230,12 @@ def render_conversation(pr_url: str) -> str:
 <button type="submit" class="secondary" name="command" value="status">状态</button>
 </div>
 </form>
+<form class="dock verdicts" method="post" action="/dashboard/verdict">
+<input type="hidden" name="pr_url" value="{safe_url}">
+<button type="submit" class="secondary" name="verdict" value="放行">放行</button>
+<button type="submit" class="secondary" name="verdict" value="退回">退回</button>
+<button type="submit" class="secondary" name="verdict" value="等待">等待</button>
+</form>
 <script>
 const target = new URLSearchParams(location.search).get("url");
 const form = document.querySelector("#actions");
@@ -302,6 +309,11 @@ setInterval(refreshPipeline, 5000);
     return _page("审核流水线", content)
 
 
+def build_id() -> str:
+    """Return the short build name passed in at container start."""
+    return (os.environ.get("PR_AGENT_BUILD") or "dev").strip()[:12] or "dev"
+
+
 def render_dashboard(limit: int = 50) -> str:
     """Return one Chinese HTML page. The database URL itself is not shown."""
     store = FactoryStore(database_url())
@@ -314,6 +326,7 @@ def render_dashboard(limit: int = 50) -> str:
         for stage, count in counts.items()
     )
     content = f"""<h1>审核工厂驾驶舱</h1>
+<p class="build">构建 {escape(build_id())}</p>
 <div class="toolbar">
 <form class="repo-form" method="post" action="/dashboard/repos">
 <input name="repo" placeholder="添加仓库，例如 owner/repo" aria-label="添加仓库" required>
@@ -343,6 +356,7 @@ def _page(title: str, content: str, refresh: bool = False) -> str:
 body {{ margin: 0; background: #f6f3ec; color: #243036; font-family: "PingFang SC", sans-serif; }}
 main {{ max-width: 980px; margin: auto; padding: 32px 20px 128px; }}
 h1 {{ margin: 0 0 8px; font-size: 36px; letter-spacing: -.04em; white-space: nowrap; }}
+.build {{ margin: 0; color: #66717a; font-size: 14px; }}
 .lead {{ color: #66717a; }}
 ol {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 0; list-style: none; }}
 li {{ background: white; border: 1px solid #e4ddd0; border-radius: 8px; padding: 14px; }}
@@ -391,7 +405,10 @@ small {{ display: block; margin: 6px 0; }}
   background: white; border: 1px solid #e4ddd0; border-radius: 8px; padding: 12px;
   box-shadow: 0 8px 24px rgba(36, 48, 54, .08); }}
 .dock-status {{ flex: 1; margin: 0; color: #66717a; }}
-.dock-buttons {{ display: flex; gap: 8px; }}
+.dock-buttons, .verdicts {{ display: flex; gap: 8px; }}
+.verdicts {{ position: fixed; z-index: 2; left: 50%; bottom: 84px; transform: translateX(-50%);
+  width: min(940px, calc(100% - 24px)); background: white; border: 1px solid #e4ddd0;
+  border-radius: 8px; padding: 8px 12px; }}
 button:disabled {{ opacity: .55; cursor: progress; }}
 @media (max-width: 720px) {{
   ol, .steps {{ grid-template-columns: 1fr 1fr; }}

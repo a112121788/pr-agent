@@ -15,6 +15,8 @@ fallback_models=["gpt-6.1-sol"]
 #model_weak="gpt-5.6-luna" # optional, a weaker model to use for some easier tasks
 # CLI
 git_provider="gitee"
+# 内测默认不调用 Gitee 合并。只有显式设为 true 时，放行且非双线才会自动汇入。
+allow_auto_merge=false
 publish_output=true
 publish_output_progress=true
 progress_gif_url="" # optional, override for the progress loading gif url (example: 'https://.../spinner.gif').

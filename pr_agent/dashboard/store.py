@@ -150,6 +150,17 @@ class FactoryStore:
             connection.commit()
             return int(cursor.lastrowid)
 
+    def release_abandoned_jobs(self) -> int:
+        """Mark reviews left behind by a dead process so the button can be used again."""
+        statement = (
+            "UPDATE review_jobs SET status = '失败', summary = ? "
+            "WHERE status IN ('排队', '运行中')"
+        )
+        with self._connect() as connection:
+            cursor = connection.execute(_sql(statement, self.url), ("进程已退出，可以再次审查",))
+            connection.commit()
+            return int(cursor.rowcount)
+
     def finish_job(self, job_id: int, status: str, summary: str):
         statement = "UPDATE review_jobs SET status = ?, summary = ? WHERE id = ?"
         with self._connect() as connection:

@@ -19,7 +19,7 @@ from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.dashboard.actions import parse_repo, run_review
 from pr_agent.dashboard.drive import continue_pull, execute_registered
 from pr_agent.dashboard.page import render_conversation, render_conversation_body, render_dashboard
-from pr_agent.dashboard.store import FactoryStore, database_url
+from pr_agent.dashboard.store import FactoryRecord, FactoryStore, database_url, record_factory_event
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.servers.request_body_limit import create_server_app
@@ -121,6 +121,24 @@ async def drive_once(background_tasks: BackgroundTasks):
     return RedirectResponse("/dashboard", status_code=303)
 
 
+@router.post("/dashboard/verdict")
+async def submit_verdict(pr_url: str = Form(...), verdict: str = Form(...)):
+    """Write one human verdict. This route never calls the Gitee merge API."""
+    from pr_agent.algo.factory_record import parse_verdict, render_verdict
+    from pr_agent.git_providers import get_git_provider
+
+    word = parse_verdict([verdict])
+    provider = get_git_provider()(pr_url)
+    sha = provider.get_pr_head_sha() or ""
+    comment = render_verdict(word, sha, "驾驶舱")
+    record_factory_event(FactoryRecord(
+        pr_url, "判定", "判定", "", word, sha, "驾驶舱",
+    ))
+    if get_settings().config.publish_output:
+        provider.publish_comment(comment)
+    return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)
+
+
 @router.post("/dashboard/repos/remove")
 async def forget_repo(owner: str = Form(...), repo: str = Form(...)):
     """Remove one watched repository without deleting its Gitee data or review history."""
@@ -156,13 +174,15 @@ async def run_pull_request_command(
     job_id = store.begin_job(pr_url, command)
     if job_id is not None:
         background_tasks.add_task(_finish_review_job, job_id, pr_url, command)
+    headers = {"X-Job-Id": str(job_id)} if job_id is not None else {}
     if request.headers.get("x-requested-with") == "fetch":
-        return Response(render_conversation_body(pr_url), media_type="text/html")
-    return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)
+        return Response(render_conversation_body(pr_url), media_type="text/html", headers=headers)
+    return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303, headers=headers)
 
 
 async def _finish_review_job(job_id: int, pr_url: str, command: str, head_sha: str = ""):
     store = FactoryStore(database_url())
+    store.finish_job(job_id, "运行中", "正在审查")
     try:
         summary = await run_review(pr_url, command)
         store.finish_job(job_id, "完成", summary)

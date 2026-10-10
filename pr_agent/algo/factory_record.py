@@ -280,6 +280,7 @@ def decide_drive(
     head_sha: str,
     stated_intent: str = "",
     rule_findings=None,
+    allow_merge: bool = False,
 ) -> DriveDecision:
     """Choose the next autopilot step. Model prose never becomes 放行."""
     intent = latest_intake_intent(comments)
@@ -292,6 +293,10 @@ def decide_drive(
 
     if verdict:
         if merge_allowed(verdict, verdict_sha, head_sha, intent):
+            if not allow_merge:
+                return DriveDecision(
+                    "留给人工", "可以由人合并。默认不自动汇入", verdict=verdict, merge=False, **common
+                )
             return DriveDecision(
                 "汇入", "当前提交已有放行", verdict=verdict, merge=True, **common
             )

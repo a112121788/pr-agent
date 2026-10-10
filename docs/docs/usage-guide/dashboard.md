@@ -9,7 +9,7 @@ Webhook 镜像在 `/dashboard` 提供驾驶舱。容器内端口是 `3000`。打
 
 在首页输入 `owner/repo`，点「登记」。驾驶舱列出这个仓库里打开的拉取请求。点「移除」只从驾驶舱拿掉这个仓库，不删除 Gitee 上的仓库、拉取请求或评论。
 
-记录默认写在 `sqlite:////data/factory.db`。要换数据库，设置 `DASHBOARD__DATABASE_URL`，例如 `postgresql://user:pass@host:5432/dbname`。页面不显示这个地址。
+记录默认写在 `sqlite:////data/factory.db`。用 `docker/dashboard.sh` 启动时，这个目录挂在命名卷 `pr-agent-data` 上，换容器不会丢掉已登记仓库。要换数据库，设置 `DASHBOARD__DATABASE_URL`，例如 `postgresql://user:pass@host:5432/dbname`。页面不显示这个地址。页头的「构建」是启动时传入的 `PR_AGENT_BUILD`。进程退出后，上次没跑完的审查会标成失败，可以再点。
 
 ## 批量审查
 
@@ -25,8 +25,22 @@ Webhook 镜像在 `/dashboard` 提供驾驶舱。容器内端口是 `3000`。打
 
 从 Gitee 拉下的评论按 Markdown 显示，包括标题、列表、表格和代码块。评论里自带的 HTML 只当文本，不会执行。
 
+## 内测
+
+1. 用 `docker/dashboard.sh` 启动，并传入 Gitee 令牌和模型密钥。数据卷是 `pr-agent-data`。
+2. 打开 `/dashboard`。页头应有「构建」。
+3. 输入 `owner/repo`，点「登记」。
+4. 点「批量审查」，或在一张拉取请求上点「审查」。
+5. 到 Gitee 刷新，查看 **PR 审查指南**。流水线里同一条评论按 Markdown 显示。
+
+默认 `config.allow_auto_merge` 是 `false`。批量审查不会调用 Gitee 合并。要恢复自动汇入，在主机配置里把它设为 `true`。
+
+抽查发现的问题不要在页面上改判定。规则改 `pr_agent/algo/review_policy.py`。模型、语言和是否自动合并改 `pr_agent/settings/configuration.toml` 或对应的环境变量。
+
 ## 汇入
 
 驾驶舱不规划意图。意图仍由提出人用 `/intake` 写在拉取请求上。已经写下「双线」的拉取请求不能放行，也不能汇入。
 
-只有当前提交已经有「放行」，并且不是双线时，驾驶舱才调用 Gitee 合并。退回、等待，或判定对应的提交已经变了，都留给人处理。审查正文里的「批准」不是放行。
+流水线底部可以写「放行」「退回」或「等待」。这三个按钮只发布判定记录，不合并。审查正文里的「批准」不是放行。
+
+只有主机打开 `config.allow_auto_merge`，并且当前提交已经有「放行」、且不是双线时，批量审查才会调用 Gitee 合并。退回、等待，或判定对应的提交已经变了，都留给人处理。

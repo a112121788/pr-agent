@@ -281,6 +281,21 @@ def when_ready(server):
     # generation the collector never traverses, keeping those pages shared.
     gc.freeze()
     _prepare_prometheus()
+    _release_abandoned_reviews()
+
+
+def _release_abandoned_reviews():
+    """A dead process does not resume reviews. Free those buttons once, in the master."""
+    try:
+        from pr_agent.dashboard.store import FactoryStore, database_url
+
+        store = FactoryStore(database_url())
+        store.setup()
+        released = store.release_abandoned_jobs()
+        if released:
+            print(f"驾驶舱把 {released} 条未完成审查标成失败")
+    except Exception as error:
+        print(f"驾驶舱没有释放上次未完成的审查：{error}")
 
 
 def _prepare_prometheus():

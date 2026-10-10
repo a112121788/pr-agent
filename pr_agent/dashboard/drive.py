@@ -86,9 +86,9 @@ def _remember(decision: DriveDecision):
     return None
 
 
-def _settle(pull, comments, rules_for, effects=None):
+def _settle(pull, comments, rules_for, effects=None, allow_merge: bool = False):
     """Apply the next autopilot step until evidence is running or the gate stops."""
-    decision = _decision_for(pull, comments, rules_for)
+    decision = _decision_for(pull, comments, rules_for, allow_merge)
     if effects is None:
         return decision
     for _ in range(4):
@@ -99,19 +99,26 @@ def _settle(pull, comments, rules_for, effects=None):
         if remembered is None:
             return decision
         comments.insert(0, remembered)
-        decision = _decision_for(pull, comments, rules_for)
+        decision = _decision_for(pull, comments, rules_for, allow_merge)
     return decision
 
 
-def _decision_for(pull, comments, rules_for) -> DriveDecision:
+def auto_merge_enabled() -> bool:
+    """Internal trials do not merge unless the host turns the switch on."""
+    from pr_agent.config_loader import get_settings
+    return bool(get_settings().get("config.allow_auto_merge", False))
+
+
+def _decision_for(pull, comments, rules_for, allow_merge: bool = False) -> DriveDecision:
     """Ask the pure decision, and load rules only when a verdict is otherwise impossible."""
     sha = pull.get("sha") or ""
     stated = explicit_intent(f"{pull.get('title') or ''}\n{pull.get('body') or ''}")
     url = pull.get("url") or ""
-    decision = decide_drive(comments, sha, stated_intent=stated)
+    decision = decide_drive(comments, sha, stated_intent=stated, allow_merge=allow_merge)
     if decision.reason.startswith("无法判定"):
         decision = decide_drive(
             comments, sha, stated_intent=stated, rule_findings=rules_for(url, decision.intent),
+            allow_merge=allow_merge,
         )
     return decision
 
@@ -143,6 +150,7 @@ def _walk(store, pulls_for, comments_for, rules_for=None, effects_for=None, appl
     pulls_for = pulls_for or open_pulls
     comments_for = comments_for or pull_comments
     rules_for = rules_for or load_rules
+    allow_merge = auto_merge_enabled()
     found = []
     for owner, repo in store.repos():
         try:
@@ -155,7 +163,7 @@ def _walk(store, pulls_for, comments_for, rules_for=None, effects_for=None, appl
             try:
                 comments = list(reversed(comments_for(url) or []))
                 effects = effects_for(url) if apply and effects_for else None
-                decision = _settle(pull, comments, rules_for, effects)
+                decision = _settle(pull, comments, rules_for, effects, allow_merge)
                 found.append((url, decision))
             except Exception as error:
                 get_logger().warning(f"驾驶舱跳过 {url}：{error}")
@@ -172,5 +180,5 @@ def continue_pull(store: FactoryStore, pr_url: str, head_sha: str, comments_for=
     effects = (effects_for or (lambda url: GiteeEffects(url)))(pr_url)
     pull = {"url": pr_url, "sha": head_sha, "title": "", "body": ""}
     comments = list(reversed(comments_for(pr_url) or []))
-    decision = _settle(pull, comments, rules_for, effects)
+    decision = _settle(pull, comments, rules_for, effects, auto_merge_enabled())
     return [(pr_url, decision)]

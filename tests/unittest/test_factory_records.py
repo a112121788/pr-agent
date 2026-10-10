@@ -116,11 +116,14 @@ def _verdict(verdict="放行", sha="abc1234567"):
 
 def test_a_matching_pass_merges_without_a_human_mode_switch():
     ready = [_verdict(), _evidence(), _intake()]
-    decision = decide_drive(ready, "abc1234567")
+    decision = decide_drive(ready, "abc1234567", allow_merge=True)
 
     assert decision.action == "汇入"
     assert decision.merge is True
     assert apply_drive(decision, _Effects()) == ["汇入"]
+    held = decide_drive(ready, "abc1234567")
+    assert held.merge is False
+    assert apply_drive(held, _Effects()) == []
 
 
 def test_a_new_pull_request_is_reviewed_without_an_intent():
@@ -159,7 +162,9 @@ def test_only_a_matching_pass_may_merge_and_evidence_uses_the_head():
     head = "abc1234567"
 
     def gate(verdict, sha):
-        return decide_drive([_verdict(verdict, sha), _evidence(head), _intake()], head)
+        return decide_drive(
+            [_verdict(verdict, sha), _evidence(head), _intake()], head, allow_merge=True,
+        )
 
     assert gate("放行", head).merge is True
     for verdict, sha in (("退回", head), ("等待", head), ("放行", "def1234567")):
