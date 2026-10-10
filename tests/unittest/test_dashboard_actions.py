@@ -271,7 +271,7 @@ def test_a_running_review_is_not_started_again(monkeypatch, tmp_path):
     monkeypatch.setattr("pr_agent.dashboard.page.database_url", lambda: url)
     monkeypatch.setattr("pr_agent.servers.gitee_app.database_url", lambda: url)
     monkeypatch.setattr(
-        "pr_agent.dashboard.page.open_pulls",
+        "pr_agent.dashboard.home.open_pulls",
         lambda _owner, _repo: [{
             "number": 8, "title": "修复晨会", "url": "https://gitee.com/o/r/pulls/8", "sha": "abc1234567",
         }],
@@ -290,18 +290,21 @@ def test_a_running_review_is_not_started_again(monkeypatch, tmp_path):
     monkeypatch.setattr("pr_agent.servers.gitee_app.run_review", _review)
     from fastapi.testclient import TestClient
 
-    from pr_agent.dashboard.page import render_dashboard
     from pr_agent.servers.gitee_app import app
 
-    page = render_dashboard()
-    assert "审查中" in page
-    assert "移除" in page
-    assert "disabled" in page
-    response = TestClient(app).post(
+    client = TestClient(app)
+    home = client.get("/dashboard/api/home").json()
+    assert home["repos"][0]["pulls"][0]["reviewing"] is True
+    assert home["repos"][0]["pulls"][0]["status"] == "排队"
+    response = client.post("/dashboard/api/run", json={"pr_url": pr, "command": "review"})
+    assert response.status_code == 200
+    assert response.json()["created"] is False
+    assert calls == []
+    legacy = client.post(
         "/dashboard/run", data={"pr_url": pr, "command": "review"}, follow_redirects=False,
     )
-    assert response.status_code == 303
-    assert response.headers.get("x-job-id") is None
+    assert legacy.status_code == 303
+    assert legacy.headers.get("x-job-id") is None
     assert calls == []
 
 

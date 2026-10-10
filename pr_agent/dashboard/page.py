@@ -1,67 +1,16 @@
 """Render the factory dashboard from stored stage records."""
 
 import hashlib
+import json
 import os
 from html import escape
 
 from pr_agent.algo.factory_record import comment_feed, records_from_comments
-from pr_agent.dashboard.actions import open_pulls, pull_comments, pull_detail
+from pr_agent.dashboard.actions import pull_comments, pull_detail
 from pr_agent.dashboard.markdown import render_comment_markdown
 from pr_agent.dashboard.store import FactoryStore, database_url
 
 _COMMANDS = {"review": "审查", "improve": "建议", "status": "状态", "describe": "描述"}
-
-
-def _counts(records) -> dict[str, int]:
-    counts = {stage: 0 for stage in ("受理", "取证", "判定", "汇入")}
-    for record in records:
-        counts[record.stage] = counts.get(record.stage, 0) + 1
-    return counts
-
-
-def _repos(store: FactoryStore) -> str:
-    blocks = []
-    for owner, repo in store.repos():
-        try:
-            pulls = open_pulls(owner, repo)
-        except Exception as error:
-            pulls = []
-            notice = f"<p class='error'>{escape(str(error))}</p>"
-        else:
-            notice = ""
-        busy = store.reviewing()
-        rows = []
-        for item in pulls:
-            reviewing = item["url"] in busy
-            review_button = (
-                "<button type='button' disabled>审查中</button>"
-                if reviewing
-                else "<button name='command' value='review'>审查</button>"
-            )
-            mark = "<span class='stage'>审查中</span>" if reviewing else ""
-            rows.append(
-                "<li class='pr'>"
-                f"<a href='/dashboard/pr?url={escape(item['url'])}'>"
-                f"#{escape(str(item['number']))} {escape(item['title'])}</a>"
-                f"{mark}"
-                "<form method='post' action='/dashboard/run'>"
-                f"<input type='hidden' name='pr_url' value='{escape(item['url'])}'>"
-                f"{review_button}"
-                "<button class='secondary' name='command' value='improve'>建议</button>"
-                "<button class='secondary' name='command' value='status'>状态</button>"
-                "</form></li>"
-            )
-        rows_html = "".join(rows) or "<li>没有打开的拉取请求</li>"
-        blocks.append(
-            "<section class='repo'><h2>"
-            f"{escape(owner)}/{escape(repo)}"
-            "</h2><form method='post' action='/dashboard/repos/remove'>"
-            f"<input type='hidden' name='owner' value='{escape(owner)}'>"
-            f"<input type='hidden' name='repo' value='{escape(repo)}'>"
-            "<button class='secondary'>移除</button></form>"
-            f"{notice}<ul>{rows_html}</ul></section>"
-        )
-    return "\n".join(blocks) or "<p class='empty'>还没有登记仓库</p>"
 
 
 def _pipeline_progress(records, jobs, feed) -> tuple[str, str]:
@@ -167,123 +116,114 @@ def render_conversation_body(pr_url: str) -> str:
     return f"<div data-stamp='{stamp}'{marker}>{html}</div>"
 
 
-def _identity(pr_url: str) -> str:
-    """Name the pull request so the pipeline is not only a bare URL."""
-    safe_url = escape(pr_url)
+def pipeline_payload(pr_url: str) -> dict:
+    """Return one pipeline as data. The browser draws it and refreshes that region only."""
+    store = FactoryStore(database_url())
+    store.setup()
+    jobs = store.jobs_for(pr_url)
+    reviewing = any(
+        command == "review" and status in {"排队", "运行中"}
+        for _job, command, status, _summary, _created in jobs
+    )
+    error = ""
+    comments = []
+    try:
+        comments = pull_comments(pr_url)
+    except Exception as exc:
+        error = str(exc)
+    records = records_from_comments(pr_url, comments)
+    feed = comment_feed(comments)
+    hint = _pipeline_progress(records, jobs, feed)[1]
+    order = ("受理", "取证", "判定", "汇入")
+    present = {record.stage for record in records}
+    current = "汇入" if all(stage in present for stage in order) else next(
+        stage for stage in order if stage not in present
+    )
+    steps = [
+        {"name": stage, "done": stage in present, "current": stage == current}
+        for stage in order
+    ]
+    messages = []
+    if error:
+        messages.append({
+            "kind": "Gitee",
+            "stage": "失败",
+            "meta": "",
+            "html": f"<div class='message'>{escape(error)}</div>",
+        })
+    for _job_id, command, status, summary, created in jobs:
+        messages.append({
+            "kind": _COMMANDS.get(command, command),
+            "stage": status,
+            "meta": _when(created or ""),
+            "html": f"<div class='message'>{escape(summary or '正在处理')}</div>",
+        })
+    for item in feed:
+        meta = " · ".join(part for part in (item["author"], _when(item["created_at"]), item["where"]) if part)
+        text = render_comment_markdown(item["text"])
+        long_comment = item["text"].count("\n") > 8 or len(item["text"]) > 360
+        if long_comment:
+            html = (
+                "<details class='message'><summary>展开正文</summary>"
+                f"<div class='message-body'>{text}</div></details>"
+            )
+        else:
+            html = f"<div class='message'>{text}</div>"
+        messages.append({"kind": item["kind"], "stage": item["stage"], "meta": meta, "html": html})
     try:
         detail = pull_detail(pr_url)
     except Exception:
-        return (
-            f"<p class='lead'><a href='{safe_url}' target='_blank' rel='noopener noreferrer'>"
-            "在 Gitee 打开这张拉取请求</a></p>"
-        )
-    number = escape(str(detail["number"]))
-    title = escape(detail["title"] or "未命名拉取请求")
-    route = f"{escape(detail['head'] or '未知')} → {escape(detail['base'] or '未知')}"
-    meta = " · ".join(
-        part for part in (escape(detail["author"] or ""), route, escape(detail["state_label"])) if part
+        identity = {"named": False, "gitee_url": pr_url}
+    else:
+        route = f"{detail['head'] or '未知'} → {detail['base'] or '未知'}"
+        meta = " · ".join(part for part in (detail["author"] or "", route, detail["state_label"]) if part)
+        identity = {
+            "named": True,
+            "number": str(detail["number"]),
+            "title": detail["title"] or "未命名拉取请求",
+            "meta": meta,
+            "gitee_url": detail["url"] or pr_url,
+        }
+    blob = json.dumps(
+        {"hint": hint, "steps": steps, "messages": messages},
+        ensure_ascii=False,
+        sort_keys=True,
     )
-    link = escape(detail["url"] or pr_url)
-    return (
-        f"<p class='identity'><span>#{number}</span>{title}</p>"
-        f"<p class='lead'>{meta} · <a href='{link}' target='_blank' rel='noopener noreferrer'>在 Gitee 打开</a></p>"
-    )
+    stamp = hashlib.sha256(blob.encode()).hexdigest()[:16]
+    return {
+        "hint": hint,
+        "steps": steps,
+        "reviewing": reviewing,
+        "messages": messages,
+        "identity": identity,
+        "stamp": stamp,
+    }
 
 
 def render_conversation(pr_url: str) -> str:
-    """Render one pull request's jobs and comments, and keep actions on screen."""
+    """Return the pipeline shell. Jobs and comments arrive from the JSON API."""
     safe_url = escape(pr_url)
-    body = render_conversation_body(pr_url)
-    review_disabled = " disabled" if "data-reviewing='1'" in body else ""
     content = f"""<a href="/dashboard">返回驾驶舱</a>
 <h1>审核流水线</h1>
-{_identity(pr_url)}
-<div id="pipeline" aria-live="polite">{body}</div>
+<div id="identity"></div>
+<div id="pipeline" aria-live="polite"></div>
 <form class="dock" id="actions" method="post" action="/dashboard/run">
 <input type="hidden" name="pr_url" value="{safe_url}">
-<p id="dock-status" class="dock-status" aria-live="polite">审查会写回 Gitee。同一张正在审查时不能再开一次。</p>
+<p id="dock-status" class="dock-status">审查会写回 Gitee。同一张正在审查时不能再开一次。</p>
 <div class="dock-buttons">
-<button type="submit" name="command" value="review"{review_disabled}>{'审查中' if review_disabled else '审查'}</button>
+<button type="submit" name="command" value="review">审查</button>
 <button type="submit" class="secondary" name="command" value="improve">建议</button>
 <button type="submit" class="secondary" name="command" value="status">状态</button>
+<span class="run-slot" id="run-slot" aria-live="polite"></span>
 </div>
 </form>
-<form class="dock verdicts" method="post" action="/dashboard/verdict">
+<form class="dock verdicts" id="verdicts" method="post" action="/dashboard/verdict">
 <input type="hidden" name="pr_url" value="{safe_url}">
 <button type="submit" class="secondary" name="verdict" value="放行">放行</button>
 <button type="submit" class="secondary" name="verdict" value="退回">退回</button>
 <button type="submit" class="secondary" name="verdict" value="等待">等待</button>
 </form>
-<script>
-const target = new URLSearchParams(location.search).get("url");
-const form = document.querySelector("#actions");
-const statusLine = document.querySelector("#dock-status");
-const buttons = [...form.querySelectorAll("button")];
-const labels = new Map(buttons.map((button) => [button, button.value === "review" ? "审查" : button.textContent]));
-let inflight = false;
-
-function applyPipeline(box, next) {{
-  const current = box.querySelector("[data-stamp]")?.dataset.stamp || "";
-  const probe = document.createElement("template");
-  probe.innerHTML = next;
-  const stamp = probe.content.querySelector("[data-stamp]")?.dataset.stamp || "";
-  if (stamp && stamp === current) return;
-  const y = window.scrollY;
-  box.innerHTML = next;
-  window.scrollTo(0, y);
-}}
-
-async function refreshPipeline() {{
-  if (!target || document.hidden || inflight) return;
-  const box = document.querySelector("#pipeline");
-  const response = await fetch("/dashboard/pr/fragment?url=" + encodeURIComponent(target));
-  if (!response.ok) return;
-  applyPipeline(box, await response.text());
-  syncReviewButton();
-}}
-
-form.addEventListener("submit", async (event) => {{
-  event.preventDefault();
-  const submitter = event.submitter;
-  if (!submitter || inflight) return;
-  inflight = true;
-  buttons.forEach((button) => {{ button.disabled = true; }});
-  submitter.textContent = "排队中";
-  statusLine.textContent = "已提交，正在更新流水线";
-  const body = new FormData(form);
-  body.set("command", submitter.value);
-  try {{
-    const response = await fetch("/dashboard/run", {{
-      method: "POST",
-      body,
-      headers: {{"X-Requested-With": "fetch"}},
-    }});
-    if (!response.ok) {{
-      statusLine.textContent = "提交没有成功，请再试一次";
-      return;
-    }}
-    applyPipeline(document.querySelector("#pipeline"), await response.text());
-    statusLine.textContent = "任务已进入流水线";
-  }} catch (_error) {{
-    statusLine.textContent = "网络中断，请再试一次";
-  }} finally {{
-    inflight = false;
-    syncReviewButton();
-  }}
-}});
-
-function syncReviewButton() {{
-  const reviewing = Boolean(document.querySelector("#pipeline [data-reviewing]"));
-  const review = form.querySelector("button[value='review']");
-  if (!review) return;
-  review.disabled = reviewing || inflight;
-  review.textContent = reviewing ? "审查中" : labels.get(review);
-  buttons.forEach((button) => {{
-    if (button !== review) button.disabled = inflight;
-  }});
-}}
-setInterval(refreshPipeline, 5000);
-</script>"""
+<script src="/dashboard/static/pipeline.js"></script>"""
     return _page("审核流水线", content)
 
 
@@ -293,29 +233,21 @@ def build_id() -> str:
 
 
 def render_dashboard(limit: int = 50) -> str:
-    """Return one Chinese HTML page. The database URL itself is not shown."""
-    store = FactoryStore(database_url())
-    store.setup()
-    repos = _repos(store)
-    records = store.latest(limit)
-    counts = _counts(records)
-    summary = "\n".join(
-        f"<li><span>{escape(stage)}</span><strong>{count}</strong></li>"
-        for stage, count in counts.items()
-    )
+    """Return the cockpit shell. Pull requests arrive from the JSON API."""
     content = f"""<h1>审核工厂驾驶舱</h1>
 <p class="build">构建 {escape(build_id())}</p>
 <div class="toolbar">
-<form class="repo-form" method="post" action="/dashboard/repos">
+<form class="repo-form" id="register" method="post" action="/dashboard/repos">
 <input name="repo" placeholder="添加仓库，例如 owner/repo" aria-label="添加仓库" required>
 <button>登记</button>
 </form>
-<form method="post" action="/dashboard/drive">
+<form method="post" action="/dashboard/drive" id="drive">
 <button class="secondary" type="submit">批量审查</button>
 </form>
 </div>
-{repos}
-<ol>{summary}</ol>"""
+<div id="repos"></div>
+<ol id="counts"></ol>
+<script src="/dashboard/static/home.js"></script>"""
     return _page("审核工厂驾驶舱", content)
 
 
@@ -351,7 +283,14 @@ button.secondary {{ background: #e7f4ee; color: #0f6b4c; }}
 .repo {{ margin: 0 0 16px; padding: 16px; }}
 .repo ul {{ display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }}
 .pr {{ display: flex; justify-content: space-between; gap: 16px; align-items: center; }}
-.pr form {{ display: flex; gap: 6px; }}
+.pr form, .pr-actions {{ display: flex; gap: 6px; align-items: center; }}
+.run-slot {{ display: inline-flex; gap: 6px; align-items: center; min-height: 16px; color: #66717a; font-size: 13px; }}
+.run-mark {{ width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #d9d3c7;
+  border-top-color: #0f6b4c; border-radius: 50%; animation: spin .8s linear infinite; }}
+@keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+@media (prefers-reduced-motion: reduce) {{
+  .run-mark {{ animation: none; }}
+}}
 .cards {{ display: grid; gap: 12px; }}
 .card {{ padding: 16px; }}
 .stage {{ float: right; background: #e7f4ee; color: #0f6b4c; border-radius: 99px; padding: 2px 8px; }}
@@ -390,7 +329,7 @@ button:disabled {{ opacity: .55; cursor: progress; }}
 @media (max-width: 720px) {{
   ol, .steps {{ grid-template-columns: 1fr 1fr; }}
   .pr {{ display: block; }}
-  .pr form {{ margin-top: 8px; }}
+  .pr form, .pr-actions {{ margin-top: 8px; }}
   .dock {{ flex-wrap: wrap; }}
   .dock-status {{ flex-basis: 100%; }}
 }}

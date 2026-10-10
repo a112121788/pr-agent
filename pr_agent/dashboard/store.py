@@ -122,6 +122,13 @@ class FactoryStore:
         job_id, created = self._claim_job(pr_url, command)
         return job_id if created else None
 
+    def claim_job(self, pr_url: str, command: str) -> tuple[int, bool]:
+        """Return the active job id and whether this call created it."""
+        job_id, created = self._claim_job(pr_url, command)
+        if job_id is None:
+            raise RuntimeError("活动审查没有写入")
+        return job_id, created
+
     def reviewing(self) -> set[str]:
         """Pull requests whose review is queued or running."""
         statement = "SELECT pr_url FROM review_jobs WHERE command = 'review' AND status IN ('排队', '运行中')"
@@ -182,6 +189,33 @@ class FactoryStore:
         statement = "SELECT id, command, status, summary, created_at FROM review_jobs WHERE pr_url = ? ORDER BY id"
         with self._connect() as connection:
             return connection.execute(_sql(statement, self.url), (pr_url,)).fetchall()
+
+    def active_reviews(self) -> dict[str, tuple[int, str]]:
+        """Map each pull request that is queued or running to its latest review job."""
+        statement = (
+            "SELECT pr_url, id, status FROM review_jobs "
+            "WHERE command = 'review' AND status IN ('排队', '运行中') ORDER BY id"
+        )
+        with self._connect() as connection:
+            rows = connection.execute(statement).fetchall()
+        found = {}
+        for pr_url, job_id, status in rows:
+            found[pr_url] = (int(job_id), status)
+        return found
+
+    def get_job(self, job_id: int) -> dict | None:
+        statement = "SELECT id, pr_url, command, status, summary FROM review_jobs WHERE id = ?"
+        with self._connect() as connection:
+            row = connection.execute(_sql(statement, self.url), (job_id,)).fetchone()
+        if row is None:
+            return None
+        return {
+            "job_id": int(row[0]),
+            "pr_url": row[1],
+            "command": row[2],
+            "status": row[3],
+            "summary": row[4] or "",
+        }
 
     def repos(self) -> list[tuple[str, str]]:
         statement = "SELECT owner, repo FROM watched_repos ORDER BY id DESC"

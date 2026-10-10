@@ -329,6 +329,32 @@
 | Risk | 连续点击产生重复审查 |
 | Rollback | 保留只读对话页 |
 
+### `COCKPIT-5` - 首页审查原地更新
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 点首页某一行的审查后，只更新这一行，浏览器不整页刷新 |
+| Scope | 首页改为 JSON 接口加静态客户端。流水线页仍由服务端渲染。不引入前端框架 |
+| Evidence | `/dashboard/api/run` 返回任务 JSON；`home.js` 在行末画执行图标并轮询 `/dashboard/api/jobs` |
+| Acceptance | 点击审查不导航；行末有执行图标；状态随后变为完成或失败；重复点击不新建任务 |
+| Risk | 客户端脚本失败时列表为空，登记表单仍会整页提交 |
+| Rollback | 让 `/dashboard` 重新由服务端拼出拉取请求列表 |
+
+### `COCKPIT-6` - 流水线原地更新
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 流水线页点审查或判定后，只更新这条流水线，浏览器不整页刷新 |
+| Scope | `/dashboard/pr` 改为壳，数据来自 `/dashboard/api/pr`。判定走 `/dashboard/api/verdict`，不合并。不引入前端框架 |
+| Evidence | `pipeline.js` 轮询 JSON，并在底栏画执行图标 |
+| Acceptance | 页面壳不含评论正文；接口返回运行状态和评论 HTML；脚本不调用整页刷新 |
+| Risk | 评论 HTML 由服务端渲染后交给客户端插入 |
+| Rollback | 恢复把 `render_conversation_body` 直接写进页面 |
+
 ## Icebox
 
 - 判定人权限名单。

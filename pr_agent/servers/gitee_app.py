@@ -4,11 +4,12 @@ import hashlib
 import hmac
 import os
 import time
+from pathlib import Path
 from typing import Any, Mapping
 from urllib.parse import unquote
 
 from fastapi import APIRouter, Form, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from starlette.background import BackgroundTasks
 from starlette.middleware import Middleware
 from starlette_context import context
@@ -18,7 +19,14 @@ from pr_agent.agent.pr_agent import PRAgent
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.dashboard.actions import parse_repo, run_review
 from pr_agent.dashboard.drive import continue_pull, execute_registered
-from pr_agent.dashboard.page import render_conversation, render_conversation_body, render_dashboard
+from pr_agent.dashboard.home import home_view
+from pr_agent.dashboard.page import (
+    build_id,
+    pipeline_payload,
+    render_conversation,
+    render_conversation_body,
+    render_dashboard,
+)
 from pr_agent.dashboard.store import FactoryRecord, FactoryStore, database_url, record_factory_event
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
@@ -28,6 +36,10 @@ from pr_agent.telemetry.prometheus import attach_metrics_endpoint, prometheus_me
 
 setup_logger(fmt=LoggingFormat.JSON, level=get_settings().get("CONFIG.LOG_LEVEL", "DEBUG"))
 router = APIRouter()
+_STATIC = Path(__file__).resolve().parents[1] / "dashboard" / "static"
+_HOME_JS = _STATIC / "home.js"
+_PIPELINE_JS = _STATIC / "pipeline.js"
+_RUN_COMMANDS = {"review", "improve", "status"}
 
 _SIGNATURE_MAX_AGE_MS = 60 * 60 * 1000
 _PULL_REQUEST_ACTIONS = {"open", "opened", "reopen", "reopened"}
@@ -89,10 +101,109 @@ def _command_from_note(body: Mapping[str, Any]) -> str:
     return comment_body if is_command_comment(comment_body) else ""
 
 
+def _home_payload() -> dict:
+    store = FactoryStore(database_url())
+    store.setup()
+    payload = home_view(store)
+    payload["build"] = build_id()
+    return payload
+
+
 @router.get("/dashboard")
 async def factory_dashboard():
-    """Show the cockpit. Opening the page does not start a review."""
+    """Show the cockpit shell. Opening the page does not start a review."""
     return Response(render_dashboard(), media_type="text/html")
+
+
+@router.get("/dashboard/static/home.js")
+async def dashboard_home_script():
+    """Serve the homepage client. It renders data from the JSON API."""
+    return FileResponse(_HOME_JS, media_type="text/javascript")
+
+
+@router.get("/dashboard/static/pipeline.js")
+async def dashboard_pipeline_script():
+    """Serve the pipeline client. It refreshes one pull request without reloading the page."""
+    return FileResponse(_PIPELINE_JS, media_type="text/javascript")
+
+
+@router.get("/dashboard/api/pr")
+async def dashboard_pipeline(url: str):
+    """Return one pipeline. The client replaces only that region."""
+    if not url.startswith("https://"):
+        raise HTTPException(status_code=400, detail="无法识别拉取请求")
+    return pipeline_payload(url)
+
+
+@router.get("/dashboard/api/home")
+async def dashboard_home():
+    """Return the repositories and review states for the homepage client."""
+    return _home_payload()
+
+
+@router.post("/dashboard/api/repos")
+async def dashboard_watch_repo(request: Request):
+    """Register one repository and return the updated homepage payload."""
+    body = await request.json()
+    try:
+        owner, name = parse_repo(str(body.get("repo") or ""))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    store = FactoryStore(database_url())
+    store.setup()
+    store.add_repo(owner, name)
+    return _home_payload()
+
+
+@router.post("/dashboard/api/repos/remove")
+async def dashboard_forget_repo(request: Request):
+    """Drop one watched repository and return the updated homepage payload."""
+    body = await request.json()
+    try:
+        owner, name = parse_repo(f"{body.get('owner') or ''}/{body.get('repo') or ''}")
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    store = FactoryStore(database_url())
+    store.setup()
+    store.remove_repo(owner, name)
+    return _home_payload()
+
+
+@router.post("/dashboard/api/drive")
+async def dashboard_drive(background_tasks: BackgroundTasks):
+    """Start one batch pass and return the homepage payload. This does not reload the page."""
+    store = FactoryStore(database_url())
+    store.setup()
+    execute_registered(store, start_review=_start_review(background_tasks))
+    return _home_payload()
+
+
+@router.post("/dashboard/api/run")
+async def dashboard_run(request: Request, background_tasks: BackgroundTasks):
+    """Queue one command and return its job. The client updates that row in place."""
+    body = await request.json()
+    pr_url = str(body.get("pr_url") or "")
+    command = str(body.get("command") or "")
+    if not pr_url.startswith("https://") or command not in _RUN_COMMANDS:
+        raise HTTPException(status_code=400, detail="不支持的操作")
+    store = FactoryStore(database_url())
+    store.setup()
+    job_id, created = store.claim_job(pr_url, command)
+    status = "排队" if created else store.get_job(job_id)["status"]
+    if created:
+        background_tasks.add_task(_finish_review_job, job_id, pr_url, command)
+    return {"job_id": job_id, "status": status, "created": created}
+
+
+@router.get("/dashboard/api/jobs/{job_id}")
+async def dashboard_job(job_id: int):
+    """Return one review job so the homepage can update a single row."""
+    store = FactoryStore(database_url())
+    store.setup()
+    job = store.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="没有这条任务")
+    return job
 
 
 @router.post("/dashboard/repos")
@@ -121,9 +232,8 @@ async def drive_once(background_tasks: BackgroundTasks):
     return RedirectResponse("/dashboard", status_code=303)
 
 
-@router.post("/dashboard/verdict")
-async def submit_verdict(pr_url: str = Form(...), verdict: str = Form(...)):
-    """Write one human verdict. This route never calls the Gitee merge API."""
+def _write_verdict(pr_url: str, verdict: str) -> str:
+    """Publish one verdict record. This never calls the Gitee merge API."""
     from pr_agent.algo.factory_record import parse_verdict, render_verdict
     from pr_agent.git_providers import get_git_provider
 
@@ -136,7 +246,28 @@ async def submit_verdict(pr_url: str = Form(...), verdict: str = Form(...)):
     ))
     if get_settings().config.publish_output:
         provider.publish_comment(comment)
+    return word
+
+
+@router.post("/dashboard/verdict")
+async def submit_verdict(pr_url: str = Form(...), verdict: str = Form(...)):
+    """Write one human verdict and return to the pipeline page."""
+    _write_verdict(pr_url, verdict)
     return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)
+
+
+@router.post("/dashboard/api/verdict")
+async def dashboard_verdict(request: Request):
+    """Write one verdict and return JSON so the pipeline stays on this page."""
+    body = await request.json()
+    pr_url = str(body.get("pr_url") or "")
+    if not pr_url.startswith("https://"):
+        raise HTTPException(status_code=400, detail="无法识别拉取请求")
+    try:
+        word = _write_verdict(pr_url, str(body.get("verdict") or ""))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"verdict": word, "pr_url": pr_url}
 
 
 @router.post("/dashboard/repos/remove")
