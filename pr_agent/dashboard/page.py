@@ -194,7 +194,10 @@ def _identity(pr_url: str) -> str:
     try:
         detail = pull_detail(pr_url)
     except Exception:
-        return f"<p class='lead'><a href='{safe_url}'>在 Gitee 打开这张拉取请求</a></p>"
+        return (
+            f"<p class='lead'><a href='{safe_url}' target='_blank' rel='noopener noreferrer'>"
+            "在 Gitee 打开这张拉取请求</a></p>"
+        )
     number = escape(str(detail["number"]))
     title = escape(detail["title"] or "未命名拉取请求")
     route = f"{escape(detail['head'] or '未知')} → {escape(detail['base'] or '未知')}"
@@ -204,7 +207,7 @@ def _identity(pr_url: str) -> str:
     link = escape(detail["url"] or pr_url)
     return (
         f"<p class='identity'><span>#{number}</span>{title}</p>"
-        f"<p class='lead'>{meta} · <a href='{link}'>在 Gitee 打开</a></p>"
+        f"<p class='lead'>{meta} · <a href='{link}' target='_blank' rel='noopener noreferrer'>在 Gitee 打开</a></p>"
     )
 
 
