@@ -17,7 +17,7 @@ from starlette_context.middleware import RawContextMiddleware
 from pr_agent.agent.pr_agent import PRAgent
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.dashboard.actions import parse_repo, run_review
-from pr_agent.dashboard.page import render_dashboard
+from pr_agent.dashboard.page import render_conversation, render_dashboard
 from pr_agent.dashboard.store import FactoryStore, database_url
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
@@ -104,11 +104,41 @@ async def watch_repo(repo: str = Form(...)):
     return RedirectResponse("/dashboard", status_code=303)
 
 
-@router.post("/dashboard/run")
-async def run_pull_request_command(pr_url: str = Form(...), command: str = Form(...)):
-    """Start one evidence command from the cockpit. The browser returns to the board."""
-    await run_review(pr_url, command)
+@router.post("/dashboard/repos/remove")
+async def forget_repo(owner: str = Form(...), repo: str = Form(...)):
+    """Remove one watched repository without deleting its Gitee data or review history."""
+    owner, repo = parse_repo(f"{owner}/{repo}")
+    store = FactoryStore(database_url())
+    store.setup()
+    store.remove_repo(owner, repo)
     return RedirectResponse("/dashboard", status_code=303)
+
+
+@router.get("/dashboard/pr")
+async def pull_request_conversation(url: str):
+    """Show one pull request's review as a conversation."""
+    return Response(render_conversation(url), media_type="text/html")
+
+
+@router.post("/dashboard/run")
+async def run_pull_request_command(
+    background_tasks: BackgroundTasks, pr_url: str = Form(...), command: str = Form(...)
+):
+    """Queue one command and return immediately. The worker updates the conversation."""
+    store = FactoryStore(database_url())
+    store.setup()
+    job_id = store.enqueue(pr_url, command)
+    background_tasks.add_task(_finish_review_job, job_id, pr_url, command)
+    return RedirectResponse(f"/dashboard/pr?url={pr_url}", status_code=303)
+
+
+async def _finish_review_job(job_id: int, pr_url: str, command: str):
+    store = FactoryStore(database_url())
+    try:
+        summary = await run_review(pr_url, command)
+        store.finish_job(job_id, "完成", summary)
+    except Exception as error:
+        store.finish_job(job_id, "失败", str(error))
 
 
 @router.post("/api/v1/gitee_webhooks")

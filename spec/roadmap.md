@@ -12,11 +12,7 @@ Gitee PR-Agent 先做审核工厂的核心机：为一张 Gitee 拉取请求收�
 
 ## Next
 
-1. `FACTORY-1`：用 `/intake` 记录意图，不改写作者原话。
-2. `FACTORY-2`：证据评论绑定当前提交号。
-3. `FACTORY-3`：用 `/verdict` 记录放行、退回或等待。
-4. `FACTORY-4`：汇入前只做检查，人仍在 Gitee 上点击合并。
-5. `FACTORY-5`：双线变更先标成必须拆分。
+驾驶舱大版本按 `COCKPIT-1` 到 `COCKPIT-4` 推进：仓库可移除、任务异步、审核对话、对话里发起判定。
 
 ## Later
 

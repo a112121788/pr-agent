@@ -161,6 +161,64 @@
 | Risk | 把普通大改动误判为双线 |
 | Rollback | 删除该规则 |
 
+## Ready
+
+### `COCKPIT-1` - 移除已登记仓库
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | 驾驶舱只保留当前需要管理的仓库 |
+| Scope | `watched_repos` 增加删除。删除后不再列出 PR，不删除 Gitee 仓库和历史审核记录 |
+| Evidence | `FactoryStore.add_repo` 只有新增 |
+| Acceptance | 页面每个仓库有“移除”；移除后刷新不再出现；SQLite 测试覆盖 |
+| Risk | 误删正在审查的仓库记录 |
+| Rollback | 隐藏移除按钮 |
+
+### `COCKPIT-2` - 审查任务异步化
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | 点审查后页面立即返回，长时间模型调用不再占住浏览器 |
+| Scope | `/dashboard/run` 创建任务并后台执行 `/review`、`/improve`、`/status`。同一 PR 同一命令重复点击不新建任务 |
+| Evidence | `run_review` 当前直接 `await PRAgent.handle_request` |
+| Acceptance | 请求立即返回任务号；任务状态依次为排队、运行、完成或失败；失败保存错误摘要 |
+| Risk | 服务进程退出会丢失内存中的后台任务 |
+| Rollback | 恢复同步调用 |
+
+## Draft
+
+### `COCKPIT-3` - 审核对话页
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | draft |
+| 优先级 | P1 |
+| Outcome | 一张 PR 的审核过程按时间显示成对话 |
+| Scope | 新增 `/dashboard/pr?url=...`。展示受理、进度、审查、建议、状态和判定。页面定时刷新 |
+| Evidence | 驾驶舱目前只有记录卡片，没有单张 PR 的过程 |
+| Acceptance | 点击 PR 进入对话；运行中的任务显示“正在审查”；完成后出现结果 |
+| Risk | 自动刷新打断阅读 |
+| Rollback | 从 PR 行移除对话入口 |
+
+依赖 `COCKPIT-2`。
+
+### `COCKPIT-4` - 在对话里继续审核
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | draft |
+| 优先级 | P2 |
+| Outcome | 审核人不用返回列表，也能继续发起审查、建议和判定 |
+| Scope | 对话页底部提供审查、建议、状态、放行、退回、等待。判定仍写判定记录，不合并 |
+| Evidence | 对话页完成后需要承接人工动作 |
+| Acceptance | 五条动作都创建异步任务或判定记录；页面能看到新的对话条目 |
+| Risk | 连续点击产生重复审查 |
+| Rollback | 保留只读对话页 |
+
 ## Icebox
 
 - 判定人权限名单。

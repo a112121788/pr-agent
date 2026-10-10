@@ -23,6 +23,16 @@ CREATE TABLE IF NOT EXISTS watched_repos (
     UNIQUE(owner, repo)
 )
 """
+CREATE_JOBS = """
+CREATE TABLE IF NOT EXISTS review_jobs (
+    id INTEGER PRIMARY KEY,
+    pr_url TEXT NOT NULL,
+    command TEXT NOT NULL,
+    status TEXT NOT NULL,
+    summary TEXT,
+    created_at TEXT NOT NULL
+)
+"""
 CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS factory_records (
     id INTEGER PRIMARY KEY,
@@ -69,6 +79,7 @@ class FactoryStore:
     def setup(self):
         with self._connect() as connection:
             connection.execute(CREATE_REPOS)
+            connection.execute(CREATE_JOBS)
             connection.execute(CREATE_TABLE)
             connection.commit()
 
@@ -93,6 +104,39 @@ class FactoryStore:
         with self._connect() as connection:
             connection.execute(_sql(statement, self.url), (owner, repo, created_at))
             connection.commit()
+
+    def remove_repo(self, owner: str, repo: str):
+        statement = "DELETE FROM watched_repos WHERE owner = ? AND repo = ?"
+        with self._connect() as connection:
+            connection.execute(_sql(statement, self.url), (owner, repo))
+            connection.commit()
+
+    def enqueue(self, pr_url: str, command: str) -> int:
+        """Return the running job when the same command is already active."""
+        active = (
+            "SELECT id FROM review_jobs WHERE pr_url = ? AND command = ? AND status IN ('排队', '运行中') "
+            "ORDER BY id DESC LIMIT 1"
+        )
+        insert = "INSERT INTO review_jobs (pr_url, command, status, summary, created_at) VALUES (?, ?, '排队', '', ?)"
+        with self._connect() as connection:
+            row = connection.execute(_sql(active, self.url), (pr_url, command)).fetchone()
+            if row:
+                return int(row[0])
+            created = datetime.now(timezone.utc).isoformat()
+            cursor = connection.execute(_sql(insert, self.url), (pr_url, command, created))
+            connection.commit()
+            return int(cursor.lastrowid)
+
+    def finish_job(self, job_id: int, status: str, summary: str):
+        statement = "UPDATE review_jobs SET status = ?, summary = ? WHERE id = ?"
+        with self._connect() as connection:
+            connection.execute(_sql(statement, self.url), (status, summary[:500], job_id))
+            connection.commit()
+
+    def jobs_for(self, pr_url: str) -> list[tuple]:
+        statement = "SELECT id, command, status, summary, created_at FROM review_jobs WHERE pr_url = ? ORDER BY id"
+        with self._connect() as connection:
+            return connection.execute(_sql(statement, self.url), (pr_url,)).fetchall()
 
     def repos(self) -> list[tuple[str, str]]:
         statement = "SELECT owner, repo FROM watched_repos ORDER BY id DESC"

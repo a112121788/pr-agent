@@ -47,7 +47,8 @@ def _repos(store: FactoryStore) -> str:
             notice = ""
         rows = "".join(
             "<li class='pr'>"
-            f"<a href='{escape(item['url'])}'>#{escape(str(item['number']))} {escape(item['title'])}</a>"
+            f"<a href='/dashboard/pr?url={escape(item['url'])}'>"
+            f"#{escape(str(item['number']))} {escape(item['title'])}</a>"
             "<form method='post' action='/dashboard/run'>"
             f"<input type='hidden' name='pr_url' value='{escape(item['url'])}'>"
             "<button name='command' value='review'>审查</button>"
@@ -56,8 +57,44 @@ def _repos(store: FactoryStore) -> str:
             "</form></li>"
             for item in pulls
         ) or "<li>没有打开的拉取请求</li>"
-        blocks.append(f"<section class='repo'><h2>{escape(owner)}/{escape(repo)}</h2>{notice}<ul>{rows}</ul></section>")
+        blocks.append(
+            "<section class='repo'><h2>"
+            f"{escape(owner)}/{escape(repo)}"
+            "</h2><form method='post' action='/dashboard/repos/remove'>"
+            f"<input type='hidden' name='owner' value='{escape(owner)}'>"
+            f"<input type='hidden' name='repo' value='{escape(repo)}'>"
+            "<button class='secondary'>移除</button></form>"
+            f"{notice}<ul>{rows}</ul></section>"
+        )
     return "\n".join(blocks) or "<p class='empty'>还没有登记仓库</p>"
+
+
+def render_conversation(pr_url: str) -> str:
+    """Render one pull request's jobs and records from oldest to newest."""
+    store = FactoryStore(database_url())
+    store.setup()
+    jobs = store.jobs_for(pr_url)
+    records = [record for record in reversed(store.latest(200)) if record.pr_url == pr_url]
+    lines = [
+        f"<p class='job'>{escape(command)} · {escape(status)}<br>{escape(summary or '')}</p>"
+        for _job_id, command, status, summary, _created in jobs
+    ]
+    lines += [
+        "<article class='card'>"
+        f"<strong>{escape(record.record_type)}</strong><p>{escape(record.summary or '')}</p></article>"
+        for record in records
+    ]
+    body = "\n".join(lines) or "<p class='empty'>还没有审核对话</p>"
+    return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="5"><title>审核对话</title></head>
+<body><main><a href="/dashboard">返回驾驶舱</a><h1>审核对话</h1>
+<p>{escape(pr_url)}</p><section class="cards">{body}</section>
+<form method="post" action="/dashboard/run">
+<input type="hidden" name="pr_url" value="{escape(pr_url)}">
+<button name="command" value="review">审查</button>
+<button name="command" value="improve">建议</button>
+<button name="command" value="status">状态</button>
+</form></main></body></html>"""
 
 
 def render_dashboard(limit: int = 50) -> str:

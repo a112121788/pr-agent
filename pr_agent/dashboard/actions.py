@@ -48,4 +48,4 @@ async def run_review(pr_url: str, command: str) -> str:
     if command not in COMMANDS:
         raise ValueError("不支持的操作")
     await PRAgent().handle_request(pr_url, f"/{command}")
-    return f"已发起 {command}"
+    return f"已完成 {command}"

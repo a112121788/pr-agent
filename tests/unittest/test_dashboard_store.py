@@ -14,6 +14,13 @@ def test_sqlite_round_trip_and_dashboard(monkeypatch, tmp_path):
     store.add(_record())
 
     assert store.latest()[0].intent == "新业务"
+    store.add_repo("owner", "repo")
+    assert store.repos() == [("owner", "repo")]
+    store.remove_repo("owner", "repo")
+    assert store.repos() == []
+    first = store.enqueue("https://gitee.com/o/r/pulls/1", "review")
+    second = store.enqueue("https://gitee.com/o/r/pulls/1", "review")
+    assert first == second
     page = render_dashboard()
     assert "审核工厂看板" in page
     assert "新业务" in page
