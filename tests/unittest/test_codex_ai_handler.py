@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from pr_agent.algo.ai_handlers.codex_ai_handler import CodexAIHandler
@@ -35,7 +37,15 @@ class _Codex:
 @pytest.mark.asyncio
 async def test_codex_handler_uses_one_read_only_turn(monkeypatch):
     codex = _Codex()
-    monkeypatch.setattr("pr_agent.algo.ai_handlers.codex_ai_handler.AsyncCodex", lambda config=None: codex)
+    homes = []
+
+    def start_codex(config=None):
+        home = config.env["CODEX_HOME"]
+        assert Path(home).is_dir()
+        homes.append(home)
+        return codex
+
+    monkeypatch.setattr("pr_agent.algo.ai_handlers.codex_ai_handler.AsyncCodex", start_codex)
     monkeypatch.setattr(
         "pr_agent.algo.ai_handlers.codex_ai_handler.get_settings",
         lambda: type("Settings", (), {"get": lambda self, key, default=None: {
@@ -55,3 +65,10 @@ async def test_codex_handler_uses_one_read_only_turn(monkeypatch):
     assert codex.kwargs["ephemeral"] is True
     assert "不要修改文件" in codex.kwargs["developer_instructions"]
     assert codex.thread.prompt == "系统\n\n用户"
+    assert codex.kwargs["config"] is not None
+
+    await handler.chat_completion("gpt-6.1-sol", "系统", "用户")
+
+    assert len(homes) == 2
+    assert homes[0] != homes[1]
+    assert all(not Path(home).exists() for home in homes)

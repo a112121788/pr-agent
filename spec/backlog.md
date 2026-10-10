@@ -189,6 +189,19 @@
 | Risk | 服务进程退出会丢失内存中的后台任务 |
 | Rollback | 恢复同步调用 |
 
+### `CODEX-1` - 并行取证不再抢同一个 Codex 状态目录
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P0 |
+| Outcome | 大 PR 的分块审查不会因为 Codex 进程互相挤掉而留下 `Failed to review PR` |
+| Scope | `CodexAIHandler` 每次调用使用独立 `CODEX_HOME`。不改审查提示词，不换回 LiteLLM |
+| Evidence | 发布镜像上 3 路并行调用有 2 路 `TransportClosedError`：`failed to initialize sqlite state runtime under /root/.codex` |
+| Acceptance | 单测锁定每次调用的临时目录不同且会删除；同一网关的 3 路并行短调用都返回 |
+| Risk | 空的 `CODEX_HOME` 不再读取镜像里的 `~/.codex` 登录；密钥和地址仍由 `OPENAI__KEY` / `OPENAI__API_BASE` 传入 |
+| Rollback | 去掉 `CODEX_HOME`，恢复所有调用共享默认状态目录 |
+
 ## Draft
 
 ### `COCKPIT-3` - 审核对话页

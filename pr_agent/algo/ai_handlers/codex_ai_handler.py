@@ -6,6 +6,8 @@ does not let Codex edit the repository, publish comments, or merge the pull requ
 
 from __future__ import annotations
 
+import tempfile
+
 from openai_codex import AsyncCodex, CodexConfig, Sandbox
 
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
@@ -39,17 +41,22 @@ class CodexAIHandler(BaseAiHandler):
         prompt = f"{system.rstrip()}\n\n{user.lstrip()}"
         provider_config = self._provider_config()
         api_key = str(get_settings().get("openai.key", "") or "")
-        config = CodexConfig(env={"OPENAI_API_KEY": api_key}) if api_key else None
-        async with AsyncCodex(config) as codex:
-            thread = await codex.thread_start(
-                model=selected_model,
-                model_provider=provider_config.get("model_provider"),
-                config=provider_config or None,
-                developer_instructions="只返回本次审查所需的文本。不要修改文件，不要发布评论，不要合并代码。",
-                sandbox=Sandbox.read_only,
-                ephemeral=True,
-            )
-            result = await thread.run(prompt)
+        # Each turn gets its own Codex home. Parallel review chunks otherwise initialize
+        # the same sqlite state directory and the later processes exit immediately.
+        with tempfile.TemporaryDirectory(prefix="pr-agent-codex-") as home:
+            env = {"CODEX_HOME": home}
+            if api_key:
+                env["OPENAI_API_KEY"] = api_key
+            async with AsyncCodex(CodexConfig(env=env)) as codex:
+                thread = await codex.thread_start(
+                    model=selected_model,
+                    model_provider=provider_config.get("model_provider"),
+                    config=provider_config or None,
+                    developer_instructions="只返回本次审查所需的文本。不要修改文件，不要发布评论，不要合并代码。",
+                    sandbox=Sandbox.read_only,
+                    ephemeral=True,
+                )
+                result = await thread.run(prompt)
         answer = result.final_response or ""
         finish_reason = "stop" if answer else "length"
         return answer, finish_reason
