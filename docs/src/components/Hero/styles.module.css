@@ -211,14 +211,15 @@
 }
 
 .hero .botAvatar {
-  background: var(--pra-accent-soft);
+  background: transparent;
   border-color: transparent;
-  color: var(--pra-accent);
+  overflow: hidden;
 }
 
 .hero .botMark {
-  width: 0.9rem;
-  height: 0.9rem;
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .hero .commentBody {

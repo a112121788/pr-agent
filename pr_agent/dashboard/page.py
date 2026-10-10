@@ -266,6 +266,7 @@ def _page(title: str, content: str, refresh: bool = False) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {refresh_tag}
 <title>{escape(title)}</title>
+<link rel="icon" type="image/svg+xml" href="/dashboard/static/favicon.svg">
 <style>
 body {{ margin: 0; background: #f6f3ec; color: #243036; font-family: "PingFang SC", sans-serif; }}
 main {{ max-width: 980px; margin: auto; padding: 32px 20px 128px; }}

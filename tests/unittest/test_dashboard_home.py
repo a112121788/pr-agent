@@ -36,9 +36,13 @@ def test_dashboard_shell_loads_the_client_without_embedding_pulls(monkeypatch, t
 
     page = client.get("/dashboard")
     script = client.get("/dashboard/static/home.js")
+    icon = client.get("/dashboard/static/favicon.svg")
 
     assert page.status_code == 200
     assert "/dashboard/static/home.js" in page.text
+    assert "/dashboard/static/favicon.svg" in page.text
+    assert icon.status_code == 200
+    assert b"<svg" in icon.content
     assert "https://gitee.com" not in page.text
     assert page.text.index("登记") < page.text.index("批量审查")
     assert script.status_code == 200

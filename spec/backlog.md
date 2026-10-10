@@ -2,6 +2,21 @@
 
 ## Done
 
+### `BRAND-1` - Gitee PR-Agent 产品图标
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P2 |
+| Outcome | 文档站、社交卡片、README 和驾驶舱显示自有圆形吉祥物，不再用上游 git-branch 字形 |
+| Scope | `docs/static/img/favicon.svg`、`favicon-white.svg`、`favicon.ico`、`logo.svg`、`logo.png`、`social-card.png`、`docs/src/assets/social-card.svg`、Hero 头像、导航栏尺寸、README、驾驶舱 `/dashboard/static/favicon.svg`。未改 provider logos 和主题色 |
+| Evidence | 原 favicon 为上游 PR 字形；吉祥物为圆形白头戴墨镜的嗅探形象 |
+| Acceptance | favicon 为 SVG 吉祥物；驾驶舱壳页含图标链接；`test_dashboard_shell_loads_the_client_without_embedding_pulls` 通过 |
+| Risk | 16px 下耳朵细节会糊；Kapa 白标在浅底上对比不足 |
+| Rollback | 还原上述文件 |
+
+## Done
+
 ### `GITEE-S1` - Gitee provider 核心路径
 
 | 字段 | 内容 |

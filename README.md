@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/static/img/favicon.svg" width="96" height="96" alt="Gitee PR-Agent 标志">
+</p>
+
 # Gitee PR-Agent
 
 Gitee PR-Agent 是审核工厂的核心机。它阅读一张 Gitee 拉取请求，把证据写成中文评论。负责人写下「放行」「退回」或「等待」后，才由有权限的人在 Gitee 上合并。

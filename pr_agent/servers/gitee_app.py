@@ -39,6 +39,7 @@ router = APIRouter()
 _STATIC = Path(__file__).resolve().parents[1] / "dashboard" / "static"
 _HOME_JS = _STATIC / "home.js"
 _PIPELINE_JS = _STATIC / "pipeline.js"
+_FAVICON = _STATIC / "favicon.svg"
 _RUN_COMMANDS = {"review", "improve", "status"}
 
 _SIGNATURE_MAX_AGE_MS = 60 * 60 * 1000
@@ -125,6 +126,12 @@ async def dashboard_home_script():
 async def dashboard_pipeline_script():
     """Serve the pipeline client. It refreshes one pull request without reloading the page."""
     return FileResponse(_PIPELINE_JS, media_type="text/javascript")
+
+
+@router.get("/dashboard/static/favicon.svg")
+async def dashboard_favicon():
+    """Serve the cockpit icon."""
+    return FileResponse(_FAVICON, media_type="image/svg+xml")
 
 
 @router.get("/dashboard/api/pr")
