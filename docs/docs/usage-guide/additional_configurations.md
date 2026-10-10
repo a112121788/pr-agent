@@ -44,7 +44,7 @@ API 费用收集是另一个默认关闭的选项。两个开关都打开时，�
 - Estimated API cost: $0.08 USD
 ```
 
-`Model` 是产生回答的模型。当 `gpt-6.1-sol` 失败并由 `glm-5.3`（或其他备用模型）接手时，会标成 `(fallback)`。只有提供商报告了用量时才出现 `Tokens`。金额是根据 LiteLLM 价格数据做的估算，不是账单。公开段落只包含汇总费用和模型名称，不包含提示词、响应或 API 密钥。
+`Model` 是产生回答的模型。当 `glm-5.3` 失败并由 `gpt-6.1-sol`（或其他备用模型）接手时，会标成 `(fallback)`。只有提供商报告了用量时才出现 `Tokens`。金额是根据 LiteLLM 价格数据做的估算，不是账单。公开段落只包含汇总费用和模型名称，不包含提示词、响应或 API 密钥。
 
 `/improve` 只在发表汇总评论时追加该段落。只发行内建议时不会带上它。当 `pr_description.use_description_markers=true` 时，重复的 `/describe` 每次运行都会再累加一块。
 

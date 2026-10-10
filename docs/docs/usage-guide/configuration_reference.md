@@ -29,8 +29,8 @@ PR-Agent 支持的每一个配置选项，按节分组。[configuration.toml](ht
 
 | Key | Default | 说明 |
 | --- | --- | --- |
-| `model` | "gpt-6.1-sol" |  |
-| `fallback_models` | ["glm-5.3"] |  |
+| `model` | "glm-5.3" |  |
+| `fallback_models` | ["gpt-6.1-sol"] |  |
 **CLI**
 
 | Key | Default | 说明 |

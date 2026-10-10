@@ -15,7 +15,7 @@ model = "<model-name>"
 fallback_models = ["<fallback-model-name>"]
 ```
 
-在 `pr_agent/settings/configuration.toml` 的 `[config]` 中设置。模型名称放在配置里，不要写进工具代码。随构建提供的默认值是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。OpenAI 兼容路由的主机必须设置 `OPENAI__KEY` 和 `OPENAI__API_BASE`。
+在 `pr_agent/settings/configuration.toml` 的 `[config]` 中设置。模型名称放在配置里，不要写进工具代码。随构建提供的默认值是 `glm-5.3`，备用模型是 `gpt-6.1-sol`。OpenAI 兼容路由的主机必须设置 `OPENAI__KEY` 和 `OPENAI__API_BASE`。
 
 行为不同的模型登记在 `pr_agent/algo/__init__.py`。上下文窗口位于其中的 `MAX_TOKENS`。没有条目时请设置 `config.custom_model_max_tokens`，否则 `get_max_tokens()` 会抛出异常。
 

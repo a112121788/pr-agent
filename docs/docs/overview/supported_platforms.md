@@ -9,7 +9,7 @@ Gitee PR-Agent 只支持 Gitee。令牌、Webhook 和 Docker 服务按 [Gitee �
 
 这次审查的默认值：
 
-- 模型 `gpt-6.1-sol`，备用 `glm-5.3`。见 [更换模型](../usage-guide/changing_a_model.md)。
+- 模型 `glm-5.3`，备用 `gpt-6.1-sol`。见 [更换模型](../usage-guide/changing_a_model.md)。
 - 响应语言 `zh-CN`。
 - 大拉取请求分段处理。见 [压缩策略](../core-abilities/compression_strategy.md)。
 - 行内评论使用 Gitee 的 diff `position`。

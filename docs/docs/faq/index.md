@@ -28,7 +28,7 @@ ___
 
 #### 回答：<span style="display:none;">2</span>
 
-- 默认模型是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。两者都会出错。先读再决定要不要改。评论使用 `zh-CN`。
+- 默认模型是 `glm-5.3`，备用模型是 `gpt-6.1-sol`。两者都会出错。先读再决定要不要改。评论使用 `zh-CN`。
 - 有价值的情况是建议抓住了 diff 里的错误。花半分钟看完列表通常值得，即使有些条目不适用。
 - `/improve` 会给自己的列表打分，并丢掉它标成错误的条目。见 [自我反思](../core-abilities/self_reflection.md)。
 - 评论故意分成几层。先看分类，再看一行摘要，摘要相关时再展开。
@@ -56,7 +56,7 @@ ___
 
 #### 回答：<span style="display:none;">4</span>
 
-本构建不会为了训练留下拉取请求内容。提示词发到你配置的模型端点（`gpt-6.1-sol`，失败后备用 `glm-5.3`）。
+本构建不会为了训练留下拉取请求内容。提示词发到你配置的模型端点（`glm-5.3`，失败后备用 `gpt-6.1-sol`）。
 
 见 [数据隐私](../overview/data_privacy.md)。
 
@@ -74,7 +74,7 @@ ___
 - `/review` 的 `enable_large_pr_chunking = true`，最多 `max_number_of_calls` 次分段调用（默认 3），再合并成一条评论。
 - `/describe` 的 `enable_large_pr_handling = true`，会再调用并合并，从而覆盖更多文件。
 
-仍然放不下的文件会写在审查覆盖范围页脚里。主模型是 `gpt-6.1-sol`；失败的分段可以改走 `glm-5.3`。细节见 [压缩策略](../core-abilities/compression_strategy.md) 和 [其他选项](../tools/review.md#其他选项)。
+仍然放不下的文件会写在审查覆盖范围页脚里。主模型是 `glm-5.3`；失败的分段可以改走 `gpt-6.1-sol`。细节见 [压缩策略](../core-abilities/compression_strategy.md) 和 [其他选项](../tools/review.md#其他选项)。
 
 </details>
 

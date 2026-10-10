@@ -8,7 +8,7 @@ Gitee PR-Agent 只审查 Gitee 上的拉取请求。它只接受这两种拉取�
 - `https://gitee.com/owner/repo/pulls/N`
 - `https://e.gitee.com/<enterprise>/repos/owner/repo/pulls/N`
 
-发布文本使用 `config.response_language` = `zh-CN`。默认模型是 `config.model` = `gpt-6.1-sol`。这次调用失败时，`config.fallback_models` 使用 `glm-5.3`。
+发布文本使用 `config.response_language` = `zh-CN`。默认模型是 `config.model` = `glm-5.3`。这次调用失败时，`config.fallback_models` 使用 `gpt-6.1-sol`。
 
 ## 运行工具 {#run}
 

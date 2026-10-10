@@ -5,12 +5,12 @@ sidebar_position: 8
 
 ## 在 PR-Agent 中更换模型 {#changing-a-model-in-pr-agent}
 
-默认模型是 `gpt-6.1-sol`。备用列表是 `glm-5.3`。两者都写在 [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) 中：
+默认模型是 `glm-5.3`。备用列表是 `gpt-6.1-sol`。两者都写在 [`configuration.toml`](https://github.com/the-pr-agent/pr-agent/blob/main/pr_agent/settings/configuration.toml) 中：
 
 ```toml
 [config]
-model = "gpt-6.1-sol"
-fallback_models = ["glm-5.3"]
+model = "glm-5.3"
+fallback_models = ["gpt-6.1-sol"]
 ```
 
 修改这两个字段即可更换模型。模型调用使用 OpenAI 兼容端点。在运行 CLI 或 `gitee_app` Webhook 的主机上设置：
@@ -40,7 +40,7 @@ LiteLLM 不认识的名称需要把 `config.custom_model_max_tokens` 设为上�
 
 ### GPT-6.1 Sol
 
-`gpt-6.1-sol` 是默认模型。它的上下文窗口为 1,050,000 token，输入上限为 922,000 token，输出最多 128,000 token。除非某个工具绕过该上限，PR-Agent 还会应用 `config.max_model_tokens`。
+`gpt-6.1-sol` 是备用模型。它的上下文窗口为 1,050,000 token，输入上限为 922,000 token，输出最多 128,000 token。除非某个工具绕过该上限，PR-Agent 还会应用 `config.max_model_tokens`。
 
 ```toml
 [config]
@@ -54,11 +54,11 @@ reasoning_effort = "medium" # "low"、"medium"、"high"、"xhigh"、"max"
 
 ### Azure {#azure}
 
-本版本没有 Azure DevOps 集成，也没有 Azure OpenAI 的操作步骤。不要把 `config.git_provider` 设为 `azure`。模型端点请按上文设置 `OPENAI__KEY` 和 `OPENAI__API_BASE`。默认模型仍是 `gpt-6.1-sol`，备用模型是 `glm-5.3`。
+本版本没有 Azure DevOps 集成，也没有 Azure OpenAI 的操作步骤。不要把 `config.git_provider` 设为 `azure`。模型端点请按上文设置 `OPENAI__KEY` 和 `OPENAI__API_BASE`。默认模型是 `glm-5.3`，备用模型是 `gpt-6.1-sol`。
 
-### GLM 备用模型
+### GLM 默认模型
 
-主模型失败时，PR-Agent 会依次尝试 `fallback_models` 中的每一项。随构建提供的备用模型是 `glm-5.3`。在主机配置里保留该 ID，或替换整个列表。当备用模型走 OpenAI 兼容路由时，它使用同一组 `OPENAI__KEY` 和 `OPENAI__API_BASE`。特定提供商的模型 ID 需要 LiteLLM 为该提供商记录的环境变量。
+默认模型是 `glm-5.3`，上下文窗口为 1,000,000 token。主模型失败时，PR-Agent 会依次尝试 `fallback_models`。随构建提供的备用模型是 `gpt-6.1-sol`。在主机配置里保留该 ID，或替换整个列表。备用模型走 OpenAI 兼容路由时，使用同一组 `OPENAI__KEY` 和 `OPENAI__API_BASE`。特定提供商的模型 ID 需要 LiteLLM 为该提供商记录的环境变量。
 
 ## 输出 token 限制
 

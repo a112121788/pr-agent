@@ -62,7 +62,7 @@ Gitee 拉取请求可以很长，也不是每个差异块都同样重要。装�
 | `/review` | `pr_reviewer.enable_large_pr_chunking = true` | diff 最多拆成 `pr_reviewer.max_number_of_calls` 段（默认 `3`）。逐段审查后合并成一条评论。 |
 | `/describe` | `pr_description.enable_large_pr_handling = true` | 再发起模型调用并合并结果，从而覆盖更多文件。 |
 
-仍然放不下的文件会列在审查覆盖范围页脚里。失败的分段会先改走备用模型（主模型为 `gpt-6.1-sol` 时，备用是 `glm-5.3`），然后才把成功的分段作为部分审查发出。分段开关在 [其他选项](../tools/review.md#其他选项)。描述工具的开关是 [Describe 配置](../tools/describe.md#配置) 里的 `enable_large_pr_handling`。
+仍然放不下的文件会列在审查覆盖范围页脚里。失败的分段会先改走备用模型（主模型为 `glm-5.3` 时，备用是 `gpt-6.1-sol`），然后才把成功的分段作为部分审查发出。分段开关在 [其他选项](../tools/review.md#其他选项)。描述工具的开关是 [Describe 配置](../tools/describe.md#配置) 里的 `enable_large_pr_handling`。
 
 分段里发出的行内评论同样使用 Gitee 的 diff `position`。见 [Gitee 安装](../installation/gitee.md#已验证的行为)。
 

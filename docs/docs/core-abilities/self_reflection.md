@@ -44,4 +44,4 @@ Gitee PR-Agent 对 `/improve` 做一次**自我反思**。模型给自己的建�
 suggestions_score_threshold = 0 # 丢掉低于该分数的建议（0-10）
 ```
 
-这一步与命令的其余部分使用同一条模型链：`gpt-6.1-sol`，主调用失败后再用 `glm-5.3`。见 [更换模型](../usage-guide/changing_a_model.md)。
+这一步与命令的其余部分使用同一条模型链：`glm-5.3`，主调用失败后再用 `gpt-6.1-sol`。见 [更换模型](../usage-guide/changing_a_model.md)。

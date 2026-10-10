@@ -9,7 +9,7 @@ Gitee PR-Agent 由你自行托管。它用你的令牌读取 Gitee 拉取请求�
 
 - 调用 Gitee API 使用主机令牌（`GITEE__PERSONAL_ACCESS_TOKEN`，或主机密钥文件里的 `[gitee].personal_access_token`）。仓库的 `.pr_agent.toml` 不能设置该令牌、API 基址或 Webhook 密钥。
 - 提示词可以包含标题、描述、提交、diff、文件上下文、仓库指令，以及议题 API 成功返回时的 Gitee 议题标题和正文。
-- 默认模型是 `gpt-6.1-sol`。调用失败后改走 `glm-5.3`。响应语言为 `zh-CN`（`config.response_language`）。
+- 默认模型是 `glm-5.3`。调用失败后改走 `gpt-6.1-sol`。响应语言为 `zh-CN`（`config.response_language`）。
 - 这些调用发生在你和 API 密钥背后的端点之间。见 [更换模型](../usage-guide/changing_a_model.md)。
 
 ## 不会送出什么
